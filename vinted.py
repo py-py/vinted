@@ -20,7 +20,7 @@ def parse_catalog(page_number: int = 1) -> list[dict]:
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/131.0.0.0 Safari/537.36"
             ),
-            locale="pl-PL",
+            locale="en-US",
         )
         page = context.new_page()
         page.goto(url, wait_until="domcontentloaded")
@@ -47,7 +47,10 @@ def parse_catalog(page_number: int = 1) -> list[dict]:
 
 
 def parse_item_id(url: str) -> Optional[str]:
-    """Extract the numeric item ID from a Vinted item URL."""
+    """
+    Extract the numeric item ID from a Vinted item URL.
+    URL: https://www.vinted.pl/items/8142652778-sjezdove-lyze-150-cm-head?referrer=catalog
+    """
     match = re.search(r"/items/(\d+)", url)
     return match.group(1) if match else None
 
@@ -73,7 +76,7 @@ def _parse_item(el) -> Optional[dict]:
 
     # Price – look for price element
     price_el = el.query_selector("[data-testid$='price-text'], .web_ui__Text__subtitle")
-    price_text = price_el.inner_text().strip() if price_el else ""
+    price_text = (price_el.inner_text().strip() if price_el else "").replace("\xa0", " ")
 
     # Brand
     brand_match = re.search(r"marka:\s*(.+?)(?:,|$)", alt)
@@ -105,9 +108,5 @@ def _parse_item(el) -> Optional[dict]:
 if __name__ == "__main__":
     items = parse_catalog(page_number=1)
     print(f"Found {len(items)} items:\n")
-    for i, item in enumerate(items, 1):
-        print(f"{i}. {item['title']}")
-        print(f"   Brand: {item['brand']}  |  Size: {item['size']}  |  Condition: {item['condition']}")
-        print(f"   Price: {item['price']}")
-        print(f"   URL: {item['url']}")
-        print()
+    for item in items:
+        print(item)
