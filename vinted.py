@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import re
-from typing import Optional
 
 from playwright.sync_api import sync_playwright
 
@@ -46,7 +47,7 @@ def parse_catalog(page_number: int = 1) -> list[dict]:
     return items
 
 
-def parse_item_id(url: str) -> Optional[str]:
+def parse_item_id(url: str) -> str | None:
     """
     Extract the numeric item ID from a Vinted item URL.
     URL: https://www.vinted.pl/items/8142652778-sjezdove-lyze-150-cm-head?referrer=catalog
@@ -55,7 +56,7 @@ def parse_item_id(url: str) -> Optional[str]:
     return match.group(1) if match else None
 
 
-def _parse_item(el) -> Optional[dict]:
+def _parse_item(el) -> dict | None:
     """Extract item data from a grid-item element."""
     # Link & URL
     link = el.query_selector("a[href*='/items/']")
