@@ -139,6 +139,9 @@ async def main() -> None:
     if product["description"]:
         print(f"\nDescription:\n  {product['description']}")
 
+    if product["ld_json"]:
+        print(f"\nJSON-LD:\n  {json.dumps(product['ld_json'], indent=2, ensure_ascii=False)}")
+
     if not product["image_urls"]:
         print("\nNo images found.")
         return
