@@ -4,14 +4,23 @@ import re
 
 from playwright.sync_api import sync_playwright
 
+
+CATALOGS = {
+    4733: "Skis",
+    2683: "Man Ski boots",
+    2652: "Woman Ski boots",
+    2715: "Girls ski boots",
+    2746: "Boys ski boots",
+}
+
 CATALOG_URL = (
-    "https://www.vinted.pl/catalog?catalog[]=4733&order=newest_first&page={page}"
+    "https://www.vinted.pl/catalog?catalog[]={catalog_id}&order=newest_first&page={page}"
 )
 
 
-def parse_catalog(page_number: int = 1) -> list[dict]:
+def parse_catalog(catalog_id, page_number: int = 1) -> list[dict]:
     """Parse Vinted catalog page and return a list of item dicts."""
-    url = CATALOG_URL.format(page=page_number)
+    url = CATALOG_URL.format(catalog_id=catalog_id, page=page_number)
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
@@ -107,7 +116,7 @@ def _parse_item(el) -> dict | None:
 
 
 if __name__ == "__main__":
-    items = parse_catalog(page_number=1)
+    items = parse_catalog(catalog_id=2683, page_number=1)
     print(f"Found {len(items)} items:\n")
     for item in items:
         print(item)
