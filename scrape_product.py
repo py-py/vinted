@@ -91,7 +91,10 @@ async def scrape_product(product_id: str) -> dict:
                 DESCRIPTION_SELECTOR,
                 """el => {
                     const clipped = el.querySelector('[style*="max-height"]');
-                    if (clipped) clipped.style.maxHeight = 'none';
+                    if (clipped) {
+                        clipped.style.maxHeight = 'none';
+                        clipped.style.overflow = 'visible';
+                    }
                     return el.innerText.trim();
                 }""",
             )
@@ -103,26 +106,24 @@ async def scrape_product(product_id: str) -> dict:
         try:
             seller = await page.evaluate(
                 """() => {
-                    const links = document.querySelectorAll('a[href*="/member/"]');
-                    const profileLink = [...links].find(a => !a.href.includes('signup'));
-                    if (!profileLink) return {};
+                    const profileEl = document.querySelector('[data-testid="profile-username"]');
+        
+                    const name = profileEl ? profileEl.innerText.trim() : '';
+                    const profileLink = profileEl ? profileEl.closest('a[href*="/member/"]') : null;
+                    const link = profileLink ? profileLink.getAttribute('href') || '' : '';
 
-                    const href = profileLink.getAttribute('href') || '';
-                    const nameEl = profileLink.querySelector('[class*="Cell__title"]');
-                    const name = nameEl ? nameEl.innerText.trim() : '';
-
-                    const ratingEl = profileLink.querySelector('[aria-label]');
+                    const ratingEl = document.querySelector('[class*="Rating"][aria-label]');
                     const ratingAria = ratingEl ? ratingEl.getAttribute('aria-label') || '' : '';
                     const starsMatch = ratingAria.match(/([\d.,]+)\s/);
                     const stars = starsMatch ? parseFloat(starsMatch[1].replace(',', '.')) : null;
 
-                    const labelEl = profileLink.querySelector('[class*="Rating__label"]');
+                    const labelEl = document.querySelector('[class*="Rating__label"]');
                     const reviews = labelEl ? parseInt(labelEl.innerText.trim(), 10) : null;
 
                     const locEl = document.querySelector('[data-testid="seller-location"]');
                     const location = locEl ? locEl.innerText.trim() : '';
 
-                    return {name, link: href, stars, reviews, location};
+                    return {name, link, stars, reviews, location};
                 }"""
             )
         except Exception:
@@ -156,7 +157,7 @@ async def save_images(image_urls: list[str], product_id: str) -> None:
 
 
 async def main() -> None:
-    product_id = sys.argv[1] if len(sys.argv) > 1 else "8473373075"
+    product_id = sys.argv[1] if len(sys.argv) > 1 else "8119502397"
     product = await scrape_product(product_id)
 
     if product["seller"]:
