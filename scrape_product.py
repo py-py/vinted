@@ -33,25 +33,20 @@ async def scrape_product(product_id: str) -> dict:
 
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    # JSON-LD structured data
-    ld_json = {}
-    ld_script = soup.find("script", type="application/ld+json")
-    if ld_script:
-        ld_json = json.loads(ld_script.string)
+    # --- Title ---
+    title = soup.title.get_text(strip=True) if soup.title else ""
 
-    # Images — all unique image URLs from .item-photos
+    # --- Images --- all unique image URLs from .item-photos
     image_urls = []
-    photos_div = soup.select_one(".item-photos")
-    if photos_div:
+    if photos_div := soup.select_one(".item-photos"):
         for img in photos_div.find_all("img"):
             src = img.get("src") or img.get("data-src")
             if src and src not in image_urls:
                 image_urls.append(src)
 
-    # Properties from .details-list--details
+    # --- Properties --- from .details-list--details
     properties = {}
-    details_div = soup.select_one(".details-list--details")
-    if details_div:
+    if details_div := soup.select_one(".details-list--details"):
         for item in details_div.select(".details-list__item"):
             vals = item.select(".details-list__item-value")
             if len(vals) >= 2:
@@ -63,28 +58,24 @@ async def scrape_product(product_id: str) -> dict:
                 value = val_clone.get_text(strip=True)
                 properties[key] = value
 
-    # Description — full text (no CSS clipping in raw HTML)
+    # --- Description --- full text (no CSS clipping in raw HTML)
     description = ""
-    desc_div = soup.select_one("div.u-text-wrap")
-    if desc_div:
+    if desc_div := soup.select_one("div.u-text-wrap"):
         description = desc_div.get_text("\n", strip=True)
 
-    # Seller info
+    # --- Seller ---
     seller = {}
-    profile_el = soup.find(attrs={"data-testid": "profile-username"})
-    if profile_el:
+    if profile_el := soup.find(attrs={"data-testid": "profile-username"}):
         seller["name"] = profile_el.get_text(strip=True)
         profile_link = profile_el.find_parent("a", href=True)
         if profile_link:
             seller["link"] = profile_link["href"]
 
-    location_el = soup.find(attrs={"data-testid": "seller-location"})
-    if location_el:
+    if location_el := soup.find(attrs={"data-testid": "seller-location"}):
         seller["location"] = location_el.get_text(strip=True)
 
     # Rating — from aria-label on the rating container
-    rating_el = soup.find(attrs={"aria-label": True}, class_=lambda c: c and "Rating" in c)
-    if rating_el:
+    if rating_el := soup.find(attrs={"aria-label": True}, class_=lambda c: c and "Rating" in c):
         aria = rating_el.get("aria-label", "")
         stars_match = re.search(r"([\d.,]+)\s", aria)
         if stars_match:
@@ -93,31 +84,35 @@ async def scrape_product(product_id: str) -> dict:
         if label_el:
             seller["reviews"] = int(label_el.get_text(strip=True))
 
+    # --- JSON-LD ---
+    ld_json = {}
+    if ld_script := soup.find("script", type="application/ld+json"):
+        ld_json = json.loads(ld_script.string)
+
     return {
-        "product_id": product_id,
+        "id": product_id,
         "url": url,
+        "title": title,
+        "image_urls": image_urls,
         "description": description,
         "properties": properties,
         "seller": seller,
-        "image_urls": image_urls,
         "ld_json": ld_json,
     }
 
 
-async def save_images(image_urls: list[str], product_id: str) -> None:
+async def save_images(image_urls: list[str], product_id: str, media_folder: Path) -> None:
     """Download images to ./media/products/{product_id}/."""
-    folder = Path("media/products") / product_id
-    folder.mkdir(parents=True, exist_ok=True)
+    media_folder.mkdir(parents=True, exist_ok=True)
 
     async with httpx.AsyncClient() as client:
-
         async def _download(i: int, url: str) -> None:
             resp = await client.get(url)
             resp.raise_for_status()
             ext = Path(url.split("?")[0]).suffix or ".jpg"
-            filepath = folder / f"{i}{ext}"
+            filepath = media_folder / f"{i}{ext}"
             filepath.write_bytes(resp.content)
-            print(f"  Saved: {filepath}")
+            print(f"-> Saved: {filepath}")
 
         await asyncio.gather(
             *(_download(i, url) for i, url in enumerate(image_urls, 1))
@@ -126,33 +121,14 @@ async def save_images(image_urls: list[str], product_id: str) -> None:
 
 async def main() -> None:
     product_id = sys.argv[1] if len(sys.argv) > 1 else "8119502397"
+    media_folder = Path("media/products") / product_id
     product = await scrape_product(product_id)
 
-    if product["seller"]:
-        s = product["seller"]
-        print(f"\nSeller: {s.get('name', '?')}")
-        print(f"  Link: https://www.vinted.pl{s.get('link', '')}")
-        print(f"  Stars: {s.get('stars', '?')} / 5")
-        print(f"  Reviews: {s.get('reviews', '?')}")
-        print(f"  Location: {s.get('location', '?')}")
+    if product["image_urls"]:
+        await save_images(product["image_urls"], product_id, media_folder)
 
-    if product["properties"]:
-        print("\nProperties:")
-        for key, value in product["properties"].items():
-            print(f"  {key}: {value}")
-
-    if product["description"]:
-        print(f"\nDescription:\n  {product['description']}")
-
-    if product["ld_json"]:
-        print(f"\nJSON-LD:\n  {json.dumps(product['ld_json'], indent=2, ensure_ascii=False)}")
-
-    if not product["image_urls"]:
-        print("\nNo images found.")
-        return
-
-    print(f"\nFound {len(product['image_urls'])} image(s), saving...\n")
-    await save_images(product["image_urls"], product_id)
+    product["saved_images"] = str(media_folder)
+    print(json.dumps(product, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":
