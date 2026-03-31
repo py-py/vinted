@@ -111,6 +111,7 @@ async def save_images(image_urls: list[str], folder: Path) -> None:
     folder.mkdir(parents=True, exist_ok=True)
 
     async with httpx.AsyncClient() as client:
+
         async def _download(i: int, url: str) -> None:
             resp = await client.get(url)
             resp.raise_for_status()
