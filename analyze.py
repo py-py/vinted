@@ -85,6 +85,7 @@ async def main() -> None:
     # Load prompt based on product type
     prompt = load_prompt(catalog_id, language="RU")
     print(f"-> Images: {len(images)}")
+
     result = analyze_with_gemini(product, images, prompt)
     print(result)
 
