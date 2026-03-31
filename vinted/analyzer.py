@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 from google import genai
 
 from .constants import CATALOG_RECIPES
+from .constants import PROMPTS_DIR
+from .formats import format_analysis
 from .models import VintedProduct
 from .scraper import save_images
 from .scraper import scrape_product
@@ -17,19 +19,13 @@ from .telegram import send_message
 
 load_dotenv()
 
-PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
-
-def load_prompt(catalog_id, language=None) -> str:
+def load_prompt(catalog_id) -> str:
     """Load base prompt + type-specific prompt."""
     base = (PROMPTS_DIR / "base.md").read_text()
     type_file = CATALOG_RECIPES[catalog_id]["prompt"]
     specific = (PROMPTS_DIR / type_file).read_text()
-    return (
-        f"{base}\n\n{specific}" + f"\n\n please, make the response on {language.upper()} language"
-        if language
-        else ""
-    )
+    return f"{base}\n\n{specific}"
 
 
 def load_image_paths(product_id: str) -> list[Path]:
@@ -50,7 +46,7 @@ def load_images(product_id: str) -> list[tuple[str, bytes]]:
 
 def analyze_with_gemini(
     product: VintedProduct, images: list[tuple[str, bytes]], prompt: str
-) -> str:
+) -> dict:
     client = genai.Client()
 
     parts = []
@@ -58,18 +54,45 @@ def analyze_with_gemini(
         parts.append(genai.types.Part.from_bytes(data=data, mime_type=media_type))
     parts.append(f"Product data:\n{product.model_dump_json(indent=2)}")
 
-    # gemini-2.5-flash-lite
     # gemini-2.5-flash
+    # gemini-2.5-flash-lite
+    # gemini-3-flash-preview
+    #   ┌───────────────────────┬───────────────┬──────────┬───────────────┐
+    #   │        Модель         │   Скорость    │ Качество │     Цена      │
+    #   ├───────────────────────┼───────────────┼──────────┼───────────────┤
+    #   │ gemini-2.5-flash      │ быстрая       │ хорошее  │ дешёвая       │
+    #   ├───────────────────────┼───────────────┼──────────┼───────────────┤
+    #   │ gemini-2.5-flash-lite │ самая быстрая │ базовое  │ самая дешёвая │
+    #   ├───────────────────────┼───────────────┼──────────┼───────────────┤
+    #   │ gemini-2.5-pro        │ медленная     │ лучшее   │ дорогая       │
+    #   ├───────────────────────┼───────────────┼──────────┼───────────────┤
+    #   │ gemini-2.0-flash      │ быстрая       │ хорошее  │ дешёвая       │
+    #   └───────────────────────┴───────────────┴──────────┴───────────────┘
+    #
+    #   Preview (нестабильные):
+    #
+    #   ┌────────────────────────┬───────────────────────┐
+    #   │         Модель         │        Заметки        │
+    #   ├────────────────────────┼───────────────────────┤
+    #   │ gemini-3-flash-preview │ новейшая, но preview  │
+    #   ├────────────────────────┼───────────────────────┤
+    #   │ gemini-3-pro-preview   │ новейшая pro, preview │
+    #   ├────────────────────────┼───────────────────────┤
+    #   │ gemini-3.1-pro-preview │ ещё новее, preview    │
+    #   └────────────────────────┴───────────────────────┘
     response = client.models.generate_content(
-        model="gemini-2.5-flash-lite",
+        model="gemini-3-flash-preview",
         contents=parts,
-        config=genai.types.GenerateContentConfig(system_instruction=prompt),
+        config=genai.types.GenerateContentConfig(
+            system_instruction=prompt,
+            response_mime_type="application/json",
+        ),
     )
-    return response.text
+    return json.loads(response.text)
 
 
 async def main() -> None:
-    product_id = sys.argv[1] if len(sys.argv) > 1 else "8119502397"
+    product_id = sys.argv[1] if len(sys.argv) > 1 else "8505042492"
     catalog_id = sys.argv[2] if len(sys.argv) > 2 else "2652"
 
     # Scrape product data
@@ -77,14 +100,14 @@ async def main() -> None:
 
     # Load images (download if needed)
     images = load_images(product_id)
-    if not images and product["image_urls"]:
-        await save_images(product["image_urls"], Path("media/products") / product_id)
+    if not images and product.image_urls:
+        await save_images(product.image_urls, product.path_to_images)
         images = load_images(product_id)
 
     # Load prompt based on product type
-    prompt = load_prompt(catalog_id, language="RU")
-    data = analyze_with_gemini(product, images, prompt)
-    analysis = json.dumps(json.loads(data), indent=2)
+    prompt = load_prompt(catalog_id)
+    data: dict = analyze_with_gemini(product, images, prompt)
+    analysis = format_analysis(data)
     print(analysis)
 
     # Send to Telegram

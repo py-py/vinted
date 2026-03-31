@@ -1,3 +1,5 @@
+from pathlib import Path
+
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -15,3 +17,5 @@ CATALOG_RECIPES = {
     "2715": {"name": "Girls ski boots", "prompt": "ski_boots.md"},
     "2746": {"name": "Boys ski boots", "prompt": "ski_boots.md"},
 }
+
+PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
