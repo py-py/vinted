@@ -10,6 +10,7 @@ select = [
     "I",   # isort
     "UP",  # pyupgrade
 ]
+ignore = ["UP045"]
 
 [tool.ruff.lint.isort]
 force-single-line = true

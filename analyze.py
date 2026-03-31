@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import mimetypes
 import sys
 from pathlib import Path
@@ -10,6 +9,8 @@ from dotenv import load_dotenv
 from google import genai
 
 from constants import CATALOG_RECIPES
+from models import VintedProduct
+from scrape_product import save_images
 from scrape_product import scrape_product
 from telegram_bot import send_message
 
@@ -23,7 +24,11 @@ def load_prompt(catalog_id, language=None) -> str:
     base = (PROMPTS_DIR / "base.md").read_text()
     type_file = CATALOG_RECIPES[catalog_id]["prompt"]
     specific = (PROMPTS_DIR / type_file).read_text()
-    return f"{base}\n\n{specific}" + f"\n\n please, make the response on {language.upper()} language" if language else ""
+    return (
+        f"{base}\n\n{specific}" + f"\n\n please, make the response on {language.upper()} language"
+        if language
+        else ""
+    )
 
 
 def load_image_paths(product_id: str) -> list[Path]:
@@ -37,25 +42,23 @@ def load_image_paths(product_id: str) -> list[Path]:
 
 def load_images(product_id: str) -> list[tuple[str, bytes]]:
     """Load saved images from disk. Returns list of (media_type, bytes)."""
-    folder = Path("media/products") / product_id
-    if not folder.exists():
-        return []
-
     images = []
-    for path in sorted(folder.iterdir()):
+    for path in load_image_paths(product_id):
         if path.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
             media_type = mimetypes.guess_type(path.name)[0] or "image/jpeg"
             images.append((media_type, path.read_bytes()))
     return images
 
 
-def analyze_with_gemini(product: dict, images: list[tuple[str, bytes]], prompt: str) -> str:
+def analyze_with_gemini(
+    product: VintedProduct, images: list[tuple[str, bytes]], prompt: str
+) -> str:
     client = genai.Client()
 
     parts = []
     for media_type, data in images:
         parts.append(genai.types.Part.from_bytes(data=data, mime_type=media_type))
-    parts.append(f"Product data:\n{json.dumps(product, indent=2, ensure_ascii=False)}")
+    parts.append(f"Product data:\n{product.model_dump_json(indent=2)}")
 
     # gemini-2.5-flash-lite
     # gemini-2.5-flash
@@ -72,28 +75,23 @@ async def main() -> None:
     catalog_id = sys.argv[2] if len(sys.argv) > 2 else "2652"
 
     # Scrape product data
-    product = await scrape_product(product_id, catalog_id)
+    product: VintedProduct = await scrape_product(product_id, catalog_id)
 
     # Load images (download if needed)
     images = load_images(product_id)
     if not images and product["image_urls"]:
-        from scrape_product import save_images
-
         await save_images(product["image_urls"], Path("media/products") / product_id)
         images = load_images(product_id)
 
     # Load prompt based on product type
-    prompt = load_prompt(catalog_id, language="RU")
-    print(f"-> Images: {len(images)}")
-
-    result = analyze_with_gemini(product, images, prompt)
-    print(result)
+    # prompt = load_prompt(catalog_id, language="RU")
+    # print(f"-> Images: {len(images)}")
+    #
+    # result = analyze_with_gemini(product, images, prompt)
+    # print(result)
 
     # Send to Telegram
-    header = f"🎿 *{product.get('title', product_id)}*\n{product.get('url', '')}\n\n"
-    image_paths = load_image_paths(product_id)
-
-    await send_message(header + result, image_paths[0])
+    await send_message(product=product)
 
 
 if __name__ == "__main__":

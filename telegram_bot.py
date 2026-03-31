@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import os
-from dotenv import load_dotenv
 
 import httpx
+from dotenv import load_dotenv
 
+from models import VintedProduct
 
 load_dotenv()
 
@@ -13,22 +14,29 @@ CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 
-async def send_message(text: str, image_path: str, parse_mode: str = "Markdown") -> None:
+async def send_message(product: VintedProduct, parse_mode: str = "Markdown") -> None:
     """
     Send a text message to the configured Telegram chat.
     Telegram limit is 4096 chars per message
+
+    data = product.model_dump_json(exclude={"ld_json","image_urls"}, indent=2)
+    message = f"## [{product.title}]({product.url})\n\n```json {data}```"
     """
+    image_urls = product.image_urls
+    data = product.model_dump_json(exclude={"ld_json", "image_urls"}, indent=2)
+    message = f"*{product.title}* [URL]({product.url})\n\n\n```json {data}```"
     async with httpx.AsyncClient() as client:
-        with open(image_path, "rb") as f:
-            await client.post(
-                f"{API_URL}/sendMessage",
-                data={
-                    "chat_id": CHAT_ID,
-                    "text": text,
-                    "parse_mode": parse_mode,
-                },
-                files={"photo": f},
-            )
+        reply = await client.post(
+            f"{API_URL}/sendPhoto",
+            json={
+                "chat_id": CHAT_ID,
+                "caption": message,
+                "parse_mode": parse_mode,
+                "photo": image_urls[0],
+            },
+        )
+        print(reply.status_code, reply.text)
+        print(product)
 
 
 async def send_photos(image_paths: list[str], caption: str = "") -> None:

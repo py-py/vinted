@@ -16,6 +16,8 @@ import httpx
 from bs4 import BeautifulSoup
 
 from constants import PRODUCT_URL
+from models import VintedProduct
+from models import VintedSeller
 
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -24,7 +26,7 @@ USER_AGENT = (
 )
 
 
-async def scrape_product(product_id: str, catalog_id: str) -> dict:
+async def scrape_product(product_id: str, catalog_id: str) -> VintedProduct:
     url = PRODUCT_URL.format(product_id=product_id)
 
     async with httpx.AsyncClient(
@@ -93,17 +95,17 @@ async def scrape_product(product_id: str, catalog_id: str) -> dict:
     if ld_script := soup.find("script", type="application/ld+json"):
         ld_json = json.loads(ld_script.string)
 
-    return {
-        "id": product_id,
-        "catalog_id": catalog_id,
-        "url": url,
-        "title": title,
-        "image_urls": image_urls,
-        "description": description,
-        "properties": properties,
-        "seller": seller,
-        "ld_json": ld_json,
-    }
+    return VintedProduct(
+        id=product_id,
+        catalog_id=catalog_id,
+        url=url,
+        title=title,
+        image_urls=image_urls,
+        description=description,
+        properties=properties,
+        seller=VintedSeller(**seller),
+        ld_json=ld_json,
+    )
 
 
 async def save_images(image_urls: list[str], folder: Path) -> None:
@@ -130,11 +132,10 @@ async def main() -> None:
     product = await scrape_product(product_id, catalog_id)
 
     folder = Path("media/products") / product_id
-    if product["image_urls"]:
-        await save_images(product["image_urls"], folder)
+    if product.image_urls:
+        await save_images(product.image_urls, folder)
 
-    product["saved_images"] = str(folder)
-    print(json.dumps(product, indent=2, ensure_ascii=False))
+    print(product.model_dump_json(indent=2))
 
 
 if __name__ == "__main__":
