@@ -110,13 +110,18 @@ async def save_images(image_urls: list[str], product_id: str) -> None:
     folder.mkdir(parents=True, exist_ok=True)
 
     async with httpx.AsyncClient() as client:
-        for i, img_url in enumerate(image_urls, 1):
-            resp = await client.get(img_url)
+
+        async def _download(i: int, url: str) -> None:
+            resp = await client.get(url)
             resp.raise_for_status()
-            ext = Path(img_url.split("?")[0]).suffix or ".jpg"
+            ext = Path(url.split("?")[0]).suffix or ".jpg"
             filepath = folder / f"{i}{ext}"
             filepath.write_bytes(resp.content)
             print(f"  Saved: {filepath}")
+
+        await asyncio.gather(
+            *(_download(i, url) for i, url in enumerate(image_urls, 1))
+        )
 
 
 async def main() -> None:
