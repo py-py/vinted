@@ -85,6 +85,12 @@ async def scrape_product(product_id: str, catalog_id: str) -> VintedProduct:
         if label_el:
             seller["reviews"] = int(label_el.get_text(strip=True))
 
+    # --- Price --- from "total-combined-price" section
+    price_el = soup.find(attrs={"data-testid": "total-combined-price"})
+    price_text = price_el.get_text(strip=True)
+    price_match = re.search(r"([\d.,]+)\s*(\S+)", price_text)
+    price = float(price_match.group(1).replace(",", "."))
+
     # --- JSON-LD ---
     ld_json = {}
     if ld_script := soup.find("script", type="application/ld+json"):
@@ -96,6 +102,7 @@ async def scrape_product(product_id: str, catalog_id: str) -> VintedProduct:
         description=description,
         catalog_id=catalog_id,
         url=url,
+        price=price,
         properties=properties,
         image_urls=image_urls,
         seller=VintedSeller(**seller),

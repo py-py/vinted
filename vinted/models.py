@@ -19,6 +19,7 @@ class VintedProduct(BaseModel):
     description: str = ""
     catalog_id: str
     url: str
+    price: float
     properties: dict[str, str] = {}
     image_urls: list[str] = []
     seller: VintedSeller = VintedSeller()
