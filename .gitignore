@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+
+# Environment
+.env
+
+# IDE
+.idea/
+
+# OS
+.DS_Store
+
+# Project
+media/
