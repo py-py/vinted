@@ -7,19 +7,23 @@ from pydantic import BaseModel
 
 class VintedSeller(BaseModel):
     username: str = ""
-    link: str = ""
     location: str = ""
+    link: str = ""
     stars: Optional[float] = None
     reviews: Optional[int] = None
 
 
 class VintedProduct(BaseModel):
     id: str
+    title: str = ""
+    description: str = ""
     catalog_id: str
     url: str
-    title: str = ""
-    image_urls: list[str] = []
-    description: str = ""
     properties: dict[str, str] = {}
+    image_urls: list[str] = []
     seller: VintedSeller = VintedSeller()
     ld_json: dict = {}
+
+    def model_dump_json(self, *args, **kwargs) -> str:
+        kwargs.setdefault("exclude", {"ld_json"})
+        return super().model_dump_json(*args, **kwargs)

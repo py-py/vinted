@@ -92,12 +92,12 @@ async def scrape_product(product_id: str, catalog_id: str) -> VintedProduct:
 
     return VintedProduct(
         id=product_id,
+        title=title,
+        description=description,
         catalog_id=catalog_id,
         url=url,
-        title=title,
-        image_urls=image_urls,
-        description=description,
         properties=properties,
+        image_urls=image_urls,
         seller=VintedSeller(**seller),
         ld_json=ld_json,
     )
