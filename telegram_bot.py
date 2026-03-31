@@ -13,19 +13,21 @@ CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 
-async def send_message(text: str, parse_mode: str = "Markdown") -> None:
-    """Send a text message to the configured Telegram chat."""
-    # Telegram limit is 4096 chars per message
-    chunks = [text[i : i + 4096] for i in range(0, len(text), 4096)]
+async def send_message(text: str, image_path: str, parse_mode: str = "Markdown") -> None:
+    """
+    Send a text message to the configured Telegram chat.
+    Telegram limit is 4096 chars per message
+    """
     async with httpx.AsyncClient() as client:
-        for chunk in chunks:
+        with open(image_path, "rb") as f:
             await client.post(
                 f"{API_URL}/sendMessage",
-                json={
+                data={
                     "chat_id": CHAT_ID,
-                    "text": chunk,
+                    "text": text,
                     "parse_mode": parse_mode,
                 },
+                files={"photo": f},
             )
 
 

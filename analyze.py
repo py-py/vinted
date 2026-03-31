@@ -11,7 +11,7 @@ from google import genai
 
 from constants import CATALOG_RECIPES
 from scrape_product import scrape_product
-from telegram_bot import send_message, send_photos
+from telegram_bot import send_message
 
 load_dotenv()
 
@@ -57,8 +57,10 @@ def analyze_with_gemini(product: dict, images: list[tuple[str, bytes]], prompt: 
         parts.append(genai.types.Part.from_bytes(data=data, mime_type=media_type))
     parts.append(f"Product data:\n{json.dumps(product, indent=2, ensure_ascii=False)}")
 
+    # gemini-2.5-flash-lite
+    # gemini-2.5-flash
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.5-flash-lite",
         contents=parts,
         config=genai.types.GenerateContentConfig(system_instruction=prompt),
     )
@@ -88,10 +90,9 @@ async def main() -> None:
 
     # Send to Telegram
     header = f"🎿 *{product.get('title', product_id)}*\n{product.get('url', '')}\n\n"
-    await send_message(header + result)
-
     image_paths = load_image_paths(product_id)
-    await send_photos(image_paths[:1])
+
+    await send_message(header + result, image_paths[0])
 
 
 if __name__ == "__main__":
