@@ -14,7 +14,9 @@ CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 
-async def send_message(product: VintedProduct, parse_mode: str = "Markdown") -> None:
+async def send_message(
+    product: VintedProduct, analysis: str, parse_mode: str = "Markdown"
+) -> None:
     """
     Send a text message to the configured Telegram chat.
     Telegram limit is 4096 chars per message
@@ -23,8 +25,7 @@ async def send_message(product: VintedProduct, parse_mode: str = "Markdown") -> 
     message = f"## [{product.title}]({product.url})\n\n```json {data}```"
     """
     image_urls = product.image_urls
-    data = product.model_dump_json(exclude={"ld_json", "image_urls"}, indent=2)
-    message = f"*{product.title}* [URL]({product.url})\n\n\n```json {data}```"
+    message = f"*{product.title}* [URL]({product.url})\n\n\n```json {analysis}```"
     async with httpx.AsyncClient() as client:
         reply = await client.post(
             f"{API_URL}/sendPhoto",

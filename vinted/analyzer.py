@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import mimetypes
 import sys
 from pathlib import Path
@@ -34,10 +35,7 @@ def load_prompt(catalog_id, language=None) -> str:
 def load_image_paths(product_id: str) -> list[Path]:
     """Load saved images from disk. Returns list of (media_type, bytes)."""
     folder = Path("media/products") / product_id
-    if not folder.exists():
-        return []
-
-    return sorted(folder.iterdir())
+    return sorted(folder.iterdir()) if folder.exists() else []
 
 
 def load_images(product_id: str) -> list[tuple[str, bytes]]:
@@ -84,14 +82,13 @@ async def main() -> None:
         images = load_images(product_id)
 
     # Load prompt based on product type
-    # prompt = load_prompt(catalog_id, language="RU")
-    # print(f"-> Images: {len(images)}")
-    #
-    # result = analyze_with_gemini(product, images, prompt)
-    # print(result)
+    prompt = load_prompt(catalog_id, language="RU")
+    data = analyze_with_gemini(product, images, prompt)
+    analysis = json.dumps(json.loads(data), indent=2)
+    print(analysis)
 
     # Send to Telegram
-    await send_message(product=product)
+    await send_message(product=product, analysis=analysis)
 
 
 if __name__ == "__main__":
