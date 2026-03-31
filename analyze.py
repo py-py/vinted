@@ -11,18 +11,28 @@ from google import genai
 
 from constants import CATALOG_RECIPES
 from scrape_product import scrape_product
+from telegram_bot import send_message, send_photos
 
 load_dotenv()
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 
 
-def load_prompt(catalog_id) -> str:
+def load_prompt(catalog_id, language=None) -> str:
     """Load base prompt + type-specific prompt."""
     base = (PROMPTS_DIR / "base.md").read_text()
     type_file = CATALOG_RECIPES[catalog_id]["prompt"]
     specific = (PROMPTS_DIR / type_file).read_text()
-    return f"{base}\n\n{specific}"
+    return f"{base}\n\n{specific}" + f"\n\n please, make the response on {language.upper()} language" if language else ""
+
+
+def load_image_paths(product_id: str) -> list[Path]:
+    """Load saved images from disk. Returns list of (media_type, bytes)."""
+    folder = Path("media/products") / product_id
+    if not folder.exists():
+        return []
+
+    return sorted(folder.iterdir())
 
 
 def load_images(product_id: str) -> list[tuple[str, bytes]]:
@@ -71,10 +81,17 @@ async def main() -> None:
         images = load_images(product_id)
 
     # Load prompt based on product type
-    prompt = load_prompt(catalog_id)
+    prompt = load_prompt(catalog_id, language="RU")
     print(f"-> Images: {len(images)}")
     result = analyze_with_gemini(product, images, prompt)
     print(result)
+
+    # Send to Telegram
+    header = f"🎿 *{product.get('title', product_id)}*\n{product.get('url', '')}\n\n"
+    await send_message(header + result)
+
+    image_paths = load_image_paths(product_id)
+    await send_photos(image_paths[:1])
 
 
 if __name__ == "__main__":
