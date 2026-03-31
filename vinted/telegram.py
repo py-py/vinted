@@ -5,7 +5,7 @@ import os
 import httpx
 from dotenv import load_dotenv
 
-from models import VintedProduct
+from .models import VintedProduct
 
 load_dotenv()
 

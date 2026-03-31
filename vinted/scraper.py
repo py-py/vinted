@@ -15,15 +15,10 @@ from pathlib import Path
 import httpx
 from bs4 import BeautifulSoup
 
-from constants import PRODUCT_URL
-from models import VintedProduct
-from models import VintedSeller
-
-USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/124.0.0.0 Safari/537.36"
-)
+from .constants import PRODUCT_URL
+from .constants import USER_AGENT
+from .models import VintedProduct
+from .models import VintedSeller
 
 
 async def scrape_product(product_id: str, catalog_id: str) -> VintedProduct:

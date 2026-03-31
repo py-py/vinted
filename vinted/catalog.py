@@ -5,8 +5,8 @@ import re
 import httpx
 from bs4 import BeautifulSoup
 
-from constants import CATALOG_URL
-from constants import USER_AGENT
+from .constants import CATALOG_URL
+from .constants import USER_AGENT
 
 
 def parse_catalog(catalog_id: int, page_number: int = 1) -> list[dict]:

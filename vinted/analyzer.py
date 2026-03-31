@@ -8,15 +8,15 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google import genai
 
-from constants import CATALOG_RECIPES
-from models import VintedProduct
-from scrape_product import save_images
-from scrape_product import scrape_product
-from telegram_bot import send_message
+from .constants import CATALOG_RECIPES
+from .models import VintedProduct
+from .scraper import save_images
+from .scraper import scrape_product
+from .telegram import send_message
 
 load_dotenv()
 
-PROMPTS_DIR = Path(__file__).parent / "prompts"
+PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
 
 def load_prompt(catalog_id, language=None) -> str:
