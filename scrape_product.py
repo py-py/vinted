@@ -35,6 +35,7 @@ async def scrape_product(product_id: str) -> dict:
 
     # --- Title ---
     title = soup.title.get_text(strip=True) if soup.title else ""
+    title = title.removesuffix(" | Vinted")
 
     # --- Images --- all unique image URLs from .item-photos
     image_urls = []
@@ -101,16 +102,16 @@ async def scrape_product(product_id: str) -> dict:
     }
 
 
-async def save_images(image_urls: list[str], product_id: str, media_folder: Path) -> None:
+async def save_images(image_urls: list[str], folder: Path) -> None:
     """Download images to ./media/products/{product_id}/."""
-    media_folder.mkdir(parents=True, exist_ok=True)
+    folder.mkdir(parents=True, exist_ok=True)
 
     async with httpx.AsyncClient() as client:
         async def _download(i: int, url: str) -> None:
             resp = await client.get(url)
             resp.raise_for_status()
             ext = Path(url.split("?")[0]).suffix or ".jpg"
-            filepath = media_folder / f"{i}{ext}"
+            filepath = folder / f"{i}{ext}"
             filepath.write_bytes(resp.content)
             print(f"-> Saved: {filepath}")
 
@@ -121,13 +122,13 @@ async def save_images(image_urls: list[str], product_id: str, media_folder: Path
 
 async def main() -> None:
     product_id = sys.argv[1] if len(sys.argv) > 1 else "8119502397"
-    media_folder = Path("media/products") / product_id
     product = await scrape_product(product_id)
 
+    folder = Path("media/products") / product_id
     if product["image_urls"]:
-        await save_images(product["image_urls"], product_id, media_folder)
+        await save_images(product["image_urls"], folder)
 
-    product["saved_images"] = str(media_folder)
+    product["saved_images"] = str(folder)
     print(json.dumps(product, indent=2, ensure_ascii=False))
 
 
