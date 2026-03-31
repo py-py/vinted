@@ -27,7 +27,9 @@ USER_AGENT = (
 async def scrape_product(product_id: str, catalog_id: str) -> dict:
     url = PRODUCT_URL.format(product_id=product_id)
 
-    async with httpx.AsyncClient(headers={"User-Agent": USER_AGENT}, follow_redirects=True) as client:
+    async with httpx.AsyncClient(
+        headers={"User-Agent": USER_AGENT}, follow_redirects=True
+    ) as client:
         print(f"-> Fetching: {url}")
         resp = await client.get(url)
         resp.raise_for_status()
@@ -117,9 +119,7 @@ async def save_images(image_urls: list[str], folder: Path) -> None:
             filepath.write_bytes(resp.content)
             print(f"-> Saved: {filepath}")
 
-        await asyncio.gather(
-            *(_download(i, url) for i, url in enumerate(image_urls, 1))
-        )
+        await asyncio.gather(*(_download(i, url) for i, url in enumerate(image_urls, 1)))
 
 
 async def main() -> None:

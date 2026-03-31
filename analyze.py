@@ -1,22 +1,16 @@
-"""
-Analyze a scraped Vinted product using Claude or Gemini.
-
-Usage:
-    python analyze.py <product_id> [--provider claude|gemini]
-"""
 from __future__ import annotations
 
 import asyncio
-from dotenv import load_dotenv
-from google import genai
-
 import json
 import mimetypes
 import sys
 from pathlib import Path
 
-from scrape_product import scrape_product
+from dotenv import load_dotenv
+from google import genai
+
 from constants import CATALOG_RECIPES
+from scrape_product import scrape_product
 
 load_dotenv()
 
@@ -43,7 +37,6 @@ def load_images(product_id: str) -> list[tuple[str, bytes]]:
             media_type = mimetypes.guess_type(path.name)[0] or "image/jpeg"
             images.append((media_type, path.read_bytes()))
     return images
-
 
 
 def analyze_with_gemini(product: dict, images: list[tuple[str, bytes]], prompt: str) -> str:
@@ -73,6 +66,7 @@ async def main() -> None:
     images = load_images(product_id)
     if not images and product["image_urls"]:
         from scrape_product import save_images
+
         await save_images(product["image_urls"], Path("media/products") / product_id)
         images = load_images(product_id)
 
