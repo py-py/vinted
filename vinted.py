@@ -5,24 +5,8 @@ import re
 import httpx
 from bs4 import BeautifulSoup
 
-
-CATALOGS = {
-    4733: "Skis",
-    2683: "Man Ski boots",
-    2652: "Woman Ski boots",
-    2715: "Girls ski boots",
-    2746: "Boys ski boots",
-}
-
-CATALOG_URL = (
-    "https://www.vinted.pl/catalog?catalog[]={catalog_id}&order=newest_first&page={page}"
-)
-
-USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/124.0.0.0 Safari/537.36"
-)
+from constants import CATALOG_URL
+from constants import USER_AGENT
 
 
 def parse_catalog(catalog_id: int, page_number: int = 1) -> list[dict]:

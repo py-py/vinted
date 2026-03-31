@@ -13,3 +13,4 @@ select = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["scrape_product", "vinted"]
+force-single-line = true

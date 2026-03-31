@@ -15,7 +15,8 @@ from pathlib import Path
 import httpx
 from bs4 import BeautifulSoup
 
-PRODUCT_URL = "https://www.vinted.pl/items/{product_id}"
+from constants import PRODUCT_URL
+
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -23,10 +24,12 @@ USER_AGENT = (
 )
 
 
-async def scrape_product(product_id: str) -> dict:
+async def scrape_product(product_id: str, catalog_id: str) -> dict:
     url = PRODUCT_URL.format(product_id=product_id)
 
-    async with httpx.AsyncClient(headers={"User-Agent": USER_AGENT}, follow_redirects=True) as client:
+    async with httpx.AsyncClient(
+        headers={"User-Agent": USER_AGENT}, follow_redirects=True
+    ) as client:
         print(f"-> Fetching: {url}")
         resp = await client.get(url)
         resp.raise_for_status()
@@ -92,6 +95,7 @@ async def scrape_product(product_id: str) -> dict:
 
     return {
         "id": product_id,
+        "catalog_id": catalog_id,
         "url": url,
         "title": title,
         "image_urls": image_urls,
@@ -115,14 +119,14 @@ async def save_images(image_urls: list[str], folder: Path) -> None:
             filepath.write_bytes(resp.content)
             print(f"-> Saved: {filepath}")
 
-        await asyncio.gather(
-            *(_download(i, url) for i, url in enumerate(image_urls, 1))
-        )
+        await asyncio.gather(*(_download(i, url) for i, url in enumerate(image_urls, 1)))
 
 
 async def main() -> None:
     product_id = sys.argv[1] if len(sys.argv) > 1 else "8119502397"
-    product = await scrape_product(product_id)
+    catalog_id = sys.argv[2] if len(sys.argv) > 2 else "2652"
+
+    product = await scrape_product(product_id, catalog_id)
 
     folder = Path("media/products") / product_id
     if product["image_urls"]:
