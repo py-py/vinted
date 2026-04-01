@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .schemas import BaseAnalysis
+from .schemas import SkiBootsAnalysis
 
 RATING_STARS = {5: "⭐⭐⭐⭐⭐", 4: "⭐⭐⭐⭐", 3: "⭐⭐⭐", 2: "⭐⭐", 1: "⭐"}
 RECOMMENDATION_LABEL = {
@@ -10,7 +10,7 @@ RECOMMENDATION_LABEL = {
 }
 
 
-def format_analysis(data: BaseAnalysis) -> str:
+def format_analysis(data: SkiBootsAnalysis) -> str:
     stars = RATING_STARS.get(data.rating, "?")
     rec = RECOMMENDATION_LABEL.get(data.recommendation.value, data.recommendation.value)
 
@@ -18,7 +18,8 @@ def format_analysis(data: BaseAnalysis) -> str:
         f"{stars} {data.rating}/5 — {rec}",
         "",
         f"🏷 {data.brand} {data.model}",
-        f"👢 Size: {data.mondo_size or '-'} cm",
+        f"👤 For: {data.target_group.value.capitalize()}",
+        f"👢 Size: {data.mondo_size or '-'} cm (EU {data.eu_size or '-'})",
         f"📅 Year: {data.year or 'н/д'}",
         f"📊 State: {data.condition_state.value}",
     ]

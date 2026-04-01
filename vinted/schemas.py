@@ -65,9 +65,17 @@ class BaseAnalysis(BaseModel):
     )
 
 
+class TargetGroup(str, Enum):
+    kids = "kids"
+    women = "women"
+    men = "men"
+
+
 class SkiBootsAnalysis(BaseAnalysis):
+    target_group: TargetGroup = Field(description="Who the boots are for: kids, women, or men")
     flex_index: Optional[str] = Field(description="Boot flex index, e.g. 80, 100-110")
-    mondo_size: Optional[str] = Field(description="Mondo point size, e.g. 25.0 / 25.5")
+    mondo_size: Optional[str] = Field(description="Mondopoint size in cm, e.g. 25.0 / 25.5")
+    eu_size: Optional[str] = Field(description="EU size, e.g. 38, 42")
     is_rental: bool = Field(description="True if rental boot indicators detected")
     estimated_age_years: Optional[str] = Field(description="Estimated age or 'unknown'")
     safety_warning: Optional[str] = Field(description="Safety concern if old or cracked")
