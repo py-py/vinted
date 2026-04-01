@@ -6,6 +6,8 @@ from typing import Optional
 from pydantic import BaseModel
 from pydantic import Field
 
+from vinted.constants import CATALOG_WOMEN_SKI_BOOTS
+
 
 class Recommendation(str, Enum):
     buy = "buy"
@@ -60,7 +62,7 @@ class SkiBootsAnalysis(BaseAnalysis):
 
 
 CATALOG_SCHEMAS: dict[str, type[BaseAnalysis]] = {
-    "2652": SkiBootsAnalysis,
+    CATALOG_WOMEN_SKI_BOOTS: SkiBootsAnalysis,
     "2683": SkiBootsAnalysis,
     "2715": SkiBootsAnalysis,
     "2746": SkiBootsAnalysis,
