@@ -42,13 +42,23 @@ class BaseAnalysis(BaseModel):
     year: Optional[str] = Field(description="Year or season, e.g. 2022/2023")
     condition_state: ConditionState = Field(description="Actual condition from photos")
     condition_notes: str = Field(description="Detailed condition assessment")
-    asking_price_pln: float = Field(description="Seller asking price + fees in PLN")
+    asking_price_pln: float = Field(description="Seller asking price (listing price) in PLN")
     estimated_resale_pln: PriceRange = Field(description="Expected resale price range")
     profit_estimate_pln: PriceRange = Field(description="Net profit after fees")
     roi_percent: float = Field(description="ROI = profit / asking_price * 100")
-    red_flags: list[str] = Field(description="List of risks and warnings")
+    red_flags: list[str] = Field(
+        description="Negative signs: damage, fakes, missing parts, old age, etc.",
+    )
+    green_flags: list[str] = Field(
+        description="Positive signs: good condition, popular brand, attractive price, etc",
+    )
     seller_trust: SellerTrust = Field(description="Seller reliability assessment")
     negotiate_target: Optional[float] = Field(description="Suggested offer price if negotiate")
+    negotiate_message: Optional[str] = Field(
+        description=(
+            "Recommendation what to write to the seller: proposed price and brief reasoning"
+        )
+    )
     summary: str = Field(description="2-3 sentence verdict in Russian")
 
 
