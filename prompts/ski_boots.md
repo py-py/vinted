@@ -1,6 +1,10 @@
 # Ski Boots — Additional Analysis
 
-You are evaluating **ski boots** for resale in Poland. Apply all base rules, plus the following.
+You are evaluating **alpine (downhill) ski boots** for resale. Apply all base rules, plus the following.
+
+> **Scope:** we evaluate **only hard-shell plastic alpine ski boots**.
+> If the listing contains cross-country boots, snowboard boots, hiking boots, or any other non-alpine footwear — set rating to **1** and recommendation to **`skip`**, with a `red_flag` explaining the mismatch.
+> Photos may include bonus items (skis, helmets, poles, etc.) — that is a `green_flag`, but we still evaluate **only the boots**.
 
 ---
 
@@ -15,12 +19,12 @@ You are evaluating **ski boots** for resale in Poland. Apply all base rules, plu
 
 **Flex-to-level mapping:**
 
-| Level            | Flex range |
-| ---------------- | :--------: |
-| Beginner         |   60–80    |
-| Intermediate     |   80–100   |
-| Advanced/Expert  |  100–130   |
-| Race             |    130+    |
+| Level           | Flex range |
+| --------------- | :--------: |
+| Beginner        |   60–80    |
+| Intermediate    |  80–100    |
+| Advanced/Expert |  100–130   |
+| Race            |   130+     |
 
 ---
 
@@ -61,10 +65,13 @@ Rental boots kill resale value. Look for:
 
 ### 2.5. Age & Safety
 
-- PU (polyurethane) degrades over time.
-- **> 10 years** — unsafe, unsellable → set `safety_warning`.
-- **6–10 years** — reduced value, flag risk.
-- **Age unknown** → `"safety_warning": "age unknown — inspect PU integrity before resale"`.
+| Age            | Action                                                                  |
+| -------------- | ----------------------------------------------------------------------- |
+| > 10 years     | Unsafe, unsellable → set `safety_warning`                               |
+| 6–10 years     | Reduced value, flag risk                                                |
+| Unknown        | `"safety_warning": "age unknown — inspect PU integrity before resale"`  |
+
+> PU (polyurethane) degrades over time — always estimate age when possible.
 
 ---
 
@@ -72,11 +79,11 @@ Rental boots kill resale value. Look for:
 
 Sizes within these ranges sell fastest:
 
-| Category  | Mondo (cm)  | EU size  |
-| --------- | :---------: | :------: |
-| Junior    |  ≥ 19.5     | 30.5+    |
-| Women     | 24.0–25.5   | 38–40    |
-| Men       | 27.0–28.5   | 42–44    |
+| Category | Mondo (cm) | EU size |
+| -------- | :--------: | :-----: |
+| Junior   |  ≥ 19.0    |  30+    |
+| Women    | 24.0–25.5  |  38–40  |
+| Men      | 27.0–28.5  |  42–44  |
 
 - Sizes **outside** these ranges sell slower → rating **−1**.
 - **Extreme** sizes (Junior < 18.5 cm / Men > 29.5 cm) → rating **−2**.
@@ -87,28 +94,32 @@ Sizes within these ranges sell fastest:
 
 ### Downgrade (−1 to −2 stars)
 
-| #  | Condition                      | Modifier |
-| -- | ------------------------------ | :------: |
-| 1  | Rental boots detected          |    −2    |
-| 2  | Visible rust on bolts          |    −1    |
-| 3  | Size outside target range      |  −1/−2   |
-| 4  | No sole photos available       |    −1    |
-| 5  | Boots older than 6 seasons     |    −1    |
+| # | Condition                  | Modifier |
+| - | -------------------------- | :------: |
+| 1 | Rental boots detected      |    −2    |
+| 2 | Visible rust on bolts      |    −1    |
+| 3 | Size outside target range  |  −1/−2   |
+| 4 | No sole photos available   |    −1    |
+| 5 | Boots older than 6 seasons |    −1    |
 
 ### Upgrade (+1 star)
 
-| #  | Condition                                                                    |
-| -- | ---------------------------------------------------------------------------- |
-| 1  | Original box visible in photos                                               |
-| 2  | GripWalk sole system                                                         |
-| 3  | Target size (see section 3)                                                  |
-| 4  | Top resale brand: **Salomon, Atomic, Head, Rossignol, Nordica, Fischer, Tecnica** |
+| # | Condition                                                                |
+| - | ------------------------------------------------------------------------ |
+| 1 | Original box visible in photos                                           |
+| 2 | GripWalk sole system                                                     |
+| 3 | Target size (see section 3)                                              |
+| 4 | Top resale brand: **Salomon, Atomic, Head, Rossignol, Nordica, Fischer** |
+
+> **Note:** every condition that triggers an upgrade should also be added to `green_flags` in the response.
 
 ---
 
-## 5. Resale References
+## 5. Resale Value Estimation
 
-When estimating resale value, consider the current market on Allegro / OLX / Vinted for the same or similar model. Mention comparable listings in `summary` if known.
+Estimate resale value based on brand reputation, model tier, condition, age, and size liquidity.
+Higher-tier models from top brands in target sizes command premium prices;
+older boots and off-sizes sell at significant discounts.
 
 ---
 
@@ -127,11 +138,11 @@ Add these fields to the base response:
 }
 ```
 
-| Field              | Description                                                                   |
-| ------------------ | ----------------------------------------------------------------------------- |
-| `flex_index`       | Flex value from model name or markings; `null` if unknown                     |
-| `mondo_size`       | Mondopoint size in cm; `null` if unknown                                      |
-| `is_rental`        | `true` if rental signs detected                                               |
+| Field                 | Description                                                                |
+| --------------------- | -------------------------------------------------------------------------- |
+| `flex_index`          | Flex value from model name or markings; `null` if unknown                  |
+| `mondo_size`          | Mondopoint size in cm; `null` if unknown                                   |
+| `is_rental`           | `true` if rental signs detected                                            |
 | `estimated_age_years` | Approximate age in years                                                   |
-| `safety_warning`   | PU degradation warning; `null` if boots are < 6 years old                     |
-| `sale_strategy`    | Where to list, starting price, what to highlight in the listing               |
+| `safety_warning`      | PU degradation warning; `null` if boots are < 6 years old                  |
+| `sale_strategy`       | Resale advice: where to list, starting price, what to highlight for buyers |
