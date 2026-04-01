@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import mimetypes
 import sys
 from pathlib import Path
@@ -14,6 +13,7 @@ from .constants import CATALOG_WOMEN_SKI_BOOTS
 from .constants import PROMPTS_DIR
 from .formats import format_analysis
 from .models import VintedProduct
+from .schemas import BaseAnalysis
 from .schemas import get_schema
 from .scraper import save_images
 from .scraper import scrape_product
@@ -49,7 +49,7 @@ def load_images(product_id: str) -> list[tuple[str, bytes]]:
 
 def analyze_with_gemini(
     product: VintedProduct, images: list[tuple[str, bytes]], prompt: str
-) -> dict:
+) -> BaseAnalysis:
     print(f"-> Analyzing: {product.url}")
 
     parts = []
@@ -84,6 +84,7 @@ def analyze_with_gemini(
     #   │ gemini-3.1-pro-preview │ ещё новее, preview    │
     #   └────────────────────────┴───────────────────────┘
     client = genai.Client()
+    schema = get_schema(product.catalog_id)
     response = client.models.generate_content(
         model="gemini-3-flash-preview",
         contents=parts,
@@ -91,10 +92,10 @@ def analyze_with_gemini(
             system_instruction=prompt,
             temperature=0.1,
             response_mime_type="application/json",
-            response_schema=get_schema(product.catalog_id),
+            response_schema=schema,
         ),
     )
-    return json.loads(response.text)
+    return schema.model_validate_json(response.text)
 
 
 async def main() -> None:
@@ -112,9 +113,11 @@ async def main() -> None:
 
     # Load prompt based on product type
     prompt = load_prompt(catalog_id)
-    data: dict = analyze_with_gemini(product, images, prompt)
-    print(json.dumps(data, indent=2, ensure_ascii=False))
-    analysis = format_analysis(data)
+    result: BaseAnalysis = analyze_with_gemini(product, images, prompt)
+    print(result.model_dump_json(indent=2))
+
+    # Formatting
+    analysis = format_analysis(result)
     print(analysis)
 
     # Send to Telegram

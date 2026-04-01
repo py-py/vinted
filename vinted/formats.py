@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .schemas import BaseAnalysis
+
 RATING_STARS = {5: "⭐⭐⭐⭐⭐", 4: "⭐⭐⭐⭐", 3: "⭐⭐⭐", 2: "⭐⭐", 1: "⭐"}
 RECOMMENDATION_LABEL = {
     "buy": "✅ Покупать",
@@ -8,36 +10,32 @@ RECOMMENDATION_LABEL = {
 }
 
 
-def format_analysis(data: dict) -> str:
-    rating = data.get("rating", "?")
-    stars = RATING_STARS.get(rating, "?")
-    rec = RECOMMENDATION_LABEL.get(data.get("recommendation", ""), data.get("recommendation", ""))
-
-    resale = data.get("estimated_resale_pln", {})
-    profit = data.get("profit_estimate_pln", {})
+def format_analysis(data: BaseAnalysis) -> str:
+    stars = RATING_STARS.get(data.rating, "?")
+    rec = RECOMMENDATION_LABEL.get(data.recommendation.value, data.recommendation.value)
 
     lines = [
-        f"{stars} {rating}/5 — {rec}",
+        f"{stars} {data.rating}/5 — {rec}",
         "",
-        f"🏷 {data.get('brand', '?')} {data.get('model', '?')}",
-        f"📅 Year: {data.get('year') or 'н/д'}",
-        f"📊 State: {data.get('condition_state', '?')}",
+        f"🏷 {data.brand} {data.model}",
+        f"📅 Year: {data.year or 'н/д'}",
+        f"📊 State: {data.condition_state.value}",
         "",
-        f"💰 Price: {data.get('asking_price_pln', '?')} PLN",
-        f"💵 Resale: {resale.get('min', '?')} – {resale.get('max', '?')} PLN",
-        f"📈 Profit: {profit.get('min', '?')} – {profit.get('max', '?')} PLN",
-        f"📊 ROI: {data.get('roi_percent', '?')}%",
+        f"💰 Price: {data.asking_price_pln} PLN",
+        f"💵 Resale: {data.estimated_resale_pln.min} – {data.estimated_resale_pln.max} PLN",
+        f"📈 Profit: {data.profit_estimate_pln.min} – {data.profit_estimate_pln.max} PLN",
+        f"📊 ROI: {data.roi_percent}%",
     ]
 
-    if data.get("negotiate_target"):
-        lines.append(f"🎯 Negotiate up to: {data['negotiate_target']} PLN")
+    if data.negotiate_target:
+        lines.append(f"🎯 Negotiate up to: {data.negotiate_target} PLN")
 
-    if data.get("red_flags"):
+    if data.red_flags:
         lines += ["", "🚩 Red flags:"]
-        for flag in data["red_flags"]:
+        for flag in data.red_flags:
             lines.append(f"  • {flag}")
 
-    if data.get("sale_strategy"):
-        lines += ["", f"📋 Strategy: {data['sale_strategy']}"]
+    if hasattr(data, "sale_strategy") and data.sale_strategy:
+        lines += ["", f"📋 Strategy: {data.sale_strategy}"]
 
     return "\n".join(lines)
