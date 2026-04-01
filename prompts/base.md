@@ -104,7 +104,8 @@ Respond **strictly** in JSON:
   "seller_trust": "high | medium | low",
   "negotiate_target": 0,
   "negotiate_message": "... or null",
-  "summary": "..."
+  "summary": "...",
+  "sale_strategy": "..."
 }
 ```
 
@@ -120,3 +121,4 @@ Respond **strictly** in JSON:
 | `negotiate_target`  | suggested offer price (PLN) if recommendation is `negotiate`; otherwise `null`                       |
 | `negotiate_message` | recommendation what to write to the seller: proposed price and brief reasoning; `null` if not `negotiate` |
 | `summary`           | 2–3 sentences: what it is, is it worth it, key risk                                                  |
+| `sale_strategy`     | resale advice: where to list, starting price, what to highlight for buyers                           |

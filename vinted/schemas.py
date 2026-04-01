@@ -60,6 +60,9 @@ class BaseAnalysis(BaseModel):
         )
     )
     summary: str = Field(description="2-3 sentence verdict in Russian")
+    sale_strategy: str = Field(
+        description="Resale advice: where to list, starting price, what to highlight for buyers"
+    )
 
 
 class SkiBootsAnalysis(BaseAnalysis):
@@ -68,7 +71,6 @@ class SkiBootsAnalysis(BaseAnalysis):
     is_rental: bool = Field(description="True if rental boot indicators detected")
     estimated_age_years: Optional[str] = Field(description="Estimated age or 'unknown'")
     safety_warning: Optional[str] = Field(description="Safety concern if old or cracked")
-    sale_strategy: str = Field(description="Where to list, price strategy, what to highlight")
 
 
 CATALOG_SCHEMAS: dict[str, type[BaseAnalysis]] = {

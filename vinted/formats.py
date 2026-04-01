@@ -35,7 +35,7 @@ def format_analysis(data: BaseAnalysis) -> str:
         for flag in data.red_flags:
             lines.append(f"  • {flag}")
 
-    if hasattr(data, "sale_strategy") and data.sale_strategy:
+    if data.sale_strategy:
         lines += ["", f"📋 Strategy: {data.sale_strategy}"]
 
     return "\n".join(lines)

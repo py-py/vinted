@@ -133,8 +133,7 @@ Add these fields to the base response:
   "mondo_size": "... or null",
   "is_rental": false,
   "estimated_age_years": "...",
-  "safety_warning": "... or null",
-  "sale_strategy": "..."
+  "safety_warning": "... or null"
 }
 ```
 
@@ -145,4 +144,3 @@ Add these fields to the base response:
 | `is_rental`           | `true` if rental signs detected                                            |
 | `estimated_age_years` | Approximate age in years                                                   |
 | `safety_warning`      | PU degradation warning; `null` if boots are < 6 years old                  |
-| `sale_strategy`       | Resale advice: where to list, starting price, what to highlight for buyers |
