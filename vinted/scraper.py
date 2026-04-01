@@ -15,6 +15,7 @@ from pathlib import Path
 import httpx
 from bs4 import BeautifulSoup
 
+from .constants import CATALOG_WOMEN_SKI_BOOTS
 from .constants import PRODUCT_URL
 from .constants import USER_AGENT
 from .models import VintedProduct
@@ -67,7 +68,7 @@ async def scrape_product(product_id: str, catalog_id: str) -> VintedProduct:
     # --- Seller ---
     seller = {}
     if profile_el := soup.find(attrs={"data-testid": "profile-username"}):
-        seller["name"] = profile_el.get_text(strip=True)
+        seller["username"] = profile_el.get_text(strip=True)
         profile_link = profile_el.find_parent("a", href=True)
         if profile_link:
             seller["link"] = profile_link["href"]
@@ -85,6 +86,12 @@ async def scrape_product(product_id: str, catalog_id: str) -> VintedProduct:
         if label_el:
             seller["reviews"] = int(label_el.get_text(strip=True))
 
+    # --- Price --- from "total-combined-price" section
+    price_el = soup.find(attrs={"data-testid": "total-combined-price"})
+    price_text = price_el.get_text(strip=True)
+    price_match = re.search(r"([\d.,]+)\s*(\S+)", price_text)
+    price = float(price_match.group(1).replace(",", "."))
+
     # --- JSON-LD ---
     ld_json = {}
     if ld_script := soup.find("script", type="application/ld+json"):
@@ -96,6 +103,7 @@ async def scrape_product(product_id: str, catalog_id: str) -> VintedProduct:
         description=description,
         catalog_id=catalog_id,
         url=url,
+        price=price,
         properties=properties,
         image_urls=image_urls,
         seller=VintedSeller(**seller),
@@ -122,7 +130,7 @@ async def save_images(image_urls: list[str], folder: Path) -> None:
 
 async def main() -> None:
     product_id = sys.argv[1] if len(sys.argv) > 1 else "8119502397"
-    catalog_id = sys.argv[2] if len(sys.argv) > 2 else "2652"
+    catalog_id = CATALOG_WOMEN_SKI_BOOTS
 
     product = await scrape_product(product_id, catalog_id)
 
@@ -130,7 +138,7 @@ async def main() -> None:
     if product.image_urls:
         await save_images(product.image_urls, folder)
 
-    print(product.model_dump_json(indent=2))
+    print(product.model_dump_json(indent=2, exclude={}))
 
 
 if __name__ == "__main__":
