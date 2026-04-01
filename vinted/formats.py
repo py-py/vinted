@@ -18,8 +18,12 @@ def format_analysis(data: BaseAnalysis) -> str:
         f"{stars} {data.rating}/5 — {rec}",
         "",
         f"🏷 {data.brand} {data.model}",
+        f"👢 Size: {data.mondo_size or '-'} cm",
         f"📅 Year: {data.year or 'н/д'}",
         f"📊 State: {data.condition_state.value}",
+    ]
+
+    lines += [
         "",
         f"💰 Price: {data.asking_price_pln} PLN",
         f"💵 Resale: {data.estimated_resale_pln.min} – {data.estimated_resale_pln.max} PLN",
@@ -35,7 +39,10 @@ def format_analysis(data: BaseAnalysis) -> str:
         for flag in data.red_flags:
             lines.append(f"  • {flag}")
 
-    if data.sale_strategy:
-        lines += ["", f"📋 Strategy: {data.sale_strategy}"]
+    if data.green_flags:
+        lines += ["", "✅ Green flags:"]
+        for flag in data.green_flags:
+            lines.append(f"  • {flag}")
 
+    lines += ["", f"💬 Summary: {data.summary}"]
     return "\n".join(lines)
