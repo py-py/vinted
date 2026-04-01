@@ -22,9 +22,9 @@ You are evaluating **alpine (downhill) ski boots** for resale. Apply all base ru
 | Level           | Flex range |
 | --------------- | :--------: |
 | Beginner        |   60–80    |
-| Intermediate    |  80–100    |
+| Intermediate    |   80–100   |
 | Advanced/Expert |  100–130   |
-| Race            |   130+     |
+| Race            |    130+    |
 
 ---
 
@@ -65,11 +65,11 @@ Rental boots kill resale value. Look for:
 
 ### 2.5. Age & Safety
 
-| Age            | Action                                                                  |
-| -------------- | ----------------------------------------------------------------------- |
-| > 10 years     | Unsafe, unsellable → set `safety_warning`                               |
-| 6–10 years     | Reduced value, flag risk                                                |
-| Unknown        | `"safety_warning": "age unknown — inspect PU integrity before resale"`  |
+| Age        | Action                                                                 |
+| ---------- | ---------------------------------------------------------------------- |
+| > 10 years | Unsafe, unsellable → set `safety_warning`                              |
+| 6–10 years | Reduced value, flag risk                                               |
+| Unknown    | `"safety_warning": "age unknown — inspect PU integrity before resale"` |
 
 > PU (polyurethane) degrades over time — always estimate age when possible.
 
@@ -81,7 +81,7 @@ Sizes within these ranges sell fastest:
 
 | Category | Mondo (cm) | EU size |
 | -------- | :--------: | :-----: |
-| Junior   |  ≥ 19.0    |  30+    |
+| Junior   |   ≥ 19.0   |   30+   |
 | Women    | 24.0–25.5  |  38–40  |
 | Men      | 27.0–28.5  |  42–44  |
 
@@ -94,13 +94,13 @@ Sizes within these ranges sell fastest:
 
 ### Downgrade (−1 to −2 stars)
 
-| # | Condition                  | Modifier |
-| - | -------------------------- | :------: |
-| 1 | Rental boots detected      |    −2    |
-| 2 | Visible rust on bolts      |    −1    |
-| 3 | Size outside target range  |  −1/−2   |
-| 4 | No sole photos available   |    −1    |
-| 5 | Boots older than 6 seasons |    −1    |
+| # | Condition                   | Modifier |
+| - | --------------------------- | :------: |
+| 1 | Rental boots detected       |    −2    |
+| 2 | Visible rust on bolts       |    −1    |
+| 3 | Size outside target range   |    −1    |
+| 4 | No sole photos available    |    −1    |
+| 5 | Boots older than 10 seasons |    −1    |
 
 ### Upgrade (+1 star)
 
@@ -139,12 +139,12 @@ Add these fields to the base response:
 }
 ```
 
-| Field                 | Description                                                                |
-| --------------------- | -------------------------------------------------------------------------- |
-| `target_group`        | Who the boots are for: `kids`, `women`, or `men`                           |
-| `flex_index`          | Flex value from model name or markings; `null` if unknown                  |
-| `mondo_size`          | Mondopoint size in cm; `null` if unknown                                   |
-| `eu_size`             | EU size (e.g. 38, 42); `null` if unknown                                   |
-| `is_rental`           | `true` if rental signs detected                                            |
-| `estimated_age_years` | Approximate age in years                                                   |
-| `safety_warning`      | PU degradation warning; `null` if boots are < 6 years old                  |
+| Field                 | Description                                                |
+| --------------------- | ---------------------------------------------------------- |
+| `target_group`        | Who the boots are for: `kids`, `women`, or `men`           |
+| `flex_index`          | Flex value from model name or markings; `null` if unknown  |
+| `mondo_size`          | Mondopoint size in cm; `null` if unknown                   |
+| `eu_size`             | EU size (e.g. 38, 42); `null` if unknown                   |
+| `is_rental`           | `true` if rental signs detected                            |
+| `estimated_age_years` | Approximate age in years                                   |
+| `safety_warning`      | PU degradation warning; `null` if boots are < 6 years old  |
