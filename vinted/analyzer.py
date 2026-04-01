@@ -89,6 +89,7 @@ def analyze_with_gemini(
         contents=parts,
         config=genai.types.GenerateContentConfig(
             system_instruction=prompt,
+            temperature=0.1,
             response_mime_type="application/json",
             response_schema=get_schema(product.catalog_id),
         ),
@@ -112,6 +113,7 @@ async def main() -> None:
     # Load prompt based on product type
     prompt = load_prompt(catalog_id)
     data: dict = analyze_with_gemini(product, images, prompt)
+    print(json.dumps(data, indent=2, ensure_ascii=False))
     analysis = format_analysis(data)
     print(analysis)
 
