@@ -13,6 +13,7 @@ from .constants import CATALOG_RECIPES
 from .constants import PROMPTS_DIR
 from .formats import format_analysis
 from .models import VintedProduct
+from .schemas import get_schema
 from .scraper import save_images
 from .scraper import scrape_product
 from .telegram import send_message
@@ -47,7 +48,7 @@ def load_images(product_id: str) -> list[tuple[str, bytes]]:
 def analyze_with_gemini(
     product: VintedProduct, images: list[tuple[str, bytes]], prompt: str
 ) -> dict:
-    client = genai.Client()
+    print(f"-> Analyzing: {product.url}")
 
     parts = []
     for media_type, data in images:
@@ -57,6 +58,8 @@ def analyze_with_gemini(
     # gemini-2.5-flash
     # gemini-2.5-flash-lite
     # gemini-3-flash-preview
+    # gemini-3-pro-preview
+    # gemini-3.1-pro-preview
     #   ┌───────────────────────┬───────────────┬──────────┬───────────────┐
     #   │        Модель         │   Скорость    │ Качество │     Цена      │
     #   ├───────────────────────┼───────────────┼──────────┼───────────────┤
@@ -65,8 +68,6 @@ def analyze_with_gemini(
     #   │ gemini-2.5-flash-lite │ самая быстрая │ базовое  │ самая дешёвая │
     #   ├───────────────────────┼───────────────┼──────────┼───────────────┤
     #   │ gemini-2.5-pro        │ медленная     │ лучшее   │ дорогая       │
-    #   ├───────────────────────┼───────────────┼──────────┼───────────────┤
-    #   │ gemini-2.0-flash      │ быстрая       │ хорошее  │ дешёвая       │
     #   └───────────────────────┴───────────────┴──────────┴───────────────┘
     #
     #   Preview (нестабильные):
@@ -80,12 +81,14 @@ def analyze_with_gemini(
     #   ├────────────────────────┼───────────────────────┤
     #   │ gemini-3.1-pro-preview │ ещё новее, preview    │
     #   └────────────────────────┴───────────────────────┘
+    client = genai.Client()
     response = client.models.generate_content(
         model="gemini-3-flash-preview",
         contents=parts,
         config=genai.types.GenerateContentConfig(
             system_instruction=prompt,
             response_mime_type="application/json",
+            response_schema=get_schema(product.catalog_id),
         ),
     )
     return json.loads(response.text)
