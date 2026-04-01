@@ -120,6 +120,3 @@ Respond **strictly** in JSON:
 | `negotiate_target`  | suggested offer price (PLN) if recommendation is `negotiate`; otherwise `null`                       |
 | `negotiate_message` | recommendation what to write to the seller: proposed price and brief reasoning; `null` if not `negotiate` |
 | `summary`           | 2–3 sentences: what it is, is it worth it, key risk                                                  |
-
-- All prices in **PLN**.
-- Respond in **Russian**.

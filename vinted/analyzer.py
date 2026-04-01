@@ -23,11 +23,12 @@ load_dotenv()
 
 
 def load_prompt(catalog_id) -> str:
-    """Load base prompt + type-specific prompt."""
+    """Load base prompt + type-specific prompt + user settings."""
     base = (PROMPTS_DIR / "base.md").read_text()
     type_file = CATALOG_RECIPES[catalog_id]["prompt"]
     specific = (PROMPTS_DIR / type_file).read_text()
-    return f"{base}\n\n{specific}"
+    user_settings = (PROMPTS_DIR / "user_settings.md").read_text()
+    return f"{base}\n\n{specific}\n\n{user_settings}"
 
 
 def load_image_paths(product_id: str) -> list[Path]:
