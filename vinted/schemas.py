@@ -43,8 +43,11 @@ class BaseAnalysis(BaseModel):
     condition_state: ConditionState = Field(description="Actual condition from photos")
     condition_notes: str = Field(description="Detailed condition assessment")
     asking_price_pln: float = Field(description="Seller asking price (listing price) in PLN")
+    estimated_delivery_pln: float = Field(
+        description="Estimated delivery cost in PLN based on seller location",
+    )
     estimated_resale_pln: PriceRange = Field(description="Expected resale price range")
-    profit_estimate_pln: PriceRange = Field(description="Net profit after fees")
+    profit_estimate_pln: PriceRange = Field(description="Net profit after fees and delivery")
     roi_percent: float = Field(description="ROI = profit / asking_price * 100")
     red_flags: list[str] = Field(
         description="Negative signs: damage, fakes, missing parts, old age, etc.",
@@ -55,13 +58,11 @@ class BaseAnalysis(BaseModel):
     seller_trust: SellerTrust = Field(description="Seller reliability assessment")
     negotiate_target: Optional[float] = Field(description="Suggested offer price if negotiate")
     negotiate_message: Optional[str] = Field(
-        description=(
-            "Recommendation what to write to the seller: proposed price and brief reasoning"
-        )
+        description="Recommendation what to write to the seller: proposed price and reasoning",
     )
     summary: str = Field(description="2-3 sentence verdict in Russian")
     sale_strategy: str = Field(
-        description="Resale advice: where to list, starting price, what to highlight for buyers"
+        description="Resale advice: where to list, starting price, what to highlight for buyers",
     )
 
 

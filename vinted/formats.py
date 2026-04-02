@@ -27,6 +27,7 @@ def format_analysis(data: SkiBootsAnalysis) -> str:
     lines += [
         "",
         f"💰 Price: {data.asking_price_pln} PLN",
+        f"🚚 Delivery: ~{data.estimated_delivery_pln} PLN",
         f"💵 Resale: {data.estimated_resale_pln.min} – {data.estimated_resale_pln.max} PLN",
         f"📈 Profit: {data.profit_estimate_pln.min} – {data.profit_estimate_pln.max} PLN",
         f"📊 ROI: {data.roi_percent}%",

@@ -46,7 +46,7 @@ You will receive:
 3. **Detect red flags** — hidden damage, fakes, misleading photos, suspicious seller profile.
 4. **Detect green flags** — signs of a good deal: popular brand, excellent condition, underpriced.
 5. **Estimate resale value** — what this item realistically sells for on Vinted/OLX in its current condition.
-6. **Calculate profit potential** — resale value vs. asking price, minus ~10% platform fees.
+6. **Calculate profit potential** — resale value vs. asking price, minus ~5% platform fees.
 
 ---
 
@@ -64,17 +64,17 @@ Evaluate seller reliability based on:
 Every product gets a star rating based on ROI and risk.
 **Rating STRICTLY determines recommendation — no exceptions.**
 
-| Rating | ROI     | Recommendation             | Meaning                              |
-| :----: | :-----: | :------------------------: | ------------------------------------ |
-| 5      | > 120%  | **buy**                    | Excellent deal, buy immediately      |
-| 4      | 90–120% | **buy** / **negotiate**    | Good deal, negotiate for even better |
-| 3      | 60–90%  | **negotiate**              | Decent only if seller lowers price   |
-| 2      | 30–60%  | **negotiate** / **skip**   | Low margin; negotiate hard or skip   |
-| 1      | < 30%   | **skip**                   | Not profitable, do not buy           |
+| Rating | ROI     | Recommendation           | Meaning                              |
+| :----: | :-----: | :----------------------: | ------------------------------------ |
+| 5      | > 120%  | **buy**                  | Excellent deal, buy immediately      |
+| 4      | 90–120% | **buy** / **negotiate**  | Good deal, negotiate for even better |
+| 3      | 60–90%  | **negotiate**            | Decent only if seller lowers price   |
+| 2      | 30–60%  | **negotiate** / **skip** | Low margin; negotiate hard or skip   |
+| 1      | < 30%   | **skip**                 | Not profitable, do not buy           |
 
 > **Important:**
 >
-> - ROI is calculated **after** adding 5–26 PLN delivery cost (depends on the seller country).
+> - ROI is calculated **after** adding delivery cost (depends on the seller country).
 > - ROI < 30% → rating 1 → recommendation **must** be `skip`.
 > - `negotiate` is available for ratings 2, 3, and 4 — whenever a realistic price drop would meaningfully improve ROI.
 > - When recommendation is `negotiate`, always fill `negotiate_target` and `negotiate_message`.
@@ -96,6 +96,7 @@ Respond **strictly** in JSON:
   "condition_state": "new | like_new | good | fair | poor",
   "condition_notes": "...",
   "asking_price_pln": 0,
+  "estimated_delivery_pln": 0,
   "estimated_resale_pln": { "min": 0, "max": 0 },
   "profit_estimate_pln": { "min": 0, "max": 0 },
   "roi_percent": 0,
@@ -111,14 +112,15 @@ Respond **strictly** in JSON:
 
 **Field rules:**
 
-| Field               | Description                                                                                          |
-| ------------------- | ---------------------------------------------------------------------------------------------------- |
-| `profit_estimate`   | resale − asking price − ~10% fees                                                                    |
-| `asking_price_pln`  | what the seller asks (listing price)                                                                 |
-| `roi_percent`       | `profit / asking_price × 100`                                                                        |
-| `rating`            | 1–5 star rating (see table above), with category modifiers applied                                   |
-| `green_flags`       | positive signs: good sole condition, clean item, original box, attractive price, etc.                |
-| `negotiate_target`  | suggested offer price (PLN) if recommendation is `negotiate`; otherwise `null`                       |
-| `negotiate_message` | recommendation what to write to the seller: proposed price and brief reasoning; `null` if not `negotiate` |
-| `summary`           | 2–3 sentences: what it is, is it worth it, key risk                                                  |
-| `sale_strategy`     | resale advice: where to list, starting price, what to highlight for buyers                           |
+| Field                    | Description                                                                                               |
+| ------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `asking_price_pln`       | what the seller asks (listing price)                                                                      |
+| `estimated_delivery_pln` | estimated delivery cost based on seller location (see user settings)                                      |
+| `profit_estimate`        | resale − asking price − delivery − ~5% fees                                                               |
+| `roi_percent`            | `profit / asking_price × 100`                                                                             |
+| `rating`                 | 1–5 star rating (see table above), with category modifiers applied                                        |
+| `green_flags`            | positive signs: good sole condition, clean item, original box, attractive price, etc.                     |
+| `negotiate_target`       | suggested offer price (PLN) if recommendation is `negotiate`; otherwise `null`                            |
+| `negotiate_message`      | recommendation what to write to the seller: proposed price and brief reasoning; `null` if not `negotiate`  |
+| `summary`                | 2–3 sentences: what it is, is it worth it, key risk                                                       |
+| `sale_strategy`          | resale advice: where to list, starting price, what to highlight for buyers                                |
