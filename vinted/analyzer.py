@@ -59,36 +59,15 @@ def analyze_with_gemini(
         parts.append(genai.types.Part.from_bytes(data=data, mime_type=media_type))
     parts.append(f"Product data:\n{product.model_dump_json(indent=2)}")
 
-    # gemini-2.5-flash
-    # gemini-2.5-flash-lite
-    # gemini-3-flash-preview
-    # gemini-3-pro-preview
-    # gemini-3.1-pro-preview
-    #   ┌───────────────────────┬───────────────┬──────────┬───────────────┐
-    #   │        Модель         │   Скорость    │ Качество │     Цена      │
-    #   ├───────────────────────┼───────────────┼──────────┼───────────────┤
-    #   │ gemini-2.5-flash      │ быстрая       │ хорошее  │ дешёвая       │
-    #   ├───────────────────────┼───────────────┼──────────┼───────────────┤
-    #   │ gemini-2.5-flash-lite │ самая быстрая │ базовое  │ самая дешёвая │
-    #   ├───────────────────────┼───────────────┼──────────┼───────────────┤
-    #   │ gemini-2.5-pro        │ медленная     │ лучшее   │ дорогая       │
-    #   └───────────────────────┴───────────────┴──────────┴───────────────┘
-    #
-    #   Preview (нестабильные):
-    #
-    #   ┌────────────────────────┬───────────────────────┐
-    #   │         Модель         │        Заметки        │
-    #   ├────────────────────────┼───────────────────────┤
-    #   │ gemini-3-flash-preview │ новейшая, но preview  │
-    #   ├────────────────────────┼───────────────────────┤
-    #   │ gemini-3-pro-preview   │ новейшая pro, preview │
-    #   ├────────────────────────┼───────────────────────┤
-    #   │ gemini-3.1-pro-preview │ ещё новее, preview    │
-    #   └────────────────────────┴───────────────────────┘
+    # * gemini-2.5-flash
+    # * gemini-2.5-flash-lite
+    # * gemini-3.1-pro-preview
+    # ? gemini-3.1-flash-lite-preview
+
     client = genai.Client()
     schema = get_schema(product.catalog_id)
     response = client.models.generate_content(
-        model="gemini-3-flash-preview",
+        model="gemini-2.5-flash-lite",
         contents=parts,
         config=genai.types.GenerateContentConfig(
             system_instruction=prompt,
@@ -113,13 +92,22 @@ async def main() -> None:
     # Load images (download if needed)
     images = load_images(product_id)
     if not images and product.image_urls:
-        await save_images(product.image_urls, product.path_to_images)
+        await save_images(product.image_urls, product.path_to_assets)
         images = load_images(product_id)
+
+    # Check for existing analysis
+    analysis_path = product.path_to_assets / "analysis.json"
+    if analysis_path.exists():
+        with open(analysis_path) as f:
+            print(f.read())
+        if input("Re-run analysis? (y/n): ").strip().lower() != "y":
+            return
 
     # Load prompt based on product type
     prompt = load_prompt(product.catalog_id)
     analysis: BaseAnalysis = analyze_with_gemini(product, images, prompt)
-    print(analysis.model_dump_json(indent=2))
+    with open(analysis_path, "w") as f:
+        f.write(analysis.model_dump_json(indent=2))
 
     # Formatting
     summary = analysis.format(product)

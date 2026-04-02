@@ -31,7 +31,7 @@ class VintedProduct(BaseModel):
         return super().model_dump_json(*args, **kwargs)
 
     @property
-    def path_to_images(self):
+    def path_to_assets(self):
         return Path("media/products") / self.id
 
     @property

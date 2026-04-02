@@ -79,7 +79,7 @@ class BaseAnalysis(BaseModel):
             f"{stars} {self.rating}/5 — {rec}",
             "",
             f"🏷 {self.brand} {self.model}",
-            f"📅 Year: {self.year or 'н/д'}",
+            f"📅 Year: {self.year or '-'}",
             f"📊 State: {self.condition_state.value}",
         ]
 
