@@ -23,11 +23,15 @@ load_dotenv()
 
 def load_prompt(catalog_id) -> str:
     """Load base prompt + type-specific prompt + user settings."""
-    base = (PROMPTS_DIR / "base.md").read_text()
-    type_file = CATALOG_RECIPES[catalog_id]["prompt"]
-    specific = (PROMPTS_DIR / type_file).read_text()
+    prompt = (PROMPTS_DIR / "base.md").read_text()
+    if catalog_id in CATALOG_RECIPES:
+        type_file = CATALOG_RECIPES[catalog_id]["prompt"]
+        specific = (PROMPTS_DIR / type_file).read_text()
+        prompt += f"\n\n{specific}"
+
     user_settings = (PROMPTS_DIR / "user_settings.md").read_text()
-    return f"{base}\n\n{specific}\n\n{user_settings}"
+    prompt += f"\n\n{user_settings}"
+    return prompt
 
 
 def load_image_paths(product_id: str) -> list[Path]:
@@ -85,7 +89,7 @@ def analyze_with_gemini(
     client = genai.Client()
     schema = get_schema(product.catalog_id)
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3-flash-preview",
         contents=parts,
         config=genai.types.GenerateContentConfig(
             system_instruction=prompt,
