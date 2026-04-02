@@ -15,17 +15,27 @@ CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 
+def build_media_payload(product: VintedProduct, message: str) -> list[dict]:
+    media = []
+    for i, url in enumerate(product.image_urls[:10]):
+        item = {"type": "photo", "media": url}
+        if i == 0:
+            item["caption"] = message
+        media.append(item)
+    return media
+
+
 async def send_message(product: VintedProduct, analytics_summary: str) -> None:
     message = f"▶ {product.title} ◀\n{product.url}\n{analytics_summary}"
+    media_payload = build_media_payload(product, message)
 
     async with httpx.AsyncClient() as client:
         try:
             reply = await client.post(
-                f"{API_URL}/sendPhoto",
+                f"{API_URL}/sendMediaGroup",
                 json={
                     "chat_id": CHAT_ID,
-                    "caption": message,
-                    "photo": product.main_image_url,
+                    "media": media_payload,
                 },
             )
             reply.raise_for_status()
