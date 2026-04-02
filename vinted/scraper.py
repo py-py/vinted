@@ -69,16 +69,11 @@ async def scrape_product(product_id: str, catalog_id: str | None = None) -> Vint
     if location_el := soup.find(attrs={"data-testid": "seller-location"}):
         seller["location"] = location_el.get_text(strip=True)
 
-    # Fallback: extract country from script data
+    # Fallback
     if not seller.get("location"):
-        # if m := re.search(r'country_title_local\\?"?\s*:\s*\\?"([^"\\]+)', resp.text):
-        #     seller["location"] = m.group(1)
-        for script in soup.find_all("script"):
-            if script.string and "country_title_local" in script.string:
-                m = re.search(r'country_title_local\\?"?\s*:\s*\\?"([^"\\]+)', script.string)
-                if m:
-                    seller["location"] = m.group(1)
-                    break
+        # extract location from <script> JSON data
+        if m := re.search(r'country_title_local\\?"?\s*:\s*\\?"([^"\\]+)', resp.text):
+            seller["location"] = m.group(1)
 
     # Rating — from aria-label on the rating container
     if rating_el := soup.find(attrs={"aria-label": True}, class_=lambda c: c and "Rating" in c):
@@ -101,14 +96,11 @@ async def scrape_product(product_id: str, catalog_id: str | None = None) -> Vint
     if ld_script := soup.find("script", type="application/ld+json"):
         ld_json = json.loads(ld_script.string)
 
-    # --- Catalog ID from page scripts ---
+    # Fallback
     if not catalog_id:
-        for script in soup.find_all("script"):
-            if script.string and "catalog_id" in script.string:
-                m = re.search(r'catalog_id\\?"?\s*:\s*(\d+)', script.string)
-                if m:
-                    catalog_id = m.group(1)
-                    break
+        # extract catalog_id from <script> JSON data
+        if m := re.search(r'catalog_id\\?"?\s*:\s*(\d+)', resp.text):
+            catalog_id = m.group(1)
 
     return VintedProduct(
         id=product_id,
