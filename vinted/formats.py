@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .models import VintedProduct
 from .schemas import SkiBootsAnalysis
 
 RATING_STARS = {5: "⭐⭐⭐⭐⭐", 4: "⭐⭐⭐⭐", 3: "⭐⭐⭐", 2: "⭐⭐", 1: "⭐"}
@@ -10,7 +11,7 @@ RECOMMENDATION_LABEL = {
 }
 
 
-def format_analysis(data: SkiBootsAnalysis) -> str:
+def format_analytics(product: VintedProduct, data: SkiBootsAnalysis) -> str:
     stars = RATING_STARS.get(data.rating, "?")
     rec = RECOMMENDATION_LABEL.get(data.recommendation.value, data.recommendation.value)
 
@@ -27,7 +28,7 @@ def format_analysis(data: SkiBootsAnalysis) -> str:
     lines += [
         "",
         f"💰 Price: {data.asking_price_pln} PLN",
-        f"🚚 Delivery: ~{data.estimated_delivery_pln} PLN",
+        f"🚚 Delivery: ~{data.estimated_delivery_pln} PLN (from {product.seller.location or '-'})",
         f"💵 Resale: {data.estimated_resale_pln.min} – {data.estimated_resale_pln.max} PLN",
         f"📈 Profit: {data.profit_estimate_pln.min} – {data.profit_estimate_pln.max} PLN",
         f"📊 ROI: {data.roi_percent}%",
@@ -47,4 +48,6 @@ def format_analysis(data: SkiBootsAnalysis) -> str:
             lines.append(f"  • {flag}")
 
     lines += ["", f"💬 Summary: {data.summary}"]
-    return "\n".join(lines)
+
+    text = "\n".join(lines)
+    return text[:1021] + "..." if len(text) > 1024 else text

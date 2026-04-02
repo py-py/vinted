@@ -15,12 +15,8 @@ CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 
-async def send_message(
-    product: VintedProduct,
-    analysis: str,
-    parse_mode: str = "Markdown",
-) -> None:
-    message = f"▶ {product.title} ◀\n{product.url}\n{analysis}"
+async def send_message(product: VintedProduct, analytics_summary: str) -> None:
+    message = f"▶ {product.title} ◀\n{product.url}\n{analytics_summary}"
 
     async with httpx.AsyncClient() as client:
         try:

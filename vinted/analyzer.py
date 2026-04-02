@@ -11,7 +11,7 @@ from google import genai
 from .constants import CATALOG_RECIPES
 from .constants import CATALOG_WOMEN_SKI_BOOTS
 from .constants import PROMPTS_DIR
-from .formats import format_analysis
+from .formats import format_analytics
 from .models import VintedProduct
 from .schemas import BaseAnalysis
 from .schemas import get_schema
@@ -86,7 +86,7 @@ def analyze_with_gemini(
     client = genai.Client()
     schema = get_schema(product.catalog_id)
     response = client.models.generate_content(
-        model="gemini-3-flash-preview",
+        model="gemini-2.5-flash",
         contents=parts,
         config=genai.types.GenerateContentConfig(
             system_instruction=prompt,
@@ -113,15 +113,15 @@ async def main() -> None:
 
     # Load prompt based on product type
     prompt = load_prompt(catalog_id)
-    result: BaseAnalysis = analyze_with_gemini(product, images, prompt)
-    print(result.model_dump_json(indent=2))
+    data: BaseAnalysis = analyze_with_gemini(product, images, prompt)
+    print(data.model_dump_json(indent=2))
 
     # Formatting
-    analysis = format_analysis(result)
-    print(analysis)
+    analytics_summary = format_analytics(product, data)
+    print(analytics_summary)
 
     # Send to Telegram
-    await send_message(product=product, analysis=analysis)
+    await send_message(product=product, analytics_summary=analytics_summary)
 
 
 if __name__ == "__main__":
