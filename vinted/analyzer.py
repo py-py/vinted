@@ -114,7 +114,7 @@ async def main() -> None:
         images = load_images(product_id)
 
     # Load prompt based on product type
-    prompt = load_prompt(catalog_id)
+    prompt = load_prompt(product.catalog_id)
     data: BaseAnalysis = analyze_with_gemini(product, images, prompt)
     print(data.model_dump_json(indent=2))
 

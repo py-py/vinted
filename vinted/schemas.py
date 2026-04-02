@@ -6,7 +6,7 @@ from typing import Optional
 from pydantic import BaseModel
 from pydantic import Field
 
-from vinted.constants import CATALOG_WOMEN_SKI_BOOTS
+from .constants import CATALOG_RECIPES
 
 
 class Recommendation(str, Enum):
@@ -75,13 +75,12 @@ class SkiBootsAnalysis(BaseAnalysis):
     safety_warning: Optional[str] = Field(description="Safety concern if old or cracked")
 
 
-CATALOG_SCHEMAS: dict[str, type[BaseAnalysis]] = {
-    CATALOG_WOMEN_SKI_BOOTS: SkiBootsAnalysis,
-    "2683": SkiBootsAnalysis,
-    "2715": SkiBootsAnalysis,
-    "2746": SkiBootsAnalysis,
+PROMPT_SCHEMAS: dict[str, type[BaseAnalysis]] = {
+    "ski_boots.md": SkiBootsAnalysis,
 }
 
 
 def get_schema(catalog_id: str) -> type[BaseAnalysis]:
-    return CATALOG_SCHEMAS.get(catalog_id, BaseAnalysis)
+    recipe = CATALOG_RECIPES.get(catalog_id, {})
+    prompt_file = recipe.get("prompt", "")
+    return PROMPT_SCHEMAS.get(prompt_file, BaseAnalysis)
