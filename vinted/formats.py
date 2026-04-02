@@ -49,5 +49,4 @@ def format_analytics(product: VintedProduct, data: SkiBootsAnalysis) -> str:
 
     lines += ["", f"💬 Summary: {data.summary}"]
 
-    text = "\n".join(lines)
-    return text[:1021] + "..." if len(text) > 1024 else text
+    return "\n".join(lines)

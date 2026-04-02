@@ -27,7 +27,8 @@ def build_media_payload(product: VintedProduct, message: str) -> list[dict]:
 
 async def send_message(product: VintedProduct, analytics_summary: str) -> None:
     message = f"▶ {product.title} ◀\n{product.url}\n{analytics_summary}"
-    media_payload = build_media_payload(product, message)
+    cutted_message = message[:1021] + "..." if len(message) > 1024 else message
+    media_payload = build_media_payload(product, cutted_message)
 
     async with httpx.AsyncClient() as client:
         try:
