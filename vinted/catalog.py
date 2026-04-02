@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 
 from .constants import CATALOG_URL
 from .constants import USER_AGENT
+from .utils import parse_item_id
 
 
 def parse_catalog(catalog_id: int, page_number: int = 1) -> list[dict]:
@@ -21,23 +22,13 @@ def parse_catalog(catalog_id: int, page_number: int = 1) -> list[dict]:
 
     items = []
     for el in raw_items:
-        item = _parse_item(el)
-        if item:
+        if item := parse_item(el):
             items.append(item)
 
     return items
 
 
-def parse_item_id(url: str) -> str | None:
-    """
-    Extract the numeric item ID from a Vinted item URL.
-    URL: https://www.vinted.pl/items/8142652778-sjezdove-lyze-150-cm-head?referrer=catalog
-    """
-    match = re.search(r"/items/(\d+)", url)
-    return match.group(1) if match else None
-
-
-def _parse_item(el: BeautifulSoup) -> dict | None:
+def parse_item(el: BeautifulSoup) -> dict | None:
     """Extract item data from a grid-item element."""
     link = el.select_one("a[href*='/items/']")
     if not link:
