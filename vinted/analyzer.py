@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 from google import genai
 
 from .constants import CATALOG_RECIPES
-from .constants import CATALOG_WOMEN_SKI_BOOTS
 from .constants import PROMPTS_DIR
 from .formats import format_analytics
 from .models import VintedProduct
@@ -99,11 +98,14 @@ def analyze_with_gemini(
 
 
 async def main() -> None:
-    product_id = sys.argv[1] if len(sys.argv) > 1 else "8505042492"
-    catalog_id = CATALOG_WOMEN_SKI_BOOTS
+    product_id = sys.argv[1] if len(sys.argv) > 1 else None
+    catalog_id = sys.argv[2] if len(sys.argv) > 2 else None
+
+    if product_id is None:
+        raise SystemExit("Usage: python -m vinted.analyzer <product_id> [catalog_id]")
 
     # Scrape product data
-    product: VintedProduct = await scrape_product(product_id, catalog_id)
+    product: VintedProduct = await scrape_product(product_id, catalog_id=catalog_id)
 
     # Load images (download if needed)
     images = load_images(product_id)

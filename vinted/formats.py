@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .constants import CATALOG_RECIPES
 from .models import VintedProduct
 from .schemas import SkiBootsAnalysis
 
@@ -19,7 +20,7 @@ def format_analytics(product: VintedProduct, data: SkiBootsAnalysis) -> str:
         f"{stars} {data.rating}/5 — {rec}",
         "",
         f"🏷 {data.brand} {data.model}",
-        f"👤 For: {data.target_group.value.capitalize()}",
+        f"👤 For: {CATALOG_RECIPES.get(product.catalog_id, {}).get('target_group', '-')}",
         f"👢 Size: {data.mondo_size or '-'} cm (EU {data.eu_size or '-'})",
         f"📅 Year: {data.year or 'н/д'}",
         f"📊 State: {data.condition_state.value}",

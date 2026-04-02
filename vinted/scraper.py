@@ -1,10 +1,4 @@
-"""
-Vinted product scraper using httpx + BeautifulSoup (no browser needed).
-
-Usage:
-    pip install httpx beautifulsoup4
-    python scrape_product.py [product_id]
-"""
+from __future__ import annotations
 
 import asyncio
 import json
@@ -15,14 +9,13 @@ from pathlib import Path
 import httpx
 from bs4 import BeautifulSoup
 
-from .constants import CATALOG_WOMEN_SKI_BOOTS
 from .constants import PRODUCT_URL
 from .constants import USER_AGENT
 from .models import VintedProduct
 from .models import VintedSeller
 
 
-async def scrape_product(product_id: str, catalog_id: str) -> VintedProduct:
+async def scrape_product(product_id: str, catalog_id: str | None = None) -> VintedProduct:
     url = PRODUCT_URL.format(product_id=product_id)
 
     async with httpx.AsyncClient(
@@ -97,11 +90,20 @@ async def scrape_product(product_id: str, catalog_id: str) -> VintedProduct:
     if ld_script := soup.find("script", type="application/ld+json"):
         ld_json = json.loads(ld_script.string)
 
+    # --- Catalog ID from page scripts ---
+    if not catalog_id:
+        for script in soup.find_all("script"):
+            if script.string and "catalog_id" in script.string:
+                m = re.search(r'catalog_id\\?"?\s*:\s*(\d+)', script.string)
+                if m:
+                    catalog_id = m.group(1)
+                    break
+
     return VintedProduct(
         id=product_id,
         title=title,
         description=description,
-        catalog_id=catalog_id,
+        catalog_id=catalog_id or "",
         url=url,
         price=price,
         properties=properties,
@@ -129,10 +131,13 @@ async def save_images(image_urls: list[str], folder: Path) -> None:
 
 
 async def main() -> None:
-    product_id = sys.argv[1] if len(sys.argv) > 1 else "8119502397"
-    catalog_id = CATALOG_WOMEN_SKI_BOOTS
+    product_id = sys.argv[1] if len(sys.argv) > 1 else None
+    catalog_id = sys.argv[2] if len(sys.argv) > 2 else None
 
-    product = await scrape_product(product_id, catalog_id)
+    if product_id is None:
+        raise SystemExit("Usage: python -m vinted.scraper <product_id> [catalog_id]")
+
+    product = await scrape_product(product_id, catalog_id=catalog_id)
 
     folder = Path("media/products") / product_id
     if product.image_urls:

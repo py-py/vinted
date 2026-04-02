@@ -129,7 +129,6 @@ Add these fields to the base response:
 
 ```json
 {
-  "target_group": "kids | women | men",
   "flex_index": "... or null",
   "mondo_size": "... or null",
   "eu_size": "... or null",
@@ -141,7 +140,6 @@ Add these fields to the base response:
 
 | Field                 | Description                                                |
 | --------------------- | ---------------------------------------------------------- |
-| `target_group`        | Who the boots are for: `kids`, `women`, or `men`           |
 | `flex_index`          | Flex value from model name or markings; `null` if unknown  |
 | `mondo_size`          | Mondopoint size in cm; `null` if unknown                   |
 | `eu_size`             | EU size (e.g. 38, 42); `null` if unknown                   |
