@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import TYPE_CHECKING
 from typing import Optional
 
 from pydantic import BaseModel
 from pydantic import Field
 
 from .constants import CATALOG_RECIPES
+from .constants import RATING_STARS
+from .constants import RECOMMENDATION_LABEL
+
+if TYPE_CHECKING:
+    from .models import VintedProduct
 
 
 class Recommendation(str, Enum):
@@ -65,6 +71,49 @@ class BaseAnalysis(BaseModel):
         description="Resale advice: where to list, starting price, what to highlight for buyers",
     )
 
+    def format(self, product: VintedProduct) -> str:
+        stars = RATING_STARS.get(self.rating, "?")
+        rec = RECOMMENDATION_LABEL.get(self.recommendation.value, self.recommendation.value)
+
+        lines = [
+            f"{stars} {self.rating}/5 — {rec}",
+            "",
+            f"🏷 {self.brand} {self.model}",
+            f"📅 Year: {self.year or 'н/д'}",
+            f"📊 State: {self.condition_state.value}",
+        ]
+
+        lines += self.format_child_attributes(product)
+
+        lines += [
+            "",
+            f"💰 Price: {self.asking_price_pln} PLN",
+            f"🚚 Delivery: ~{self.estimated_delivery_pln} PLN (from {product.seller.location or '-'})",  # NOQA: E501
+            f"💵 Resale: {self.estimated_resale_pln.min} – {self.estimated_resale_pln.max} PLN",
+            f"📈 Profit: {self.profit_estimate_pln.min} – {self.profit_estimate_pln.max} PLN",
+            f"📊 ROI: {self.roi_percent}%",
+        ]
+
+        if self.negotiate_target:
+            lines.append(f"🎯 Negotiate up to: {self.negotiate_target} PLN")
+
+        if self.red_flags:
+            lines += ["", "🚩 Red flags:"]
+            for flag in self.red_flags:
+                lines.append(f"  • {flag}")
+
+        if self.green_flags:
+            lines += ["", "✅ Green flags:"]
+            for flag in self.green_flags:
+                lines.append(f"  • {flag}")
+
+        lines += ["", f"💬 Summary: {self.summary}"]
+
+        return "\n".join(lines)
+
+    def format_child_attributes(self, product):
+        return []
+
 
 class SkiBootsAnalysis(BaseAnalysis):
     flex_index: Optional[str] = Field(description="Boot flex index, e.g. 80, 100-110")
@@ -73,6 +122,12 @@ class SkiBootsAnalysis(BaseAnalysis):
     is_rental: bool = Field(description="True if rental boot indicators detected")
     estimated_age_years: Optional[str] = Field(description="Estimated age or 'unknown'")
     safety_warning: Optional[str] = Field(description="Safety concern if old or cracked")
+
+    def format_child_attributes(self, product):
+        return [
+            f"👤 For: {CATALOG_RECIPES.get(product.catalog_id, {}).get('target_group', '-')}",
+            f"👢 Size: {self.mondo_size or '-'} cm (EU {self.eu_size or '-'})",
+        ]
 
 
 PROMPT_SCHEMAS: dict[str, type[BaseAnalysis]] = {

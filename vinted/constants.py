@@ -41,3 +41,11 @@ CATALOG_RECIPES = {
 }
 
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
+
+
+RATING_STARS = {5: "⭐⭐⭐⭐⭐", 4: "⭐⭐⭐⭐", 3: "⭐⭐⭐", 2: "⭐⭐", 1: "⭐"}
+RECOMMENDATION_LABEL = {
+    "buy": "✅ Покупать",
+    "negotiate": "🤝 Торговаться",
+    "skip": "❌ Не покупать",
+}

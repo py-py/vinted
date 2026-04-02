@@ -25,8 +25,8 @@ def build_media_payload(product: VintedProduct, message: str) -> list[dict]:
     return media
 
 
-async def send_message(product: VintedProduct, analytics_summary: str) -> None:
-    message = f"▶ {product.title} ◀\n{product.url}\n{analytics_summary}"
+async def send_message(product: VintedProduct, summary: str) -> None:
+    message = f"▶ {product.title} ◀\n{product.url}\n{summary}"
     cutted_message = message[:1021] + "..." if len(message) > 1024 else message
     media_payload = build_media_payload(product, cutted_message)
 
