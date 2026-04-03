@@ -59,15 +59,19 @@ def analyze_with_gemini(
         parts.append(genai.types.Part.from_bytes(data=data, mime_type=media_type))
     parts.append(f"Product data:\n{product.model_dump_json(indent=2)}")
 
-    # * gemini-2.5-flash
-    # * gemini-2.5-flash-lite
-    # * gemini-3.1-pro-preview
-    # ? gemini-3.1-flash-lite-preview
+    # 20    Gemini 2.5 Flash	    gemini-2.5-flash
+    #       Gemini 2.5 Pro	        gemini-2.5-pro
+    #       Gemini 2 Flash	        gemini-2.0-flash
+    #       Gemini 2 Flash Lite	    gemini-2.0-flash-lite
+    # 20    Gemini 3 Flash	        gemini-3-flash-preview
+    # 500   Gemini 3.1 Flash Lite	gemini-3.1-flash-lite-preview
+    #       Gemini 3.1 Pro	        gemini-3.1-pro-preview
+    # 20    Gemini 2.5 Flash Lite	gemini-2.5-flash-lite
 
     client = genai.Client()
     schema = get_schema(product.catalog_id)
     response = client.models.generate_content(
-        model="gemini-2.5-flash-lite",
+        model="gemini-3-flash-preview",
         contents=parts,
         config=genai.types.GenerateContentConfig(
             system_instruction=prompt,
