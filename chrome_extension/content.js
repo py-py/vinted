@@ -12,8 +12,8 @@ function colorizeByFavourites() {
     const container = btn.closest('.new-item-box__container');
     if (!container) return;
 
-    const content = container.querySelector('.web_ui__Cell__content');
-    if (!content) return;
+    const summary = container.querySelector('.new-item-box__summary');
+    if (!summary) return;
 
     let color;
     if (count >= 8)      color = '#fca5a5'; // soft red
@@ -21,7 +21,12 @@ function colorizeByFavourites() {
     else if (count > 2)  color = '#fef9c3'; // pale yellow
     else return;
 
-    content.style.backgroundColor = color;
+    summary.style.backgroundColor = color;
+    summary.style.borderRadius = '0 0 12px 12px';
+    summary.style.padding = '8px';
+    summary.querySelectorAll('.web_ui__Cell__content').forEach(el => {
+      el.style.backgroundColor = 'transparent';
+    });
   });
 }
 
@@ -85,6 +90,13 @@ function createPanel() {
         margin-bottom: 6px;
       }
       #vfc-range-labels span { font-weight: 600; color: #111; }
+      #vfc-match-count {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #555;
+        text-align: right;
+      }
+      #vfc-match-count span { font-weight: 600; color: #111; }
       #vfc-track-wrap {
         position: relative;
         height: 20px;
@@ -152,14 +164,20 @@ function createPanel() {
         <input type="range" id="vfc-range-max" min="0" max="1000" value="1000" step="10">
       </div>
     </div>
+    <div id="vfc-match-count">Visible: <span id="vfc-visible-count">0</span></div>
   `;
   document.body.appendChild(panel);
 
   const favCheckbox = panel.querySelector('#vfc-fav-checkbox');
 
   function resetColors() {
-    document.querySelectorAll('.web_ui__Cell__content').forEach(el => {
+    document.querySelectorAll('.new-item-box__container .new-item-box__summary').forEach(el => {
       el.style.backgroundColor = '';
+      el.style.borderRadius = '';
+      el.style.padding = '';
+      el.querySelectorAll('.web_ui__Cell__content').forEach(c => {
+        c.style.backgroundColor = '';
+      });
     });
   }
 
@@ -167,6 +185,17 @@ function createPanel() {
     if (favCheckbox.checked) colorizeByFavourites();
     else resetColors();
   });
+
+  const visibleCount = panel.querySelector('#vfc-visible-count');
+
+  function updateMatchCount() {
+    const items = document.querySelectorAll('.feed-grid__item');
+    let count = 0;
+    items.forEach(item => {
+      if (getComputedStyle(item).display !== 'none') count++;
+    });
+    visibleCount.textContent = count;
+  }
 
   const checkbox   = panel.querySelector('#vfc-checkbox');
   const sliderWrap = panel.querySelector('#vfc-slider-wrap');
@@ -196,6 +225,7 @@ function createPanel() {
       parseInt(rangeMin.value),
       parseInt(rangeMax.value)
     );
+    updateMatchCount();
   }
 
   checkbox.addEventListener('change', () => {
@@ -207,6 +237,7 @@ function createPanel() {
   rangeMax.addEventListener('input', onChange);
 
   updateFill();
+  updateMatchCount();
 }
 
 // ── 4. Init ────────────────────────────────────────────────────────────────
@@ -216,6 +247,15 @@ createPanel();
 const observer = new MutationObserver(() => {
   const favCb = document.querySelector('#vfc-fav-checkbox');
   if (favCb && favCb.checked) colorizeByFavourites();
+  const countEl = document.querySelector('#vfc-visible-count');
+  if (countEl) {
+    const items = document.querySelectorAll('.feed-grid__item');
+    let count = 0;
+    items.forEach(item => {
+      if (getComputedStyle(item).display !== 'none') count++;
+    });
+    countEl.textContent = count;
+  }
 });
 observer.observe(
   document.querySelector('.feed-grid') ?? document.body,
