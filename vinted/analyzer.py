@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import argparse
 import asyncio
 import mimetypes
 import os
-import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -76,11 +76,15 @@ def analyze_with_gemini(
 
 
 async def main() -> None:
-    product_id = sys.argv[1] if len(sys.argv) > 1 else None
-    catalog_id = sys.argv[2] if len(sys.argv) > 2 else None
+    parser = argparse.ArgumentParser()
+    parser.add_argument("product_id")
+    parser.add_argument("catalog_id", nargs="?", default=None)
+    parser.add_argument("--force", action="store_true")
+    args = parser.parse_args()
 
-    if product_id is None:
-        raise SystemExit("Usage: python -m vinted.analyzer <product_id> [catalog_id]")
+    product_id = args.product_id
+    catalog_id = args.catalog_id
+    is_force = args.force
 
     # Scrape product data
     product: VintedProduct = await scrape_product(product_id, catalog_id=catalog_id)
@@ -91,9 +95,9 @@ async def main() -> None:
         await save_images(product.image_urls, product.path_to_assets)
         images = load_images(product_id)
 
-    # Check for existing analysis
     analysis_path = product.path_to_assets / "analysis.json"
-    if analysis_path.exists():
+    # Check for existing analysis
+    if analysis_path.exists() and not is_force:
         with open(analysis_path) as f:
             print(f.read())
         if input("Re-run analysis? (y/n): ").strip().lower() != "y":
