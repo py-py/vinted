@@ -15,7 +15,7 @@ CATALOG_WOMEN_SKI_BOOTS = "2652"
 CATALOG_RECIPES = {
     "4733": {
         "name": "Skis",
-        "prompt": "skis.md",
+        "prompt": None,
         "target_group": "All",
     },
     "2683": {

@@ -24,7 +24,7 @@ load_dotenv()
 def load_prompt(catalog_id) -> str:
     """Load base prompt + type-specific prompt + user settings."""
     prompt = (PROMPTS_DIR / "base.md").read_text()
-    if catalog_id in CATALOG_RECIPES:
+    if catalog_id in CATALOG_RECIPES and CATALOG_RECIPES[catalog_id].get("prompt"):
         type_file = CATALOG_RECIPES[catalog_id]["prompt"]
         specific = (PROMPTS_DIR / type_file).read_text()
         prompt += f"\n\n{specific}"
