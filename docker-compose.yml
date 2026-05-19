@@ -1,0 +1,15 @@
+services:
+  vinted:
+    build: .
+    image: vinted-dev
+    container_name: vinted-dev
+    working_dir: /app
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - .:/app:cached
+      - ./media:/app/media:cached
+    stdin_open: true
+    tty: true
+    command: bash

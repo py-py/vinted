@@ -1,0 +1,13 @@
+.git
+.gitignore
+.idea
+.DS_Store
+__pycache__
+*.pyc
+*.pyo
+.env
+.venv
+venv
+media
+cookies.json
+README.md
