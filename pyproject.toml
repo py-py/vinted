@@ -1,3 +1,25 @@
+[project]
+name = "vinted"
+version = "0.1.0"
+description = "Scrape Vinted favourites and analyse them with Gemini."
+requires-python = ">=3.9"
+dependencies = [
+    "beautifulsoup4==4.14.3",
+    "google-genai==1.47.0",
+    "httpx==0.28.1",
+    "pydantic==2.12.5",
+    "python-dotenv==1.2.1",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit==4.3.0",
+    "ruff==0.15.8",
+]
+
+[tool.uv]
+package = false
+
 [tool.ruff]
 line-length = 99
 target-version = "py39"
