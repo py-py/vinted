@@ -2,14 +2,14 @@
 
 ## Setup
 
-Install dependencies:
+Install dependencies (creates a `.venv` from `pyproject.toml`/`uv.lock`):
 
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
 Install pre-commit hooks:
 
 ```bash
-pre-commit install
+uv run pre-commit install
 ```

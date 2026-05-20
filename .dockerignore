@@ -1,0 +1,26 @@
+# Version control
+.git
+.gitignore
+
+# IDE / Editor
+.idea
+.DS_Store
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+
+# Virtual environments
+.venv
+venv
+
+# Secrets / Environment
+.env
+cookies.json
+
+# Application data
+media
+
+# Docs
+README.md
