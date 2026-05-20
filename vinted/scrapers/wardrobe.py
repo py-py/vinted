@@ -6,7 +6,7 @@ import sys
 
 import httpx
 
-from .constants import USER_AGENT
+from ..constants import USER_AGENT
 
 WARDROBE_API_URL = "https://www.vinted.pl/api/v2/wardrobe/{user_id}/items"
 MEMBER_URL = "https://www.vinted.pl/member/{user_id}"
@@ -72,7 +72,7 @@ def parse_item(item: dict) -> dict:
 async def main() -> None:
     user_id = sys.argv[1] if len(sys.argv) > 1 else None
     if user_id is None:
-        raise SystemExit("Usage: python -m vinted.wardrobe <user_id>")
+        raise SystemExit("Usage: python -m vinted.scrapers.wardrobe <user_id>")
 
     items = await fetch_wardrobe(user_id)
     result = [parse_item(item) for item in items]

@@ -9,22 +9,19 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 import sys
 from pathlib import Path
 
 import httpx
-from dotenv import load_dotenv
 
-from .constants import USER_AGENT
-
-load_dotenv()
-VINTED_USER_ID = os.environ["VINTED_USER_ID"]
+from ..constants import USER_AGENT
+from ..core.config import get_settings
 
 FAVOURITES_URL = "https://www.vinted.pl/api/v2/users/{user_id}/items/favourites"
 TOKEN_REFRESH_URL = "https://www.vinted.pl/oauth/token"
 
-COOKIES_PATH = Path(__file__).parent.parent / "cookies.json"
+# cookies.json lives at the repo root (two levels up from vinted/scrapers/).
+COOKIES_PATH = Path(__file__).parent.parent.parent / "cookies.json"
 
 # Minimum cookies required for authenticated API access
 REQUIRED_COOKIE_KEYS = [
@@ -146,7 +143,7 @@ def parse_favourite_item(item: dict) -> dict:
 
 
 async def main() -> None:
-    user_id = sys.argv[1] if len(sys.argv) > 1 else VINTED_USER_ID
+    user_id = sys.argv[1] if len(sys.argv) > 1 else get_settings().vinted_user_id
     items = await fetch_favourites(user_id=user_id)
     print(f"Total favourites: {len(items)}\n")
     header = f"{'ID':>12s} | {'Brand':20s} | {'Size':8s} | {'Price':15s} | Title"

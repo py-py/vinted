@@ -1,38 +1,20 @@
 from __future__ import annotations
 
-from enum import Enum
 from typing import TYPE_CHECKING
 from typing import Optional
 
 from pydantic import BaseModel
 from pydantic import Field
 
-from .constants import CATALOG_RECIPES
-from .constants import RATING_STARS
-from .constants import RECOMMENDATION_LABEL
+from ..constants import CATALOG_RECIPES
+from ..constants import RATING_STARS
+from ..constants import RECOMMENDATION_LABEL
+from .enums import ConditionState
+from .enums import Recommendation
+from .enums import SellerTrust
 
 if TYPE_CHECKING:
-    from .models import VintedProduct
-
-
-class Recommendation(str, Enum):
-    buy = "buy"
-    negotiate = "negotiate"
-    skip = "skip"
-
-
-class ConditionState(str, Enum):
-    new = "new"
-    like_new = "like_new"
-    good = "good"
-    fair = "fair"
-    poor = "poor"
-
-
-class SellerTrust(str, Enum):
-    high = "high"
-    medium = "medium"
-    low = "low"
+    from .product import VintedProduct
 
 
 class PriceRange(BaseModel):

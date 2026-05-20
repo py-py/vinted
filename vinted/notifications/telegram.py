@@ -1,18 +1,10 @@
 from __future__ import annotations
 
-import os
-
 import httpx
-from dotenv import load_dotenv
 
-from .exceptions import BadRequestHTTPException
-from .models import VintedProduct
-
-load_dotenv()
-
-BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
-CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
-API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
+from ..core.config import get_settings
+from ..core.exceptions import BadRequestHTTPException
+from ..domain.product import VintedProduct
 
 
 def build_media_payload(product: VintedProduct, message: str) -> list[dict]:
@@ -26,6 +18,9 @@ def build_media_payload(product: VintedProduct, message: str) -> list[dict]:
 
 
 async def send_message(product: VintedProduct, summary: str) -> None:
+    settings = get_settings()
+    api_url = f"https://api.telegram.org/bot{settings.telegram_bot_token}"
+
     message = f"▶ {product.title} ◀\n{product.url}\n{summary}"
     cutted_message = message[:1021] + "..." if len(message) > 1024 else message
     media_payload = build_media_payload(product, cutted_message)
@@ -33,9 +28,9 @@ async def send_message(product: VintedProduct, summary: str) -> None:
     async with httpx.AsyncClient() as client:
         try:
             reply = await client.post(
-                f"{API_URL}/sendMediaGroup",
+                f"{api_url}/sendMediaGroup",
                 json={
-                    "chat_id": CHAT_ID,
+                    "chat_id": settings.telegram_chat_id,
                     "media": media_payload,
                 },
             )
