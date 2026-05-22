@@ -36,9 +36,14 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     claude_model: str = "claude-sonnet-4-6"
 
-    # --- GCP / Firestore ---
+    # --- Database (SQLModel / SQLAlchemy async URL) ---
+    database_url: str = "postgresql+asyncpg://vinted:vinted@localhost:5432/vinted"
+
+    # --- GCP ---
     gcp_project: str | None = None
-    firestore_collection: str = "items"
+
+    # --- Google Cloud Storage (product images) ---
+    gcs_bucket: str | None = None
 
     # --- Notification policy ---
     notify_min_rating: int = 4
