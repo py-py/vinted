@@ -1,10 +1,12 @@
 {% extends "sqladmin_original/base.html" %}
 
-{# Adds a PhotoSwipe lightbox over any .pswp-gallery rendered by the views. #}
+{# Adds a PhotoSwipe lightbox over .pswp-gallery and a CodeMirror JSON editor
+   over textarea.json-codemirror (form_widget_args in the views). #}
 
 {% block head_css %}
   {{ super() }}
   <link rel="stylesheet" href="https://unpkg.com/photoswipe@5.4.4/dist/photoswipe.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 {% endblock %}
 
 {% block tail %}
@@ -30,5 +32,30 @@
     });
 
     lightbox.init();
+  </script>
+
+  <!-- CodeMirror JSON editor for JSONB form fields (classic scripts → global CodeMirror). -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script>
+    document.querySelectorAll("textarea.json-codemirror").forEach((ta) => {
+      try {
+        ta.value = JSON.stringify(JSON.parse(ta.value), null, 2);
+      } catch (e) {
+        // leave non-JSON / empty value untouched
+      }
+      CodeMirror.fromTextArea(ta, {
+        mode: { name: "javascript", json: true },
+        lineNumbers: true,
+        viewportMargin: Infinity,
+      });
+    });
+  </script>
+
+  <!-- Select2 (bundled by sqladmin) for opted-in selects. -->
+  <script>
+    jQuery(function ($) {
+      $(".select2-field").select2({ width: "100%" });
+    });
   </script>
 {% endblock %}

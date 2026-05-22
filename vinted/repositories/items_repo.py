@@ -10,12 +10,21 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from ..db.models import Item
 from ..db.session import get_sessionmaker
 from ..domain.analysis import BaseAnalysis
+from ..domain.enums import Catalog
 from ..domain.enums import ItemStatus
 from ..domain.product import VintedProduct
 
 
 def _now() -> datetime:
     return datetime.now(UTC)
+
+
+def _to_catalog(value: str) -> Catalog | None:
+    """Map a scraped catalog id string to a known ``Catalog``, or ``None``."""
+    try:
+        return Catalog(int(value))
+    except (ValueError, TypeError):
+        return None
 
 
 class ItemsRepository:
@@ -43,7 +52,7 @@ class ItemsRepository:
                 session.add(item)
             item.title = product.title
             item.description = product.description
-            item.catalog_id = product.catalog_id
+            item.catalog_id = _to_catalog(product.catalog_id)
             item.url = product.url
             item.price = product.price
             item.properties = product.properties

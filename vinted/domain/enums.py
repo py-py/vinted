@@ -1,6 +1,17 @@
 from __future__ import annotations
 
+from enum import IntEnum
 from enum import StrEnum
+
+
+class Catalog(IntEnum):
+    """Known Vinted catalog ids (see constants.CATALOG_RECIPES)."""
+
+    skis = 4733
+    men_ski_boots = 2683
+    women_ski_boots = 2652
+    girls_ski_boots = 2715
+    boys_ski_boots = 2746
 
 
 class Recommendation(StrEnum):

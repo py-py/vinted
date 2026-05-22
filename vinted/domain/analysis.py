@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from typing import Optional
 
 from pydantic import BaseModel
 from pydantic import Field
@@ -27,7 +26,7 @@ class BaseAnalysis(BaseModel):
     recommendation: Recommendation = Field(description="buy / negotiate / skip")
     brand: str = Field(description="Product brand")
     model: str = Field(description="Product model")
-    year: Optional[str] = Field(description="Year or season, e.g. 2022/2023")
+    year: str | None = Field(description="Year or season, e.g. 2022/2023")
     condition_state: ConditionState = Field(description="Actual condition from photos")
     condition_notes: str = Field(description="Detailed condition assessment")
     asking_price_pln: float = Field(description="Seller asking price (listing price) in PLN")
@@ -44,8 +43,8 @@ class BaseAnalysis(BaseModel):
         description="Positive signs: good condition, popular brand, attractive price, etc",
     )
     seller_trust: SellerTrust = Field(description="Seller reliability assessment")
-    negotiate_target: Optional[float] = Field(description="Suggested offer price if negotiate")
-    negotiate_message: Optional[str] = Field(
+    negotiate_target: float | None = Field(description="Suggested offer price if negotiate")
+    negotiate_message: str | None = Field(
         description="Recommendation what to write to the seller: proposed price and reasoning",
     )
     summary: str = Field(description="2-3 sentence verdict in Russian")
@@ -98,12 +97,12 @@ class BaseAnalysis(BaseModel):
 
 
 class SkiBootsAnalysis(BaseAnalysis):
-    flex_index: Optional[str] = Field(description="Boot flex index, e.g. 80, 100-110")
-    mondo_size: Optional[str] = Field(description="Mondopoint size in cm, e.g. 25.0 / 25.5")
-    eu_size: Optional[str] = Field(description="EU size, e.g. 38, 42")
+    flex_index: str | None = Field(description="Boot flex index, e.g. 80, 100-110")
+    mondo_size: str | None = Field(description="Mondopoint size in cm, e.g. 25.0 / 25.5")
+    eu_size: str | None = Field(description="EU size, e.g. 38, 42")
     is_rental: bool = Field(description="True if rental boot indicators detected")
-    estimated_age_years: Optional[str] = Field(description="Estimated age or 'unknown'")
-    safety_warning: Optional[str] = Field(description="Safety concern if old or cracked")
+    estimated_age_years: str | None = Field(description="Estimated age or 'unknown'")
+    safety_warning: str | None = Field(description="Safety concern if old or cracked")
 
     def format_child_attributes(self, product):
         return [
