@@ -31,7 +31,8 @@ from .session import get_sessionmaker
 
 
 def _img(item_id: str, n: int = 3) -> list[str]:
-    return [f"https://images1.vinted.net/demo/{item_id}/{i}.jpg" for i in range(1, n + 1)]
+    # Lorem Picsum placeholder photos; the seed keeps each image stable & distinct.
+    return [f"https://picsum.photos/seed/{item_id}-{i}/400/400" for i in range(1, n + 1)]
 
 
 def _ski_boots(**overrides) -> SkiBootsAnalysis:

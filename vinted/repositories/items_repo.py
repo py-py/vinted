@@ -29,11 +29,8 @@ class ItemsRepository:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession] | None = None) -> None:
         self._sessionmaker = session_factory or get_sessionmaker()
 
-    async def exists(self, item_id: str) -> bool:
-        async with self._sessionmaker() as session:
-            return await session.get(Item, item_id) is not None
-
     async def get(self, item_id: str) -> dict[str, Any] | None:
+        """Return the stored item, or ``None`` if it is missing."""
         async with self._sessionmaker() as session:
             item = await session.get(Item, item_id)
             return item.model_dump(mode="json") if item is not None else None
@@ -57,7 +54,11 @@ class ItemsRepository:
             await session.commit()
 
     async def save_analysis(
-        self, item_id: str, analysis: BaseAnalysis, *, status: ItemStatus
+        self,
+        item_id: str,
+        analysis: BaseAnalysis,
+        *,
+        status: ItemStatus,
     ) -> None:
         async with self._sessionmaker() as session:
             item = await session.get(Item, item_id)
