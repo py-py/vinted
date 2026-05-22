@@ -22,9 +22,7 @@ def main() -> None:
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
 
-    result = asyncio.run(
-        analyze_item(args.product_id, args.catalog_id, source="cli", force=args.force)
-    )
+    result = asyncio.run(analyze_item(args.product_id, args.catalog_id, force=args.force))
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
 

@@ -35,7 +35,7 @@ class ItemsRepository:
             item = await session.get(Item, item_id)
             return item.model_dump(mode="json") if item is not None else None
 
-    async def save_product(self, product: VintedProduct, *, source: str = "catalog") -> None:
+    async def save_product(self, product: VintedProduct) -> None:
         async with self._sessionmaker() as session:
             item = await session.get(Item, product.id)
             if item is None:
@@ -49,7 +49,6 @@ class ItemsRepository:
             item.properties = product.properties
             item.image_urls = product.image_urls
             item.seller = product.seller.model_dump()
-            item.source = source
             item.status = ItemStatus.new.value
             await session.commit()
 

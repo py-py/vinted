@@ -36,7 +36,6 @@ class Item(SQLModel, table=True):
     properties: dict[str, Any] = Field(default_factory=dict, sa_type=JSONB)
     image_urls: list[str] = Field(default_factory=list, sa_type=JSONB)
     seller: dict[str, Any] = Field(default_factory=dict, sa_type=JSONB)
-    source: str = "catalog"
     status: str = Field(default=ItemStatus.new.value, index=True)
     # none_as_null: store a missing analysis as SQL NULL, not a JSON ``null`` scalar.
     analysis: Optional[dict[str, Any]] = Field(default=None, sa_type=JSONB(none_as_null=True))

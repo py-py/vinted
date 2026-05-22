@@ -76,7 +76,7 @@ def _skis(**overrides) -> BaseAnalysis:
         brand="Rossignol",
         model="Experience 84",
         year="2021/2022",
-        condition_state=ConditionState.fair,
+        condition_state=ConditionState.satisfactory,
         condition_notes="Base has a few scratches, edges fine, bindings adjustable.",
         asking_price_pln=400.0,
         estimated_delivery_pln=30.0,
@@ -184,7 +184,7 @@ def _dataset() -> list[tuple[VintedProduct, BaseAnalysis | None, ItemStatus | No
                 eu_size="39",
                 rating=2,
                 recommendation=Recommendation.skip,
-                condition_state=ConditionState.poor,
+                condition_state=ConditionState.satisfactory,
                 is_rental=True,
                 estimated_age_years="8+",
                 safety_warning="Старые ботинки из проката, возможна деградация пластика.",
@@ -291,10 +291,9 @@ async def seed(clear: bool = False) -> None:
         print("Cleared items table.")
 
     repo = ItemsRepository()
-    sources = ["catalog", "favourites", "wardrobe", "cli"]
 
-    for i, (product, analysis, status) in enumerate(_dataset()):
-        await repo.save_product(product, source=sources[i % len(sources)])
+    for product, analysis, status in _dataset():
+        await repo.save_product(product)
         if analysis is not None and status is not None:
             await repo.save_analysis(product.id, analysis, status=status)
         elif status is not None:

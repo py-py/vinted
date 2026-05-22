@@ -28,7 +28,6 @@ async def analyze_item(
     product_id: str,
     catalog_id: str | None = None,
     *,
-    source: str = "catalog",
     force: bool = False,
 ) -> dict[str, Any]:
     """End-to-end pipeline for a single item: scrape -> store -> analyze -> store -> notify."""
@@ -44,7 +43,7 @@ async def analyze_item(
 
     # 1. Scrape full product detail and persist the raw record.
     product = await scrape_product(product_id, catalog_id=catalog_id)
-    await repo.save_product(product, source=source)
+    await repo.save_product(product)
 
     # 2. Ensure images are available locally for the LLM.
     images = await load_images(product.id)

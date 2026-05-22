@@ -93,7 +93,7 @@ Respond **strictly** in JSON:
   "brand": "...",
   "model": "...",
   "year": "...",
-  "condition_state": "new | like_new | good | fair | poor",
+  "condition_state": "new_with_tags | new_without_tags | very_good | good | satisfactory",
   "condition_notes": "...",
   "asking_price_pln": 0,
   "estimated_delivery_pln": 0,

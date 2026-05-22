@@ -39,8 +39,7 @@ def _verdict(model: Item, _: str) -> Markup:
         return _MUTED
     parts: list[str] = []
     if rating:
-        stars = "★" * int(rating) + "☆" * (5 - int(rating))
-        parts.append(f'<span class="text-warning" title="{rating}/5">{stars}</span>')
+        parts.append(f'<span class="fw-semibold">{int(rating)}/5</span>')
     if rec:
         color = _REC_COLORS.get(rec, "secondary")
         parts.append(f'<span class="badge bg-{color}">{html.escape(rec)}</span>')
@@ -111,7 +110,6 @@ class ItemAdmin(ModelView, model=Item):
         Item.price,
         Item.status,
         Item.analysis,
-        Item.source,
         Item.created_at,
     ]
     column_labels = {
@@ -130,7 +128,6 @@ class ItemAdmin(ModelView, model=Item):
             [(s.value, s.value) for s in ItemStatus],
             title="Status",
         ),
-        AllUniqueStringValuesFilter(Item.source, title="Source"),
         AllUniqueStringValuesFilter(Item.catalog_id, title="Catalog"),
     ]
 

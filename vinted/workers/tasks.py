@@ -12,7 +12,6 @@ async def analyze_item_task(
     product_id: str,
     catalog_id: str | None = None,
     *,
-    source: str = "catalog",
     force: bool = False,
 ) -> None:
     """Background-safe wrapper around the pipeline.
@@ -22,7 +21,7 @@ async def analyze_item_task(
     FastAPI BackgroundTasks now, or a Cloud Tasks / Pub-Sub worker later.
     """
     try:
-        await analyze_item(product_id, catalog_id, source=source, force=force)
+        await analyze_item(product_id, catalog_id, force=force)
     except Exception:
         logger.exception("Failed to analyze item %s", product_id)
         try:

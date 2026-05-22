@@ -27,7 +27,6 @@ async def scrape_catalog(
                 analyze_item_task,
                 item_id,
                 str(catalog_id),
-                source="catalog",
                 force=force,
             )
             item_ids.append(item_id)
@@ -47,7 +46,6 @@ async def scrape_item(
         analyze_item_task,
         item_id,
         catalog_id,
-        source="manual",
         force=force,
     )
     return {"item_id": item_id, "status": "enqueued"}

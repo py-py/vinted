@@ -10,11 +10,11 @@ class Recommendation(StrEnum):
 
 
 class ConditionState(StrEnum):
-    new = "new"
-    like_new = "like_new"
+    new_with_tags = "new_with_tags"
+    new_without_tags = "new_without_tags"
+    very_good = "very_good"
     good = "good"
-    fair = "fair"
-    poor = "poor"
+    satisfactory = "satisfactory"
 
 
 class SellerTrust(StrEnum):
