@@ -1,0 +1,34 @@
+{% extends "sqladmin_original/base.html" %}
+
+{# Adds a PhotoSwipe lightbox over any .pswp-gallery rendered by the views. #}
+
+{% block head_css %}
+  {{ super() }}
+  <link rel="stylesheet" href="https://unpkg.com/photoswipe@5.4.4/dist/photoswipe.css">
+{% endblock %}
+
+{% block tail %}
+  {{ super() }}
+  <script type="module">
+    import PhotoSwipeLightbox from "https://unpkg.com/photoswipe@5.4.4/dist/photoswipe-lightbox.esm.js";
+
+    const lightbox = new PhotoSwipeLightbox({
+      gallery: ".pswp-gallery",
+      children: "a",
+      pswpModule: () => import("https://unpkg.com/photoswipe@5.4.4/dist/photoswipe.esm.js"),
+    });
+
+    // Image sizes aren't known server-side; read them from the loaded thumbnail
+    // (its src is the full image, just scaled down via CSS).
+    lightbox.addFilter("domItemData", (itemData, element) => {
+      const img = element.querySelector("img");
+      if (img) {
+        itemData.width = img.naturalWidth || 1200;
+        itemData.height = img.naturalHeight || 1200;
+      }
+      return itemData;
+    });
+
+    lightbox.init();
+  </script>
+{% endblock %}
