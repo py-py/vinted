@@ -5,6 +5,9 @@ from pathlib import Path
 
 from ..constants import CATALOG_RECIPES
 from ..constants import PROMPTS_DIR
+from ..storage.gcs import download_bytes
+from ..storage.gcs import list_blob_names
+from ..storage.gcs import product_prefix
 from .base import Image
 
 _IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png", ".webp", ".gif")
@@ -22,15 +25,11 @@ def load_prompt(catalog_id: str) -> str:
     return prompt
 
 
-def load_images(product_id: str) -> list[Image]:
-    """Load saved product images from disk as (media_type, bytes) tuples."""
-    folder = Path("media/products") / product_id
-    if not folder.exists():
-        return []
-
+async def load_images(product_id: str) -> list[Image]:
+    """Load saved product images from GCS as (media_type, bytes) tuples."""
     images: list[Image] = []
-    for path in sorted(folder.iterdir()):
-        if path.suffix.lower() in _IMAGE_SUFFIXES:
-            media_type = mimetypes.guess_type(path.name)[0] or "image/jpeg"
-            images.append((media_type, path.read_bytes()))
+    for name in await list_blob_names(product_prefix(product_id)):
+        if Path(name).suffix.lower() in _IMAGE_SUFFIXES:
+            media_type = mimetypes.guess_type(name)[0] or "image/jpeg"
+            images.append((media_type, await download_bytes(name)))
     return images

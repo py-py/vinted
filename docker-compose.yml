@@ -1,4 +1,22 @@
 services:
+  db:
+    image: postgres:16
+    container_name: vinted-db
+    environment:
+      POSTGRES_USER: vinted
+      POSTGRES_PASSWORD: vinted
+      POSTGRES_DB: vinted
+    ports:
+      # Host 5433 -> container 5432 (5432 is often taken by a local Postgres).
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vinted"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   vinted:
     build: .
     image: vinted-dev
@@ -7,8 +25,16 @@ services:
     env_file:
       - path: .env
         required: false
+    environment:
+      # Inside the compose network Postgres is reachable at host "db".
+      DATABASE_URL: postgresql+asyncpg://vinted:vinted@db:5432/vinted
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       - .:/app:cached
-      - ./media:/app/media:cached
     stdin_open: true
     tty: true
+
+volumes:
+  pgdata:

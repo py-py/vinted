@@ -47,10 +47,10 @@ async def analyze_item(
     await repo.save_product(product, source=source)
 
     # 2. Ensure images are available locally for the LLM.
-    images = load_images(product.id)
+    images = await load_images(product.id)
     if not images and product.image_urls:
-        await save_images(product.image_urls, product.path_to_assets)
-        images = load_images(product.id)
+        await save_images(product.image_urls, product.id)
+        images = await load_images(product.id)
 
     # 3. Run the configured LLM analyzer.
     prompt = load_prompt(product.catalog_id)

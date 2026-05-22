@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     claude_model: str = "claude-sonnet-4-6"
 
     # --- Database (SQLModel / SQLAlchemy async URL) ---
-    database_url: str = "postgresql+asyncpg://vinted:vinted@localhost:5432/vinted"
+    database_url: str = "postgresql+asyncpg://vinted:vinted@localhost:5433/vinted"
 
     # --- GCP ---
     gcp_project: str | None = None

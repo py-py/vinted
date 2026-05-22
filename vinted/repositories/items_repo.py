@@ -4,11 +4,14 @@ from datetime import UTC
 from datetime import datetime
 from typing import Any
 
-from ..core.config import get_settings
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker
+
+from ..db.models import Item
+from ..db.session import get_sessionmaker
 from ..domain.analysis import BaseAnalysis
 from ..domain.enums import ItemStatus
 from ..domain.product import VintedProduct
-from .firestore import get_client
 
 
 def _now() -> datetime:
@@ -16,55 +19,61 @@ def _now() -> datetime:
 
 
 class ItemsRepository:
-    """Firestore-backed store for scraped items and their analyses.
+    """SQL-backed store for scraped items and their analyses (one row per item).
 
-    Document layout (collection ``items``, doc id = Vinted item id)::
-
-        {
-            ...scraped product fields...,
-            "status": "new" | "analyzed" | "notified" | "skipped" | "failed",
-            "source": "catalog" | "favourites" | "wardrobe",
-            "analysis": { ...BaseAnalysis... },
-            "created_at": <timestamp>,
-            "analyzed_at": <timestamp>,
-        }
+    Each method runs in its own short-lived transaction, so the same repository
+    instance is safe to reuse across the request, the CLI and background tasks
+    without holding a connection open during long LLM calls.
     """
 
-    def __init__(self, collection: str | None = None) -> None:
-        self._db = get_client()
-        self._collection = collection or get_settings().firestore_collection
-
-    def _doc(self, item_id: str):
-        return self._db.collection(self._collection).document(item_id)
+    def __init__(self, session_factory: async_sessionmaker[AsyncSession] | None = None) -> None:
+        self._sessionmaker = session_factory or get_sessionmaker()
 
     async def exists(self, item_id: str) -> bool:
-        snapshot = await self._doc(item_id).get()
-        return snapshot.exists
+        async with self._sessionmaker() as session:
+            return await session.get(Item, item_id) is not None
 
     async def get(self, item_id: str) -> dict[str, Any] | None:
-        snapshot = await self._doc(item_id).get()
-        return snapshot.to_dict() if snapshot.exists else None
+        async with self._sessionmaker() as session:
+            item = await session.get(Item, item_id)
+            return item.model_dump(mode="json") if item is not None else None
 
     async def save_product(self, product: VintedProduct, *, source: str = "catalog") -> None:
-        data = product.model_dump(exclude={"ld_json"})
-        data |= {
-            "status": ItemStatus.new.value,
-            "source": source,
-            "created_at": _now(),
-        }
-        await self._doc(product.id).set(data, merge=True)
+        async with self._sessionmaker() as session:
+            item = await session.get(Item, product.id)
+            if item is None:
+                item = Item(id=product.id, created_at=_now())
+                session.add(item)
+            item.title = product.title
+            item.description = product.description
+            item.catalog_id = product.catalog_id
+            item.url = product.url
+            item.price = product.price
+            item.properties = product.properties
+            item.image_urls = product.image_urls
+            item.seller = product.seller.model_dump()
+            item.source = source
+            item.status = ItemStatus.new.value
+            await session.commit()
 
     async def save_analysis(
         self, item_id: str, analysis: BaseAnalysis, *, status: ItemStatus
     ) -> None:
-        await self._doc(item_id).set(
-            {
-                "analysis": analysis.model_dump(mode="json"),
-                "status": status.value,
-                "analyzed_at": _now(),
-            },
-            merge=True,
-        )
+        async with self._sessionmaker() as session:
+            item = await session.get(Item, item_id)
+            if item is None:
+                item = Item(id=item_id, created_at=_now())
+                session.add(item)
+            item.analysis = analysis.model_dump(mode="json")
+            item.status = status.value
+            item.analyzed_at = _now()
+            await session.commit()
 
     async def set_status(self, item_id: str, status: ItemStatus) -> None:
-        await self._doc(item_id).set({"status": status.value}, merge=True)
+        async with self._sessionmaker() as session:
+            item = await session.get(Item, item_id)
+            if item is None:
+                item = Item(id=item_id, created_at=_now())
+                session.add(item)
+            item.status = status.value
+            await session.commit()

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import mimetypes
 import re
 import sys
 from pathlib import Path
@@ -13,6 +14,8 @@ from ..constants import PRODUCT_URL
 from ..constants import USER_AGENT
 from ..domain.product import VintedProduct
 from ..domain.product import VintedSeller
+from ..storage.gcs import product_prefix
+from ..storage.gcs import upload_bytes
 
 
 async def scrape_product(product_id: str, catalog_id: str | None = None) -> VintedProduct:
@@ -116,21 +119,26 @@ async def scrape_product(product_id: str, catalog_id: str | None = None) -> Vint
     )
 
 
-async def save_images(image_urls: list[str], folder: Path) -> None:
-    """Download images to ./media/products/{product_id}/."""
-    folder.mkdir(parents=True, exist_ok=True)
+async def save_images(image_urls: list[str], product_id: str) -> list[str]:
+    """Download images and upload them to GCS under ``products/{product_id}/``.
+
+    Returns the list of blob names that were written.
+    """
+    prefix = product_prefix(product_id)
 
     async with httpx.AsyncClient() as client:
 
-        async def _download(i: int, url: str) -> None:
+        async def _store(i: int, url: str) -> str:
             resp = await client.get(url)
             resp.raise_for_status()
             ext = Path(url.split("?")[0]).suffix or ".jpg"
-            filepath = folder / f"{i}{ext}"
-            filepath.write_bytes(resp.content)
-            print(f"-> Saved: {filepath}")
+            blob_name = f"{prefix}/{i}{ext}"
+            content_type = mimetypes.guess_type(blob_name)[0]
+            await upload_bytes(blob_name, resp.content, content_type=content_type)
+            print(f"-> Uploaded: {blob_name}")
+            return blob_name
 
-        await asyncio.gather(*(_download(i, url) for i, url in enumerate(image_urls, 1)))
+        return list(await asyncio.gather(*(_store(i, url) for i, url in enumerate(image_urls, 1))))
 
 
 async def main() -> None:
@@ -142,9 +150,8 @@ async def main() -> None:
 
     product = await scrape_product(product_id, catalog_id=catalog_id)
 
-    folder = Path("media/products") / product_id
     if product.image_urls:
-        await save_images(product.image_urls, folder)
+        await save_images(product.image_urls, product_id)
 
     print(product.model_dump_json(indent=2, exclude={}))
 

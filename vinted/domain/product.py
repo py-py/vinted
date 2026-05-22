@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Optional
 
 from pydantic import BaseModel
@@ -29,10 +28,6 @@ class VintedProduct(BaseModel):
     def model_dump_json(self, *args, **kwargs) -> str:
         kwargs.setdefault("exclude", {"ld_json"})
         return super().model_dump_json(*args, **kwargs)
-
-    @property
-    def path_to_assets(self):
-        return Path("media/products") / self.id
 
     @property
     def main_image_url(self):

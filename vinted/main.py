@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
+from .admin import setup_admin
 from .api.routes import health
 from .api.routes import items
 from .api.routes import scrape
@@ -14,6 +15,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(scrape.router)
     app.include_router(items.router)
+    setup_admin(app)
     return app
 
 
