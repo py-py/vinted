@@ -178,14 +178,12 @@ class ItemAdmin(ModelView, model=Item):
         Item.analysis: _json_detail("analysis"),
     }
 
-    # JSONB fields get a CodeMirror editor; status gets a Select2 dropdown
-    # (both wired up in templates/sqladmin/base.html).
+    # Render JSONB fields with a CodeMirror JSON editor (wired up in base.html).
     form_widget_args = {
         "properties": {"class": "json-codemirror"},
         "image_urls": {"class": "json-codemirror"},
         "seller": {"class": "json-codemirror"},
         "analysis": {"class": "json-codemirror"},
-        "status": {"class": "form-control select2-field"},
     }
     # Render status as a <select> with the ItemStatus choices.
     form_overrides = {"status": SelectField}
