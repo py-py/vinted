@@ -3,13 +3,14 @@ from __future__ import annotations
 from datetime import UTC
 from datetime import datetime
 from typing import Any
-from typing import Optional
 
 from sqlalchemy import DateTime
+from sqlalchemy import Integer
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field
 from sqlmodel import SQLModel
 
+from ..domain.enums import Catalog
 from ..domain.enums import ItemStatus
 
 
@@ -30,7 +31,7 @@ class Item(SQLModel, table=True):
     id: str = Field(primary_key=True)  # Vinted item id
     title: str = ""
     description: str = ""
-    catalog_id: str = ""
+    catalog_id: Catalog | None = Field(default=None, sa_type=Integer)
     url: str = ""
     price: float = 0.0
     properties: dict[str, Any] = Field(default_factory=dict, sa_type=JSONB)
@@ -38,6 +39,6 @@ class Item(SQLModel, table=True):
     seller: dict[str, Any] = Field(default_factory=dict, sa_type=JSONB)
     status: str = Field(default=ItemStatus.new.value, index=True)
     # none_as_null: store a missing analysis as SQL NULL, not a JSON ``null`` scalar.
-    analysis: Optional[dict[str, Any]] = Field(default=None, sa_type=JSONB(none_as_null=True))
+    analysis: dict[str, Any] | None = Field(default=None, sa_type=JSONB(none_as_null=True))
     created_at: datetime = Field(default_factory=_now, sa_type=DateTime(timezone=True))
-    analyzed_at: Optional[datetime] = Field(default=None, sa_type=DateTime(timezone=True))
+    analyzed_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))

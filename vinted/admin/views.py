@@ -6,11 +6,28 @@ from typing import Any
 
 from markupsafe import Markup
 from sqladmin import ModelView
-from sqladmin.filters import AllUniqueStringValuesFilter
 from sqladmin.filters import StaticValuesFilter
+from sqladmin.filters import get_column_obj
+from sqlalchemy import Select
+from wtforms.fields import SelectField
 
 from ..db.models import Item
+from ..domain.enums import Catalog
 from ..domain.enums import ItemStatus
+
+
+def _catalog_label(catalog: Catalog) -> str:
+    return catalog.name.replace("_", " ").title()
+
+
+class IntStaticValuesFilter(StaticValuesFilter):
+    """StaticValuesFilter that coerces the URL value to int for integer columns."""
+
+    async def get_filtered_query(self, query: Select, value: object, model: object) -> Select:
+        if value == "":
+            return query
+        return query.filter(get_column_obj(self.column, model) == int(value))
+
 
 _STATUS_COLORS = {
     ItemStatus.new.value: "secondary",
@@ -29,6 +46,15 @@ def _badge(text: str, color: str) -> Markup:
 
 def _status_badge(model: Item, _: str) -> Markup:
     return _badge(model.status, _STATUS_COLORS.get(model.status, "light"))
+
+
+def _catalog(model: Item, _: str) -> str | Markup:
+    if model.catalog_id is None:
+        return _MUTED
+    try:
+        return _catalog_label(Catalog(model.catalog_id))
+    except ValueError:
+        return str(model.catalog_id)
 
 
 def _verdict(model: Item, _: str) -> Markup:
@@ -119,7 +145,7 @@ class ItemAdmin(ModelView, model=Item):
         Item.created_at: "Created",
         Item.analyzed_at: "Analyzed",
     }
-    column_searchable_list = [Item.id, Item.title, Item.catalog_id]
+    column_searchable_list = [Item.id, Item.title]
     column_sortable_list = [Item.price, Item.status, Item.created_at, Item.analyzed_at]
     column_default_sort = [(Item.created_at, True)]
     column_filters = [
@@ -128,23 +154,42 @@ class ItemAdmin(ModelView, model=Item):
             [(s.value, s.value) for s in ItemStatus],
             title="Status",
         ),
-        AllUniqueStringValuesFilter(Item.catalog_id, title="Catalog"),
+        IntStaticValuesFilter(
+            Item.catalog_id,
+            [(str(c.value), _catalog_label(c)) for c in Catalog],
+            title="Catalog",
+        ),
     ]
 
     column_formatters = {
         Item.image_urls: _list_thumb,
+        Item.catalog_id: _catalog,
         Item.status: _status_badge,
         Item.analysis: _verdict,
         Item.price: _price,
         Item.created_at: _created,
     }
     column_formatters_detail = {
+        Item.catalog_id: _catalog,
         Item.status: _status_badge,
         Item.image_urls: _thumbnails,
         Item.properties: _json_detail("properties"),
         Item.seller: _json_detail("seller"),
         Item.analysis: _json_detail("analysis"),
     }
+
+    # JSONB fields get a CodeMirror editor; status gets a Select2 dropdown
+    # (both wired up in templates/sqladmin/base.html).
+    form_widget_args = {
+        "properties": {"class": "json-codemirror"},
+        "image_urls": {"class": "json-codemirror"},
+        "seller": {"class": "json-codemirror"},
+        "analysis": {"class": "json-codemirror"},
+        "status": {"class": "form-control select2-field"},
+    }
+    # Render status as a <select> with the ItemStatus choices.
+    form_overrides = {"status": SelectField}
+    form_args = {"status": {"choices": [(s.value, s.value) for s in ItemStatus]}}
 
     page_size = 50
     page_size_options = [25, 50, 100, 200]

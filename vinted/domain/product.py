@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from pydantic import BaseModel
 
 
@@ -9,8 +7,8 @@ class VintedSeller(BaseModel):
     username: str = ""
     location: str = ""
     link: str = ""
-    stars: Optional[float] = None
-    reviews: Optional[int] = None
+    stars: float | None = None
+    reviews: int | None = None
 
 
 class VintedProduct(BaseModel):
