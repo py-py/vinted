@@ -5,7 +5,7 @@ import os
 
 from dotenv import load_dotenv
 
-from .store import JsonStore
+from .store import get_store
 
 
 def main() -> None:
@@ -22,8 +22,8 @@ def main() -> None:
             raise SystemExit("Provide --chat or set TELEGRAM_CHAT_ID in .env")
         chat_id = int(env_chat)
 
-    sub = JsonStore().add_subscription(chat_id, args.url)
-    print(f"Added subscription {sub.id}: chat={sub.telegram_chat_id}")
+    sub = get_store().add_subscription(chat_id, args.url)
+    print(f"Subscription {sub.id} (chat {sub.telegram_chat_id})")
     print(f"  url: {sub.url}")
 
 
