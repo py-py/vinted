@@ -17,16 +17,21 @@ API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 
 def format_item_caption(item: dict) -> str:
-    """Build a Telegram caption for a single catalog item dict."""
-    parts = [f"▶ {item.get('title') or '—'} ◀"]
-    fields = (item.get("brand"), item.get("size"), item.get("condition"))
-    if meta := " · ".join(v for v in fields if v):
-        parts.append(meta)
+    """Build a Telegram caption for a single catalog item dict (empty fields skipped)."""
+    lines = [f"📦 {item.get('title') or '—'}"]
+    if brand := item.get("brand"):
+        lines.append(f"🏷 Бренд: {brand}")
+    if size := item.get("size"):
+        lines.append(f"📏 Размер: {size}")
+    if condition := item.get("condition"):
+        lines.append(f"✨ Состояние: {condition}")
     if price := item.get("price"):
-        parts.append(f"💶 {price}")
+        lines.append(f"💶 Цена: {price}")
+    if total := item.get("total_price"):
+        lines.append(f"🛡 С защитой: {total}")
     if url := item.get("url"):
-        parts.append(url)
-    caption = "\n".join(parts)
+        lines.append(f"🔗 {url}")
+    caption = "\n".join(lines)
     return caption[:1021] + "..." if len(caption) > 1024 else caption
 
 

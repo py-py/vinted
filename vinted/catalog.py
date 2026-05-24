@@ -46,7 +46,7 @@ def parse_item(el: BeautifulSoup) -> dict | None:
     link = el.select_one("a[href*='/items/']")
     if not link:
         return None
-    href = link.get("href", "")
+    href = link.get("href", "").split("?")[0]  # drop tracking query (e.g. ?referrer=catalog)
     item_url = f"https://www.vinted.pl{href}" if href.startswith("/") else href
 
     item_id = parse_item_id(href)
@@ -57,6 +57,9 @@ def parse_item(el: BeautifulSoup) -> dict | None:
 
     price_el = el.select_one("[data-testid$='price-text'], .web_ui__Text__subtitle")
     price_text = (price_el.get_text(strip=True) if price_el else "").replace("\xa0", " ")
+
+    total_el = el.select_one("[data-testid='total-combined-price']")
+    total_price_text = (total_el.get_text(strip=True) if total_el else "").replace("\xa0", " ")
 
     brand_match = re.search(r"marka:\s*(.+?)(?:,|$)", alt)
     brand = brand_match.group(1).strip() if brand_match else ""
@@ -76,6 +79,7 @@ def parse_item(el: BeautifulSoup) -> dict | None:
         "condition": condition,
         "size": size,
         "price": price_text,
+        "total_price": total_price_text,
         "url": item_url,
         "image_url": image_url,
     }
