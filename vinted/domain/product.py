@@ -1,14 +1,12 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel
 
+from ..db.models import VintedSeller
 
-class VintedSeller(BaseModel):
-    username: str = ""
-    location: str = ""
-    link: str = ""
-    stars: float | None = None
-    reviews: int | None = None
+__all__ = ["VintedProduct", "VintedSeller"]
 
 
 class VintedProduct(BaseModel):
@@ -20,7 +18,8 @@ class VintedProduct(BaseModel):
     price: float
     properties: dict[str, str] = {}
     image_urls: list[str] = []
-    seller: VintedSeller = VintedSeller()
+    seller: VintedSeller | None = None
+    uploaded_at: datetime | None = None
     ld_json: dict = {}
 
     def model_dump_json(self, *args, **kwargs) -> str:

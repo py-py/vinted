@@ -69,7 +69,7 @@ class BaseAnalysis(BaseModel):
         lines += [
             "",
             f"💰 Price: {self.asking_price_pln} PLN",
-            f"🚚 Delivery: ~{self.estimated_delivery_pln} PLN (from {product.seller.location or '-'})",  # NOQA: E501
+            f"🚚 Delivery: ~{self.estimated_delivery_pln} PLN (from {(product.seller.country if product.seller else '') or '-'})",  # NOQA: E501
             f"💵 Resale: {self.estimated_resale_pln.min} – {self.estimated_resale_pln.max} PLN",
             f"📈 Profit: {self.profit_estimate_pln.min} – {self.profit_estimate_pln.max} PLN",
             f"📊 ROI: {self.roi_percent}%",

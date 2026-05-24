@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from ..db.models import Item
+from ..db.models import VintedSeller
 from ..db.session import get_sessionmaker
 from ..domain.analysis import BaseAnalysis
 from ..domain.enums import Catalog
@@ -53,6 +54,25 @@ class ItemsRepository:
         result = await session.execute(select(Item).where(Item.vinted_id == vinted_id))
         return result.scalar_one_or_none()
 
+    @staticmethod
+    async def _upsert_seller(session: AsyncSession, seller: VintedSeller | None) -> int | None:
+        """Upsert the seller (by its Vinted id) and return its id, or ``None``.
+
+        Flushed before the item is written so the FK target already exists.
+        """
+        if seller is None or seller.id is None:
+            return None
+        row = await session.get(VintedSeller, seller.id)
+        if row is None:
+            row = VintedSeller(id=seller.id)
+            session.add(row)
+        row.username = seller.username
+        row.feedback_count = seller.feedback_count
+        row.country = seller.country
+        row.last_seen_at = seller.last_seen_at
+        await session.flush()
+        return seller.id
+
     async def get(self, item_id: str) -> dict[str, Any] | None:
         """Return the stored item by its Vinted id, or ``None`` if it is missing."""
         vinted_id = _to_vinted_id(item_id)
@@ -65,6 +85,7 @@ class ItemsRepository:
     async def save_product(self, product: VintedProduct) -> None:
         vinted_id = _to_vinted_id(product.id)
         async with self._sessionmaker() as session:
+            seller_id = await self._upsert_seller(session, product.seller)
             item = await self._by_vinted_id(session, vinted_id) if vinted_id is not None else None
             if item is None:
                 item = Item(vinted_id=vinted_id, created_at=_now())
@@ -76,7 +97,7 @@ class ItemsRepository:
             item.price = product.price
             item.properties = product.properties
             item.image_urls = product.image_urls
-            item.seller = product.seller.model_dump()
+            item.vinted_seller_id = seller_id
             item.status = ItemStatus.new.value
             await session.commit()
 

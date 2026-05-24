@@ -16,6 +16,19 @@ from ..domain.product import VintedProduct
 from ..domain.product import VintedSeller
 from ..storage.gcs import product_prefix
 from ..storage.gcs import upload_bytes
+from .parsing import parse_member_id
+
+
+def _json_str(text: str, key: str) -> str | None:
+    """Read a (possibly backslash-escaped) JSON string value by key."""
+    m = re.search(rf'{key}\\?"\s*:\s*\\?"([^"\\]+)', text)
+    return m.group(1) if m else None
+
+
+def _json_int(text: str, key: str) -> int | None:
+    """Read a (possibly backslash-escaped) JSON integer value by key."""
+    m = re.search(rf'{key}\\?"\s*:\s*(\d+)', text)
+    return int(m.group(1)) if m else None
 
 
 async def scrape_product(product_id: str, catalog_id: str | None = None) -> VintedProduct:
@@ -61,32 +74,24 @@ async def scrape_product(product_id: str, catalog_id: str | None = None) -> Vint
     if desc_div := soup.select_one("div.u-text-wrap"):
         description = desc_div.get_text("\n", strip=True)
 
-    # --- Seller ---
-    seller = {}
+    # --- Seller --- read from the item-owner object embedded in the page JSON.
+    # The username/id come from the profile link; the rest from the JSON block,
+    # whose values may be backslash-escaped (so the matchers tolerate ``\"``).
+    seller: dict = {}
     if profile_el := soup.find(attrs={"data-testid": "profile-username"}):
         seller["username"] = profile_el.get_text(strip=True)
-        profile_link = profile_el.find_parent("a", href=True)
-        if profile_link:
-            seller["link"] = profile_link["href"]
+        if profile_link := profile_el.find_parent("a", href=True):
+            seller["id"] = parse_member_id(profile_link["href"])
 
-    if location_el := soup.find(attrs={"data-testid": "seller-location"}):
-        seller["location"] = location_el.get_text(strip=True)
-
-    # Fallback
-    if not seller.get("location"):
-        # extract location from <script> JSON data
-        if m := re.search(r'country_title_local\\?"?\s*:\s*\\?"([^"\\]+)', resp.text):
-            seller["location"] = m.group(1)
-
-    # Rating — from aria-label on the rating container
-    if rating_el := soup.find(attrs={"aria-label": True}, class_=lambda c: c and "Rating" in c):
-        aria = rating_el.get("aria-label", "")
-        stars_match = re.search(r"([\d.,]+)\s", aria)
-        if stars_match:
-            seller["stars"] = float(stars_match.group(1).replace(",", "."))
-        label_el = rating_el.select_one("[class*='Rating__label']")
-        if label_el:
-            seller["reviews"] = int(label_el.get_text(strip=True))
+    # The owner object is identifiable by ``country_title_local`` (appears once);
+    # the remaining seller fields cluster around it.
+    if anchor := re.search(r'country_title_local\\?"\s*:\s*\\?"([^"\\]+)', resp.text):
+        block = resp.text[max(0, anchor.start() - 2000) : anchor.start() + 800]
+        seller["country"] = anchor.group(1)
+        if (count := _json_int(block, "feedback_count")) is not None:
+            seller["feedback_count"] = count
+        if last_seen := _json_str(block, "last_logged_on_ts"):
+            seller["last_seen_at"] = last_seen  # ISO-8601; the model parses to datetime
 
     # --- Price --- from "total-combined-price" section
     price_el = soup.find(attrs={"data-testid": "total-combined-price"})
@@ -114,7 +119,8 @@ async def scrape_product(product_id: str, catalog_id: str | None = None) -> Vint
         price=price,
         properties=properties,
         image_urls=image_urls,
-        seller=VintedSeller(**seller),
+        # No id means we couldn't identify the seller — leave it unset.
+        seller=VintedSeller(**seller) if seller.get("id") else None,
         ld_json=ld_json,
     )
 

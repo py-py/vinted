@@ -12,6 +12,7 @@ from sqlalchemy import Select
 from wtforms.fields import SelectField
 
 from ..db.models import Item
+from ..db.models import VintedSeller
 from ..domain.enums import Catalog
 from ..domain.enums import ItemStatus
 
@@ -179,7 +180,6 @@ class ItemAdmin(ModelView, model=Item):
         Item.status: _status_badge,
         Item.image_urls: _thumbnails,
         Item.properties: _json_detail("properties"),
-        Item.seller: _json_detail("seller"),
         Item.analysis: _json_detail("analysis"),
     }
 
@@ -187,7 +187,6 @@ class ItemAdmin(ModelView, model=Item):
     form_widget_args = {
         "properties": {"class": "json-codemirror"},
         "image_urls": {"class": "json-codemirror"},
-        "seller": {"class": "json-codemirror"},
         "analysis": {"class": "json-codemirror"},
     }
     # Render status as a <select> with the ItemStatus choices.
@@ -200,3 +199,36 @@ class ItemAdmin(ModelView, model=Item):
     page_size = 50
     page_size_options = [25, 50, 100, 200]
     can_export = True
+
+
+class SellerAdmin(ModelView, model=VintedSeller):
+    """Admin view for normalized Vinted sellers."""
+
+    name = "Seller"
+    name_plural = "Sellers"
+    icon = "fa-solid fa-user"
+
+    column_list = [
+        VintedSeller.id,
+        VintedSeller.username,
+        VintedSeller.country,
+        VintedSeller.feedback_count,
+        VintedSeller.last_seen_at,
+        VintedSeller.created_at,
+    ]
+    column_labels = {
+        VintedSeller.id: "Vinted ID",
+        VintedSeller.feedback_count: "Feedbacks",
+        VintedSeller.last_seen_at: "Last seen",
+        VintedSeller.created_at: "Created",
+        VintedSeller.updated_at: "Updated",
+    }
+    column_searchable_list = [VintedSeller.username]
+    column_sortable_list = [
+        VintedSeller.feedback_count,
+        VintedSeller.last_seen_at,
+        VintedSeller.created_at,
+    ]
+    column_formatters = {VintedSeller.created_at: _created}
+    form_excluded_columns = [VintedSeller.updated_at]
+    page_size = 50

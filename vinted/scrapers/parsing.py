@@ -10,3 +10,12 @@ def parse_item_id(url: str) -> str | None:
     """
     match = re.search(r"/items/(\d+)", url)
     return match.group(1) if match else None
+
+
+def parse_member_id(url: str) -> int | None:
+    """
+    Extract the numeric seller ID from a Vinted member URL.
+    URL: https://www.vinted.pl/member/12345-some-username
+    """
+    match = re.search(r"/member/(\d+)", url)
+    return int(match.group(1)) if match else None

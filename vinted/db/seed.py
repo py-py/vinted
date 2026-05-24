@@ -14,6 +14,9 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from datetime import UTC
+from datetime import datetime
+from datetime import timedelta
 
 from sqlalchemy import delete
 
@@ -112,7 +115,7 @@ def _dataset() -> list[tuple[VintedProduct, BaseAnalysis | None, ItemStatus | No
                 properties={"Rozmiar": "42", "Marka": "Salomon", "Stan": "Bardzo dobry"},
                 image_urls=_img("9001"),
                 seller=VintedSeller(
-                    username="ski_pro_pl", location="Kraków, PL", stars=4.9, reviews=128
+                    id=5001, username="ski_pro_pl", country="PL", feedback_count=128
                 ),
             ),
             _ski_boots(rating=5, recommendation=Recommendation.buy),
@@ -129,7 +132,7 @@ def _dataset() -> list[tuple[VintedProduct, BaseAnalysis | None, ItemStatus | No
                 properties={"Rozmiar": "43", "Marka": "Atomic"},
                 image_urls=_img("9002"),
                 seller=VintedSeller(
-                    username="zimowy_sklep", location="Warszawa, PL", stars=4.6, reviews=54
+                    id=5002, username="zimowy_sklep", country="PL", feedback_count=54
                 ),
             ),
             _ski_boots(
@@ -156,7 +159,7 @@ def _dataset() -> list[tuple[VintedProduct, BaseAnalysis | None, ItemStatus | No
                 properties={"Długość": "170 cm", "Marka": "Rossignol"},
                 image_urls=_img("9003"),
                 seller=VintedSeller(
-                    username="gory_i_narty", location="Zakopane, PL", stars=4.3, reviews=31
+                    id=5003, username="gory_i_narty", country="PL", feedback_count=31
                 ),
             ),
             _skis(rating=3, recommendation=Recommendation.negotiate),
@@ -173,7 +176,7 @@ def _dataset() -> list[tuple[VintedProduct, BaseAnalysis | None, ItemStatus | No
                 properties={"Rozmiar": "39", "Marka": "Nordica"},
                 image_urls=_img("9004", 2),
                 seller=VintedSeller(
-                    username="okazje_zima", location="Wrocław, PL", stars=3.8, reviews=9
+                    id=5004, username="okazje_zima", country="PL", feedback_count=9
                 ),
             ),
             _ski_boots(
@@ -208,7 +211,7 @@ def _dataset() -> list[tuple[VintedProduct, BaseAnalysis | None, ItemStatus | No
                 properties={"Długość": "163 cm", "Marka": "Head"},
                 image_urls=_img("9005"),
                 seller=VintedSeller(
-                    username="alpy_outlet", location="Katowice, PL", stars=4.7, reviews=72
+                    id=5005, username="alpy_outlet", country="PL", feedback_count=72
                 ),
             ),
             None,
@@ -225,7 +228,7 @@ def _dataset() -> list[tuple[VintedProduct, BaseAnalysis | None, ItemStatus | No
                 properties={"Rozmiar": "42", "Marka": "Tecnica"},
                 image_urls=_img("9006"),
                 seller=VintedSeller(
-                    username="narciarz12", location="Gdańsk, PL", stars=4.1, reviews=23
+                    id=5006, username="narciarz12", country="PL", feedback_count=23
                 ),
             ),
             None,
@@ -241,7 +244,7 @@ def _dataset() -> list[tuple[VintedProduct, BaseAnalysis | None, ItemStatus | No
                 price=480.0,
                 properties={"Długość": "173 cm"},
                 image_urls=[],
-                seller=VintedSeller(username="unknown", location=""),
+                seller=None,  # broken listing: no seller -> exercises nullable FK
             ),
             None,
             ItemStatus.failed,
@@ -257,7 +260,7 @@ def _dataset() -> list[tuple[VintedProduct, BaseAnalysis | None, ItemStatus | No
                 properties={"Rozmiar": "44", "Marka": "Lange", "Stan": "Jak nowe"},
                 image_urls=_img("9008", 4),
                 seller=VintedSeller(
-                    username="pro_skier", location="Bielsko-Biała, PL", stars=5.0, reviews=210
+                    id=5008, username="pro_skier", country="PL", feedback_count=210
                 ),
             ),
             _ski_boots(
@@ -290,7 +293,7 @@ _GEN_CYCLE: list[tuple[ItemStatus, Recommendation | None, int | None]] = [
     (ItemStatus.notified, Recommendation.buy, 4),
     (ItemStatus.failed, None, None),
 ]
-_GEN_CITIES = ["Kraków", "Warszawa", "Gdańsk", "Poznań", "Łódź", "Wrocław"]
+_GEN_COUNTRIES = ["PL", "DE", "FR", "IT", "ES", "CZ"]
 # Distinct (catalog, brand, model) combos; catalog 4733 == skis, others == boots.
 _GEN_PRODUCTS = [
     ("2683", "Salomon", "S/Pro 100"),
@@ -327,10 +330,12 @@ def _generated(count: int, *, first_id: int = 9009) -> list[tuple]:
             properties={"Marka": brand, "Rozmiar": str(38 + k % 8)},
             image_urls=_img(vid) if status is not ItemStatus.failed else [],
             seller=VintedSeller(
-                username=f"seller_{vid}",
-                location=f"{_GEN_CITIES[k % len(_GEN_CITIES)]}, PL",
-                stars=round(3.5 + (k % 4) * 0.4, 1),
-                reviews=10 + k * 7,
+                # 6 distinct sellers reused across 12 items -> some own multiple.
+                id=5101 + k % 6,
+                username=f"seller_{5101 + k % 6}",
+                country=_GEN_COUNTRIES[k % len(_GEN_COUNTRIES)],
+                feedback_count=10 + k * 7,
+                last_seen_at=datetime.now(UTC) - timedelta(days=k),
             ),
         )
         if status in (ItemStatus.notified, ItemStatus.analyzed, ItemStatus.skipped):

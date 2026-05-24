@@ -19,16 +19,13 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-class VintedSQLModel(SQLModel):
-    """Base for our tables: a surrogate PK plus created/updated timestamps.
+class TimestampMixin(SQLModel):
+    """``created_at``/``updated_at`` columns, shared by all our tables.
 
-    Not a table itself (no ``table=True``); any subclass that sets ``table=True``
-    inherits these as columns. Timestamps are app-side: ``created_at`` is set once
-    on insert, ``updated_at`` is refreshed on every ORM/Core UPDATE via ``onupdate``
-    (Python-side, not a DB trigger).
+    App-side: ``created_at`` is set once on insert, ``updated_at`` is refreshed on
+    every ORM/Core UPDATE via ``onupdate`` (Python-side, not a DB trigger).
     """
 
-    id: int | None = Field(default=None, primary_key=True)
     created_at: datetime = Field(
         default_factory=_now,
         sa_type=DateTime(timezone=True),
@@ -40,12 +37,37 @@ class VintedSQLModel(SQLModel):
     )
 
 
+class VintedSQLModel(TimestampMixin):
+    """Base for tables keyed by a surrogate autoincrement PK (plus timestamps).
+
+    Not a table itself (no ``table=True``); subclasses that set ``table=True``
+    inherit these as columns.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+
+
+class VintedSeller(TimestampMixin, table=True):
+    """A Vinted seller, keyed by their site id; one seller has many items."""
+
+    __tablename__ = "sellers"
+
+    # Vinted's own seller id (not a surrogate) — always supplied, never generated.
+    id: int = Field(
+        sa_type=BigInteger, primary_key=True, sa_column_kwargs={"autoincrement": False}
+    )
+    username: str = ""
+    feedback_count: int | None = None  # number of seller reviews/feedbacks
+    country: str = ""
+    last_seen_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))
+
+
 class Item(VintedSQLModel, table=True):
     """One row per scraped Vinted item, plus its analysis and lifecycle status.
 
-    Variable / nested data (``properties``, ``image_urls``, ``seller``, ``analysis``)
-    is stored in JSONB columns so the schema stays stable across catalog-specific
-    analysis subtypes.
+    Variable / nested data (``properties``, ``image_urls``, ``analysis``) is stored
+    in JSONB columns so the schema stays stable across catalog-specific analysis
+    subtypes. The seller is normalized into its own ``sellers`` table.
     """
 
     __tablename__ = "items"
@@ -53,7 +75,14 @@ class Item(VintedSQLModel, table=True):
     # Where this item originated; for our own bookkeeping, not user-editable.
     source: str = "Vinted"
     vinted_id: int | None = Field(default=None, sa_type=BigInteger, index=True, unique=True)
+    uploaded_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))
     catalog_id: Catalog | None = Field(default=None, sa_type=Integer, index=True)
+    vinted_seller_id: int | None = Field(
+        default=None,
+        sa_type=BigInteger,
+        foreign_key="sellers.id",
+        index=True,
+    )
 
     title: str = ""
     description: str = ""
@@ -61,8 +90,7 @@ class Item(VintedSQLModel, table=True):
     price: float | None = Field(default=None)
     properties: dict[str, Any] = Field(default_factory=dict, sa_type=JSONB)
     image_urls: list[str] = Field(default_factory=list, sa_type=JSONB)
-    seller: dict[str, Any] = Field(default_factory=dict, sa_type=JSONB)
     status: str = Field(default=ItemStatus.new.value, index=True)
-    # none_as_null: store a missing analysis as SQL NULL, not a JSON ``null`` scalar.
-    analysis: dict[str, Any] | None = Field(default=None, sa_type=JSONB(none_as_null=True))
+
     analyzed_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))
+    analysis: dict[str, Any] | None = Field(default=dict, sa_type=JSONB)

@@ -7,6 +7,7 @@ from sqladmin import Admin
 
 from ..db.session import get_engine
 from .views import ItemAdmin
+from .views import SellerAdmin
 
 _TEMPLATES_DIR = str(Path(__file__).parent / "templates")
 
@@ -24,4 +25,5 @@ def setup_admin(app: FastAPI) -> Admin:
         templates_dir=_TEMPLATES_DIR,
     )
     admin.add_view(ItemAdmin)
+    admin.add_view(SellerAdmin)
     return admin
