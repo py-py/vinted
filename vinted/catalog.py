@@ -10,14 +10,16 @@ from .constants import USER_AGENT
 from .utils import parse_item_id
 
 
-def parse_catalog(catalog_id: int, page_number: int = 1) -> list[dict]:
-    """Parse Vinted catalog page and return a list of item dicts."""
-    url = CATALOG_URL.format(catalog_id=catalog_id, page=page_number)
-
+def fetch_catalog_html(url: str) -> str:
+    """Fetch a Vinted catalog/search page and return its HTML."""
     resp = httpx.get(url, headers={"User-Agent": USER_AGENT}, follow_redirects=True)
     resp.raise_for_status()
+    return resp.text
 
-    soup = BeautifulSoup(resp.text, "html.parser")
+
+def parse_catalog_html(html: str) -> list[dict]:
+    """Parse catalog HTML and return a list of item dicts."""
+    soup = BeautifulSoup(html, "html.parser")
     raw_items = soup.select("[data-testid='grid-item']")
 
     items = []
@@ -26,6 +28,17 @@ def parse_catalog(catalog_id: int, page_number: int = 1) -> list[dict]:
             items.append(item)
 
     return items
+
+
+def parse_catalog_url(url: str) -> list[dict]:
+    """Parse a full Vinted catalog/search URL (keeps filters, search_id, etc.)."""
+    return parse_catalog_html(fetch_catalog_html(url))
+
+
+def parse_catalog(catalog_id: int, page_number: int = 1) -> list[dict]:
+    """Parse a Vinted catalog page by catalog_id and return a list of item dicts."""
+    url = CATALOG_URL.format(catalog_id=catalog_id, page=page_number)
+    return parse_catalog_url(url)
 
 
 def parse_item(el: BeautifulSoup) -> dict | None:
