@@ -13,4 +13,8 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen
 
+# Bake the source so the image can run standalone (Cloud Run Job).
+# Local dev still works: docker-compose mounts the repo over /app at runtime.
+COPY . .
+
 CMD ["bash"]
