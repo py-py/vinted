@@ -72,7 +72,9 @@ def _verdict(model: Item, _: str) -> Markup:
     return Markup(" ".join(parts))
 
 
-def _price(model: Item, _: str) -> str:
+def _price(model: Item, _: str) -> str | Markup:
+    if model.price is None:
+        return _MUTED
     return f"{model.price:.0f} zł"
 
 
@@ -130,6 +132,7 @@ class ItemAdmin(ModelView, model=Item):
 
     column_list = [
         Item.id,
+        Item.vinted_id,
         Item.image_urls,
         Item.title,
         Item.catalog_id,
@@ -139,10 +142,12 @@ class ItemAdmin(ModelView, model=Item):
         Item.created_at,
     ]
     column_labels = {
+        Item.vinted_id: "Vinted ID",
         Item.catalog_id: "Catalog",
         Item.analysis: "Verdict",
         Item.image_urls: "Images",
         Item.created_at: "Created",
+        Item.updated_at: "Updated",
         Item.analyzed_at: "Analyzed",
     }
     column_searchable_list = [Item.id, Item.title]
@@ -188,6 +193,9 @@ class ItemAdmin(ModelView, model=Item):
     # Render status as a <select> with the ItemStatus choices.
     form_overrides = {"status": SelectField}
     form_args = {"status": {"choices": [(s.value, s.value) for s in ItemStatus]}}
+    # ``id``/``updated_at`` are managed automatically and ``source`` is set by us:
+    # keep them out of the create/edit form.
+    form_excluded_columns = [Item.id, Item.source, Item.updated_at]
 
     page_size = 50
     page_size_options = [25, 50, 100, 200]

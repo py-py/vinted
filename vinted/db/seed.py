@@ -280,6 +280,72 @@ def _dataset() -> list[tuple[VintedProduct, BaseAnalysis | None, ItemStatus | No
     ]
 
 
+# Status -> (recommendation, rating) for generated rows. ``new``/``failed`` carry
+# no analysis; the rest get a synthetic one matching the catalog's schema.
+_GEN_CYCLE: list[tuple[ItemStatus, Recommendation | None, int | None]] = [
+    (ItemStatus.notified, Recommendation.buy, 5),
+    (ItemStatus.analyzed, Recommendation.negotiate, 3),
+    (ItemStatus.new, None, None),
+    (ItemStatus.skipped, Recommendation.skip, 2),
+    (ItemStatus.notified, Recommendation.buy, 4),
+    (ItemStatus.failed, None, None),
+]
+_GEN_CITIES = ["Kraków", "Warszawa", "Gdańsk", "Poznań", "Łódź", "Wrocław"]
+# Distinct (catalog, brand, model) combos; catalog 4733 == skis, others == boots.
+_GEN_PRODUCTS = [
+    ("2683", "Salomon", "S/Pro 100"),
+    ("4733", "Völkl", "Deacon 76"),
+    ("2652", "Atomic", "Hawx 90"),
+    ("2683", "Tecnica", "Cochise 110"),
+    ("4733", "Blizzard", "Rustler 9"),
+    ("2652", "Lange", "RX 120"),
+    ("2683", "Nordica", "Speedmachine 95"),
+    ("4733", "Elan", "Wingman 82"),
+    ("2652", "Head", "Edge LYT 80"),
+    ("2683", "Dalbello", "Panterra 100"),
+    ("4733", "Dynastar", "Speed 4x4"),
+    ("2652", "Rossignol", "Alltrack 90"),
+]
+
+
+def _generated(count: int, *, first_id: int = 9009) -> list[tuple]:
+    """Synthesize ``count`` extra items, cycling catalog, status and verdict."""
+    out: list[tuple[VintedProduct, BaseAnalysis | None, ItemStatus | None]] = []
+    for k in range(count):
+        vid = str(first_id + k)
+        status, rec, rating = _GEN_CYCLE[k % len(_GEN_CYCLE)]
+        catalog, brand, model = _GEN_PRODUCTS[k % len(_GEN_PRODUCTS)]
+        is_ski = catalog == "4733"
+        price = 150.0 + (k % 8) * 55
+        product = VintedProduct(
+            id=vid,
+            title=f"{brand} {model}",
+            description=f"{brand} {model}, używane, stan dobry.",
+            catalog_id=catalog,
+            url=f"https://www.vinted.pl/items/{vid}",
+            price=price,
+            properties={"Marka": brand, "Rozmiar": str(38 + k % 8)},
+            image_urls=_img(vid) if status is not ItemStatus.failed else [],
+            seller=VintedSeller(
+                username=f"seller_{vid}",
+                location=f"{_GEN_CITIES[k % len(_GEN_CITIES)]}, PL",
+                stars=round(3.5 + (k % 4) * 0.4, 1),
+                reviews=10 + k * 7,
+            ),
+        )
+        if status in (ItemStatus.notified, ItemStatus.analyzed, ItemStatus.skipped):
+            make = _skis if is_ski else _ski_boots
+            analysis = make(
+                brand=brand, model=model, rating=rating, recommendation=rec, asking_price_pln=price
+            )
+            out.append((product, analysis, status))
+        elif status is ItemStatus.failed:
+            out.append((product, None, ItemStatus.failed))
+        else:
+            out.append((product, None, None))
+    return out
+
+
 async def seed(clear: bool = False) -> None:
     # Import here to avoid a circular import (repo imports db.models/session).
     from ..repositories.items_repo import ItemsRepository
@@ -292,7 +358,8 @@ async def seed(clear: bool = False) -> None:
 
     repo = ItemsRepository()
 
-    for product, analysis, status in _dataset():
+    dataset = _dataset() + _generated(12)  # 8 curated + 12 generated = 20
+    for product, analysis, status in dataset:
         await repo.save_product(product)
         if analysis is not None and status is not None:
             await repo.save_analysis(product.id, analysis, status=status)
@@ -301,7 +368,7 @@ async def seed(clear: bool = False) -> None:
         label = status.value if status else ItemStatus.new.value
         print(f"  + {product.id}  {label:<9} {product.title}")
 
-    print(f"Seeded {len(_dataset())} items.")
+    print(f"Seeded {len(dataset)} items.")
 
 
 def main() -> None:
