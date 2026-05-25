@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import os
 
 import httpx
@@ -17,22 +18,22 @@ API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 
 def format_item_caption(item: dict) -> str:
-    """Build a Telegram caption for a single catalog item dict (empty fields skipped)."""
-    lines = [f"📦 {item.get('title') or '—'}"]
+    """Build a Telegram HTML caption for a single catalog item dict (empty fields skipped)."""
+    title = html.escape((item.get("title") or "—")[:250])
+    lines = [f"<b>{title}</b>"]
     if brand := item.get("brand"):
-        lines.append(f"🏷 Бренд: {brand}")
+        lines.append(f"🏷 Brand: {html.escape(brand)}")
     if size := item.get("size"):
-        lines.append(f"📏 Размер: {size}")
+        lines.append(f"📏 Size: {html.escape(size)}")
     if condition := item.get("condition"):
-        lines.append(f"✨ Состояние: {condition}")
+        lines.append(f"✨ Condition: {html.escape(condition)}")
     if price := item.get("price"):
-        lines.append(f"💶 Цена: {price}")
+        lines.append(f"💶 Price: {html.escape(price)}")
     if total := item.get("total_price"):
-        lines.append(f"🛡 С защитой: {total}")
+        lines.append(f"🛡 With protection: {html.escape(total)}")
     if url := item.get("url"):
-        lines.append(f"🔗 {url}")
-    caption = "\n".join(lines)
-    return caption[:1021] + "..." if len(caption) > 1024 else caption
+        lines.append(f"🔗 {html.escape(url)}")
+    return "\n".join(lines)
 
 
 def send_item(chat_id: int | str, item: dict) -> None:
@@ -42,10 +43,15 @@ def send_item(chat_id: int | str, item: dict) -> None:
 
     if image_url:
         endpoint = "sendPhoto"
-        payload = {"chat_id": chat_id, "photo": image_url, "caption": caption}
+        payload = {
+            "chat_id": chat_id,
+            "photo": image_url,
+            "caption": caption,
+            "parse_mode": "HTML",
+        }
     else:
         endpoint = "sendMessage"
-        payload = {"chat_id": chat_id, "text": caption}
+        payload = {"chat_id": chat_id, "text": caption, "parse_mode": "HTML"}
 
     with httpx.Client() as client:
         reply = client.post(f"{API_URL}/{endpoint}", json=payload)
