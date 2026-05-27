@@ -181,6 +181,7 @@ async def build_order(client: httpx.AsyncClient, raw_order: dict) -> Order:
     return Order(
         transaction_id=transaction_id,
         conversation_id=conversation_id,
+        purchase_id=escrow.get("purchase_id", "") or "",
         title=escrow.get("title", raw_order.get("title", "")),
         date=raw_order.get("date", escrow.get("created_at", "")),
         is_bundle=len(items) > 1,

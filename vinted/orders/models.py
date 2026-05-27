@@ -30,6 +30,7 @@ class OrderItem(BaseModel):
 class Order(BaseModel):
     transaction_id: int
     conversation_id: int
+    purchase_id: str = ""
     title: str
     date: str
     is_bundle: bool
