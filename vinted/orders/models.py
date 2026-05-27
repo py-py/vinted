@@ -25,6 +25,7 @@ class OrderItem(BaseModel):
     paid_price: float | None = None
     listed_price: float | None = None
     currency: str = ""
+    is_deleted: bool = False
 
 
 class Order(BaseModel):
@@ -38,6 +39,7 @@ class Order(BaseModel):
     seller_login: str = ""
     seller_country: str = ""
     items: list[OrderItem]
+    photo_url: str = ""
     items_price: float
     service_fee: float
     shipment_price: float

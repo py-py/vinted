@@ -152,6 +152,7 @@ async def build_order(client: httpx.AsyncClient, raw_order: dict) -> Order:
                 paid_price=_amount(paid_dict) or None,
                 listed_price=_amount(listed_dict) or None,
                 currency=_currency(paid_dict),
+                is_deleted=bool(it.get("is_deleted")),
             )
         )
 
@@ -181,6 +182,7 @@ async def build_order(client: httpx.AsyncClient, raw_order: dict) -> Order:
         seller_login=seller.get("login", ""),
         seller_country=seller.get("country_code", ""),
         items=items,
+        photo_url=(raw_order.get("photo") or {}).get("url", ""),
         items_price=_amount(payment.get("items_price", {}).get("price")),
         service_fee=_amount(payment.get("service_fee_price", {}).get("price")),
         shipment_price=_amount(payment.get("shipment_price", {}).get("price")),
