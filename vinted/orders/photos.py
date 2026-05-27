@@ -25,10 +25,7 @@ async def backfill_photos(
         return
 
     photo_store: PhotoStore = store or PhotoStore()
-    sem = asyncio.Semaphore(_MAX_CONCURRENT_UPLOADS)
-    uploaded = 0
-    skipped = 0
-    failures: list[str] = []
+    semaphore = asyncio.Semaphore(_MAX_CONCURRENT_UPLOADS)
 
     async with httpx.AsyncClient(
         headers={"User-Agent": USER_AGENT},
@@ -36,22 +33,9 @@ async def backfill_photos(
         follow_redirects=True,
     ) as client:
 
-        async def _one(item_id: int, url: str) -> None:
-            nonlocal uploaded, skipped
-            async with sem:
-                try:
-                    gs_uri = await photo_store.upload_photo(item_id, url, client)
-                except Exception as e:
-                    failures.append(f"{url}: {e}")
-                    return
-            if gs_uri is None:
-                skipped += 1
-            else:
-                uploaded += 1
+        async def _upload(item_id: int, url: str) -> None:
+            async with semaphore:
+                await photo_store.upload_photo(item_id, url, client)
 
         print(f"-> photos: {len(tasks_args)} URLs to process")
-        await asyncio.gather(*(_one(iid, u) for iid, u in tasks_args))
-
-    print(f"-> photos: uploaded={uploaded}, skipped={skipped}, failed={len(failures)}")
-    for f in failures:
-        print(f"   FAIL {f}")
+        await asyncio.gather(*(_upload(iid, u) for iid, u in tasks_args))

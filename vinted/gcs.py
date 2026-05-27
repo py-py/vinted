@@ -2,6 +2,7 @@
 GCS client for storing Vinted purchase photos.
 
 Layout: items/{item_id}/images/{token}.jpeg
+Project/bucket are read from env: GOOGLE_CLOUD_PROJECT, VINTED_GCS_BUCKET.
 """
 
 from __future__ import annotations
@@ -13,9 +14,6 @@ import re
 import httpx
 from google.api_core import exceptions as gcp_exceptions
 from google.cloud import storage
-
-DEFAULT_PROJECT = "vinted-492007"
-DEFAULT_BUCKET = "vinted-dev"
 
 # Vinted CDN URL pattern: https://imagesN.vinted.net/t/{token}/{size}/{numeric}.jpeg?s=...
 _TOKEN_RE = re.compile(r"/t/([^/]+)/")
@@ -30,17 +28,9 @@ def extract_token(url: str) -> str:
 
 
 class PhotoStore:
-    def __init__(
-        self,
-        project: str | None = None,
-        bucket: str | None = None,
-    ) -> None:
-        self.client = storage.Client(
-            project=project or os.environ.get("GOOGLE_CLOUD_PROJECT", DEFAULT_PROJECT),
-        )
-        self.bucket = self.client.bucket(
-            bucket or os.environ.get("VINTED_GCS_BUCKET", DEFAULT_BUCKET)
-        )
+    def __init__(self) -> None:
+        self.client = storage.Client(project=os.environ["GOOGLE_CLOUD_PROJECT"])
+        self.bucket = self.client.bucket(os.environ["VINTED_GCS_BUCKET"])
 
     def _blob_name(self, item_id: int, url: str) -> str:
         return f"items/{item_id}/images/{extract_token(url)}.jpeg"

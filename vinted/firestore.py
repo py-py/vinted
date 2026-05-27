@@ -1,7 +1,7 @@
 """
 Firestore client and persistence helpers for Vinted data.
 
-Defaults match the existing notifier setup: project=vinted-492007, db=vinted-dev.
+Project/database are read from env: GOOGLE_CLOUD_PROJECT, FIRESTORE_DATABASE.
 """
 
 from __future__ import annotations
@@ -12,8 +12,6 @@ from google.cloud import firestore
 
 from .orders.models import Order
 
-DEFAULT_PROJECT = "vinted-492007"
-DEFAULT_DATABASE = "vinted-dev"
 PURCHASES_COLLECTION = "purchases"
 
 
@@ -26,25 +24,20 @@ class FirestoreStore:
         purchases/{transaction_id}/items/{id} -> per-item fields
     """
 
-    def __init__(
-        self,
-        project: str | None = None,
-        database: str | None = None,
-    ) -> None:
+    def __init__(self) -> None:
         self.client = firestore.Client(
-            project=project or os.environ.get("GOOGLE_CLOUD_PROJECT", DEFAULT_PROJECT),
-            database=database or os.environ.get("FIRESTORE_DATABASE", DEFAULT_DATABASE),
+            project=os.environ["GOOGLE_CLOUD_PROJECT"],
+            database=os.environ["FIRESTORE_DATABASE"],
         )
+        self.purchases = self.client.collection(PURCHASES_COLLECTION)
 
     def existing_transaction_ids(self) -> set[int]:
-        return {
-            int(doc.id) for doc in self.client.collection(PURCHASES_COLLECTION).list_documents()
-        }
+        return {int(doc.id) for doc in self.purchases.list_documents()}
 
     def list_item_photos(self) -> list[tuple[int, list[str]]]:
         """(item_id, photo_urls) for every item in every purchase. Empty lists are dropped."""
         pairs: list[tuple[int, list[str]]] = []
-        for purchase_ref in self.client.collection(PURCHASES_COLLECTION).list_documents():
+        for purchase_ref in self.purchases.list_documents():
             for item_doc in purchase_ref.collection("items").stream():
                 urls = (item_doc.to_dict() or {}).get("photo_urls") or []
                 if urls:
@@ -55,9 +48,7 @@ class FirestoreStore:
         if not order.transaction_id:
             raise ValueError(f"order has empty transaction_id: {order}")
 
-        purchase_ref = self.client.collection(PURCHASES_COLLECTION).document(
-            str(order.transaction_id)
-        )
+        purchase_ref = self.purchases.document(str(order.transaction_id))
         order_doc = order.model_dump(exclude={"items"})
         order_doc["updated_at"] = firestore.SERVER_TIMESTAMP
 
