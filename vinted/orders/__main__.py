@@ -11,7 +11,12 @@ from .photos import backfill_photos
 
 async def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m vinted.orders")
-    parser.add_argument("max_pages", nargs="?", type=int, default=None)
+    parser.add_argument(
+        "--max-pages",
+        type=int,
+        default=None,
+        help="limit pages of my_orders to fetch (5 orders per page)",
+    )
     parser.add_argument(
         "--no-save",
         action="store_true",
@@ -29,30 +34,31 @@ async def main() -> None:
     )
     args = parser.parse_args()
 
+    if args.no_save:
+        orders = await fetch_orders(max_pages=args.max_pages)
+        print(json.dumps([o.model_dump() for o in orders], indent=2, ensure_ascii=False))
+        return
+
+    store = FirestoreStore()
+
     if args.backfill_photos:
-        items = FirestoreStore().list_item_photos()
+        items = store.list_item_photos()
         print(f"-> {len(items)} items with photos in Firestore")
         await backfill_photos(items)
         return
 
-    store: FirestoreStore | None = None
-    skip_ids: set[int] = set()
-    if not args.no_save and not args.force:
-        store = FirestoreStore()
-        skip_ids = store.existing_transaction_ids()
-        print(f"-> {len(skip_ids)} purchases already in Firestore, will skip")
+    store = FirestoreStore()
+    skip_ids: set[int] = set() if args.force else store.existing_transaction_ids()
+    print(f"-> {len(skip_ids)} purchases already in Firestore, will skip")
 
     orders = await fetch_orders(max_pages=args.max_pages, skip_transaction_ids=skip_ids)
-
-    if args.no_save:
-        print(json.dumps([o.model_dump() for o in orders], indent=2, ensure_ascii=False))
-        return
-
     if not orders:
         print("-> No new purchases to save")
         return
-    (store or FirestoreStore()).save_orders(orders)
-    await backfill_photos([(it.id, it.photo_urls) for o in orders for it in o.items])
+
+    store.save_orders(orders)
+    photos: list = [(item.id, item.photo_urls) for order in orders for item in order.items]
+    await backfill_photos(photos)
 
 
 if __name__ == "__main__":
