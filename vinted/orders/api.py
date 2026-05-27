@@ -1,8 +1,7 @@
 """
 HTTP layer for purchased orders.
 
-Auth is shared with favourites: cookies are read from `cookies.json`
-and the access token is auto-refreshed via OAuth on 401.
+Auth is shared with favourites: cookies are read from `cookies.json`.
 
 Pipeline per order:
   /api/v2/my_orders                       -> list of orders (paginated)
@@ -20,7 +19,6 @@ import httpx
 
 from ..constants import USER_AGENT
 from ..favourites import load_cookies
-from ..favourites import refresh_access_token
 from .models import CurrencyConversion
 from .models import Order
 from .models import OrderItem
@@ -50,17 +48,11 @@ async def _request(
     params: dict | None = None,
     max_retries: int = 5,
 ) -> httpx.Response:
-    """GET with one-shot token refresh on 401 and exponential backoff on 429."""
+    """GET with exponential backoff on 429."""
     backoff = 2.0
-    refreshed = False
     resp: httpx.Response | None = None
     for attempt in range(max_retries):
         resp = await client.get(url, params=params)
-        if resp.status_code == 401 and not refreshed:
-            cookies = await refresh_access_token(dict(client.cookies))
-            client.cookies.update(cookies)
-            refreshed = True
-            continue
         if resp.status_code == 429:
             retry_after = float(resp.headers.get("Retry-After", backoff))
             sleep = retry_after + random.uniform(0, 1)
