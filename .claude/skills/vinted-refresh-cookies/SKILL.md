@@ -20,24 +20,21 @@ Do **not** stage the input through an intermediate file in `/tmp` or the repo �
 ## Procedure
 
 1. **Obtain the curl text** per "Input" above (inline string or Read a file).
-2. **Extract the cookie string.** Match one of (try in order, take the first that matches):
-   - `-b '...'` or `-b "..."`
-   - `--cookie '...'` or `--cookie "..."`
-   - a `Cookie:` request header (`-H 'cookie: ...'`, case-insensitive)
-   If none matches, stop and report which patterns were tried.
+2. **Extract the cookie string.** Tokenize the curl text with `shlex.split()` (stdlib — handles the single/double quotes and `\`-line-continuations that Chrome's "Copy as cURL" emits for cookie strings; it doesn't *decode* `$'...'` ANSI-C escapes but tolerates them in unrelated headers, and real Vinted cookies are RFC 6265 cookie-octets so they always come back in plain `'...'` form). Walk the tokens and take the first match:
+   - `-b <value>` or `--cookie <value>` → value is the next token
+   - `-H <value>` where `<value>` starts with `cookie:` (case-insensitive) → strip the `cookie:` prefix and trim
+   If none matches, stop and report that no `-b` / `--cookie` / `Cookie:` header was found. Do **not** fall back to regex — if shlex fails to parse, the curl text is malformed and the user should re-copy it.
 3. **Parse** the cookie string into a dict by splitting on `; ` (semicolon + space), then on the first `=` of each pair. Trim whitespace. Cookie *values* may contain `=`, `_`, `-`, `.`, `~`, `+`, `/`; keep them verbatim (do **not** URL-decode).
-4. **Pick the 4 required keys** that `vinted/favourites.py` expects:
+4. **Pick the 3 required keys** that `vinted/favourites.py` expects:
    - `access_token_web`
-   - `refresh_token_web`
    - `datadome`
    - `cf_clearance`
-   If any are missing, stop and report which ones — partial cookies will break auth. Note: `refresh_token_web` is `HttpOnly` and may be hidden in some DevTools paste formats (e.g. the cookie table view); the curl `-b` string always contains it.
+   If any are missing, stop and report which ones — partial cookies will break auth. Note: `refresh_token_web` is **not** needed right now — the auto-refresh flow has been removed from `favourites.py` / `orders/api.py`, so the operator is expected to re-run this skill manually once the access token (~2h lifetime) expires. If `refresh_token_web` happens to be in the curl, you may still write it (harmless), but don't fail when it's absent.
 5. **Write** the dict as pretty-printed JSON to `cookies.json` in the project root (overwrite). Read the existing file first if it exists, only to confirm the path; do not merge — a fresh curl is the source of truth.
 6. **Decode the access_token_web JWT** to report its `exp` claim:
    - Split on `.`, take the middle segment, base64-decode (`base64.urlsafe_b64decode` with `=` padding fixed), `json.loads`.
    - Convert `exp` (unix seconds) to a human-readable UTC time and show how long it lasts (e.g. `expires in 1h 58m`).
-   - Do the same for `refresh_token_web` so the user sees both windows.
-7. **Print a one-line summary**: which keys were written, when access expires, when refresh expires.
+7. **Print a one-line summary**: which keys were written and when access expires.
 
 ## Implementation note
 
