@@ -41,6 +41,16 @@ class FirestoreStore:
             int(doc.id) for doc in self.client.collection(PURCHASES_COLLECTION).list_documents()
         }
 
+    def list_item_photos(self) -> list[tuple[int, list[str]]]:
+        """(item_id, photo_urls) for every item in every purchase. Empty lists are dropped."""
+        pairs: list[tuple[int, list[str]]] = []
+        for purchase_ref in self.client.collection(PURCHASES_COLLECTION).list_documents():
+            for item_doc in purchase_ref.collection("items").stream():
+                urls = (item_doc.to_dict() or {}).get("photo_urls") or []
+                if urls:
+                    pairs.append((int(item_doc.id), list(urls)))
+        return pairs
+
     def save_order(self, order: Order) -> None:
         if not order.transaction_id:
             raise ValueError(f"order has empty transaction_id: {order}")
