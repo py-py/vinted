@@ -36,6 +36,11 @@ class FirestoreStore:
             database=database or os.environ.get("FIRESTORE_DATABASE", DEFAULT_DATABASE),
         )
 
+    def existing_transaction_ids(self) -> set[int]:
+        return {
+            int(doc.id) for doc in self.client.collection(PURCHASES_COLLECTION).list_documents()
+        }
+
     def save_order(self, order: Order) -> None:
         if not order.transaction_id:
             raise ValueError(f"order has empty transaction_id: {order}")

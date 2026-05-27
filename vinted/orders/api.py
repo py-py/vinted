@@ -196,7 +196,9 @@ async def fetch_orders(
     status: str = "completed",
     per_page: int = 100,
     max_pages: int | None = None,
+    skip_transaction_ids: set[int] | None = None,
 ) -> list[Order]:
+    skip = skip_transaction_ids or set()
     cookies = load_cookies()
     async with httpx.AsyncClient(
         headers={
@@ -211,6 +213,10 @@ async def fetch_orders(
         )
         orders: list[Order] = []
         for i, raw in enumerate(raw_orders, 1):
-            print(f"-> [{i}/{len(raw_orders)}] tx={raw['transaction_id']}")
+            tx_id = raw["transaction_id"]
+            if tx_id in skip:
+                print(f"-> [{i}/{len(raw_orders)}] tx={tx_id} (skipped, already saved)")
+                continue
+            print(f"-> [{i}/{len(raw_orders)}] tx={tx_id}")
             orders.append(await build_order(client, raw))
     return orders
