@@ -194,7 +194,7 @@ async def build_order(client: httpx.AsyncClient, raw_order: dict) -> Order:
 async def fetch_orders(
     *,
     status: str = "completed",
-    per_page: int = 5,
+    per_page: int = 100,
     max_pages: int | None = None,
 ) -> list[Order]:
     cookies = load_cookies()
