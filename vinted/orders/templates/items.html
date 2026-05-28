@@ -21,7 +21,8 @@
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
       {% for item in items %}
       {% set photos = item.photo_urls or ([item.photo_url] if item.photo_url else []) %}
-      <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden">
+      <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden"
+           data-tx="{{ item.tx_id }}" data-item="{{ item.id }}">
         <div class="pswp-gallery aspect-square relative bg-slate-100 group">
           {% if photos %}
             {% for url in photos %}
@@ -88,6 +89,9 @@
           <div class="text-xs text-slate-400 truncate">
             {{ item.seller_login or "—" }}{% if item.order_date %} · {{ item.order_date[:10] }}{% endif %}
           </div>
+          <button type="button" class="sale-btn w-full mt-1 rounded-md px-3 py-1.5 text-sm font-semibold transition"
+                  data-status="{{ item['_sale_status'] }}">
+          </button>
         </div>
       </div>
       {% endfor %}
@@ -145,6 +149,48 @@
     });
 
     lightbox.init();
+  </script>
+
+  <script>
+    // Cycle an item's sale status (none -> listed -> sold -> none) and persist it.
+    const STATES = {
+      none:     { label: 'Not listed', classes: ['bg-slate-100', 'text-slate-600', 'ring-1', 'ring-slate-300', 'hover:bg-slate-200'] },
+      listed:   { label: 'Listed',     classes: ['bg-amber-500', 'text-white', 'hover:bg-amber-600'] },
+      sold:     { label: 'SOLD',       classes: ['bg-green-600', 'text-white', 'hover:bg-green-700'] },
+      reserved: { label: 'Reserved',   classes: ['bg-blue-600', 'text-white', 'hover:bg-blue-700'] },
+      parted_sold: { label: 'Parted Sold', classes: ['bg-teal-600', 'text-white', 'hover:bg-teal-700'] },
+    };
+    const ORDER = ['none', 'listed', 'sold', 'reserved', 'parted_sold'];
+    const ALL_CLASSES = Object.values(STATES).flatMap((s) => s.classes);
+
+    const paint = (btn, status) => {
+      btn.dataset.status = status;
+      btn.textContent = STATES[status].label;
+      btn.classList.remove(...ALL_CLASSES);
+      btn.classList.add(...STATES[status].classes);
+    };
+
+    document.querySelectorAll('.sale-btn').forEach((btn) => {
+      paint(btn, STATES[btn.dataset.status] ? btn.dataset.status : 'none');
+      btn.addEventListener('click', async () => {
+        const card = btn.closest('[data-tx]');
+        const next = ORDER[(ORDER.indexOf(btn.dataset.status) + 1) % ORDER.length];
+        btn.disabled = true;
+        try {
+          const res = await fetch(`/items/${card.dataset.tx}/${card.dataset.item}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: next }),
+          });
+          if (!res.ok) throw new Error(res.status);
+          paint(btn, next);
+        } catch (e) {
+          alert('Failed to update sale status');
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
   </script>
 </body>
 </html>

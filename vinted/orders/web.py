@@ -14,10 +14,12 @@ from functools import lru_cache
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi import HTTPException
 from fastapi.responses import HTMLResponse
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
 from jinja2 import select_autoescape
+from pydantic import BaseModel
 
 from ..firestore import FirestoreStore
 
@@ -84,10 +86,11 @@ def _load_items() -> list[dict]:
                 {
                     **item,
                     "price_pln": pln_by_id.get(item_id) if isinstance(item_id, int) else None,
+                    "_sale_status": item.get("_sale_status") or "none",
                     "seller_login": purchase.get("seller_login", ""),
                     "seller_country": purchase.get("seller_country", ""),
                     "order_date": purchase.get("date", ""),
-                    "transaction_id": purchase.get("transaction_id"),
+                    "tx_id": tx_id,
                     "conversation_id": purchase.get("conversation_id"),
                 }
             )
@@ -98,3 +101,18 @@ def _load_items() -> list[dict]:
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
     return _env.get_template("items.html").render(items=_load_items())
+
+
+_SALE_STATUSES = {"none", "listed", "sold", "reserved", "parted_sold"}
+
+
+class StatusUpdate(BaseModel):
+    status: str
+
+
+@app.post("/items/{tx_id}/{item_id}/status")
+def set_status(tx_id: str, item_id: str, update: StatusUpdate) -> dict:
+    if update.status not in _SALE_STATUSES:
+        raise HTTPException(status_code=422, detail=f"invalid status: {update.status!r}")
+    _store().set_item_status(tx_id, item_id, update.status)
+    return {"tx_id": tx_id, "item_id": item_id, "status": update.status}
