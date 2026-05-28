@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Vinted purchases</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.css">
 </head>
 <body class="bg-slate-50 text-slate-900">
-  <header class="border-b bg-white sticky top-0 z-10">
+  <header class="border-b bg-white sticky top-0 z-20">
     <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
       <h1 class="text-2xl font-semibold">Purchased items</h1>
       <span class="text-sm text-slate-500">{{ items|length }} items</span>
@@ -19,15 +20,35 @@
     {% else %}
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
       {% for item in items %}
-      <a href="{{ item.url or '#' }}" target="_blank" rel="noopener"
-         class="group block bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden">
-        <div class="aspect-square bg-slate-100 overflow-hidden">
-          {% if item.photo_url %}
-            <img src="{{ item.photo_url }}" alt="{{ item.title }}"
-                 class="w-full h-full object-cover group-hover:scale-105 transition"
-                 loading="lazy" decoding="async" referrerpolicy="no-referrer">
+      {% set photos = item.photo_urls or ([item.photo_url] if item.photo_url else []) %}
+      <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden">
+        <div class="pswp-gallery aspect-square relative bg-slate-100 group">
+          {% if photos %}
+            {% for url in photos %}
+              <a href="{{ url }}"
+                 data-pswp-width="1500" data-pswp-height="2000"
+                 target="_blank" rel="noopener"
+                 class="{% if loop.first %}block w-full h-full{% else %}hidden{% endif %}">
+                {% if loop.first %}
+                  <img src="{{ url }}" alt="{{ item.title }}"
+                       class="w-full h-full object-cover group-hover:scale-105 transition"
+                       loading="lazy" decoding="async" referrerpolicy="no-referrer">
+                {% endif %}
+              </a>
+            {% endfor %}
           {% else %}
             <div class="w-full h-full flex items-center justify-center text-slate-400 text-sm">no photo</div>
+          {% endif %}
+          {% if item.url %}
+            <a href="{{ item.url }}" target="_blank" rel="noopener"
+               class="absolute bottom-2 right-2 z-10 bg-white/95 hover:bg-white rounded-full p-2 shadow ring-1 ring-slate-200 text-slate-700 hover:text-slate-900"
+               title="Open on Vinted">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
+                   viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M14 5h5v5M19 5l-9 9M5 7v12h12"/>
+              </svg>
+            </a>
           {% endif %}
         </div>
         <div class="p-3 space-y-1">
@@ -54,10 +75,20 @@
             {{ item.seller_login or "—" }}{% if item.order_date %} · {{ item.order_date[:10] }}{% endif %}
           </div>
         </div>
-      </a>
+      </div>
       {% endfor %}
     </div>
     {% endif %}
   </main>
+
+  <script type="module">
+    import PhotoSwipeLightbox from 'https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe-lightbox.esm.min.js';
+    const lightbox = new PhotoSwipeLightbox({
+      gallery: '.pswp-gallery',
+      children: 'a[data-pswp-width]',
+      pswpModule: () => import('https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.esm.min.js'),
+    });
+    lightbox.init();
+  </script>
 </body>
 </html>
