@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vinted purchases</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="border-b bg-white sticky top-0 z-10">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <h1 class="text-2xl font-semibold">Purchased items</h1>
+      <span class="text-sm text-slate-500">{{ items|length }} items</span>
+    </div>
+  </header>
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    {% if not items %}
+      <p class="text-slate-500">No purchased items found in Firestore.</p>
+    {% else %}
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      {% for item in items %}
+      <a href="{{ item.url or '#' }}" target="_blank" rel="noopener"
+         class="group block bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden">
+        <div class="aspect-square bg-slate-100 overflow-hidden">
+          {% if item.photo_url %}
+            <img src="{{ item.photo_url }}" alt="{{ item.title }}"
+                 class="w-full h-full object-cover group-hover:scale-105 transition"
+                 loading="lazy" decoding="async" referrerpolicy="no-referrer">
+          {% else %}
+            <div class="w-full h-full flex items-center justify-center text-slate-400 text-sm">no photo</div>
+          {% endif %}
+        </div>
+        <div class="p-3 space-y-1">
+          <div class="text-sm font-medium line-clamp-2 min-h-[2.5rem]">{{ item.title or "—" }}</div>
+          <div class="text-xs text-slate-500 flex justify-between gap-2">
+            <span class="truncate">{{ item.size or "—" }}</span>
+            <span class="truncate">{{ item.condition or "" }}</span>
+          </div>
+          {% if item.price_pln is not none %}
+            <div class="text-sm font-semibold">
+              {{ "%.2f"|format(item.price_pln) }} PLN
+              {% if item.currency and item.currency != "PLN" %}
+                <span class="text-xs font-normal text-slate-400">
+                  ({{ "%.2f"|format(item.paid_price) }} {{ item.currency }})
+                </span>
+              {% endif %}
+            </div>
+          {% elif item.paid_price is not none %}
+            <div class="text-sm font-semibold text-slate-500">
+              {{ "%.2f"|format(item.paid_price) }} {{ item.currency }}
+            </div>
+          {% endif %}
+          <div class="text-xs text-slate-400 truncate">
+            {{ item.seller_login or "—" }}{% if item.order_date %} · {{ item.order_date[:10] }}{% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </main>
+</body>
+</html>
