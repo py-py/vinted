@@ -83,35 +83,29 @@
 
   <script type="module">
     import PhotoSwipeLightbox from 'https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe-lightbox.esm.min.js';
-    // PhotoSwipe needs natural width/height on each <a data-pswp-width/height>
-    // to render slides with the correct aspect ratio. The placeholder 800x800
-    // in the markup is replaced once we know the real image dimensions.
 
-    // 1) Free dims from already-loaded visible thumbnails (first photo per gallery).
-    function applyDimsFromImg(a, img) {
-      if (img.naturalWidth && img.naturalHeight) {
-        a.dataset.pswpWidth = String(img.naturalWidth);
-        a.dataset.pswpHeight = String(img.naturalHeight);
-      }
-    }
-    document.querySelectorAll('.pswp-gallery a[data-pswp-width]').forEach((a) => {
-      const img = a.querySelector('img');
-      if (!img) return;
-      if (img.complete) applyDimsFromImg(a, img);
-      else img.addEventListener('load', () => applyDimsFromImg(a, img), { once: true });
-    });
+    // PhotoSwipe reads data-pswp-width/height per anchor at open time. We seed
+    // those lazily from natural image sizes: free from visible thumbnails, on
+    // hover/touch for hidden gallery items.
+    const resolve = (a, img) => {
+      const apply = () => {
+        if (img.naturalWidth) {
+          a.dataset.pswpWidth = img.naturalWidth;
+          a.dataset.pswpHeight = img.naturalHeight;
+        }
+      };
+      img.complete ? apply() : img.addEventListener('load', apply, { once: true });
+    };
 
-    // 2) Preload dims for the rest of the gallery on hover/touch.
+    document.querySelectorAll('.pswp-gallery a[data-pswp-width] > img')
+      .forEach((img) => resolve(img.parentElement, img));
+
     document.querySelectorAll('.pswp-gallery').forEach((g) => {
-      let primed = false;
       const prime = () => {
-        if (primed) return;
-        primed = true;
-        g.querySelectorAll('a[data-pswp-width]').forEach((a) => {
-          if (a.querySelector('img')) return;  // already handled above
-          const probe = new Image();
-          probe.onload = () => applyDimsFromImg(a, probe);
-          probe.src = a.href;
+        g.removeEventListener('mouseenter', prime);
+        g.removeEventListener('touchstart', prime);
+        g.querySelectorAll('a[data-pswp-width]:not(:has(img))').forEach((a) => {
+          resolve(a, Object.assign(new Image(), { src: a.href }));
         });
       };
       g.addEventListener('mouseenter', prime, { passive: true });
@@ -124,23 +118,16 @@
       pswpModule: () => import('https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.esm.min.js'),
     });
 
-    // 3) Fallback: if preload didn't finish before open (cold tap on mobile),
-    // refit the slide to the image's natural size once it actually loads.
-    lightbox.on('loadComplete', (e) => {
-      const c = e.content;
-      if (c.type !== 'image' || !c.element) return;
-      const w = c.element.naturalWidth;
-      const h = c.element.naturalHeight;
-      if (!w || !h) return;
-      const s = c.slide;
-      if (!s || (s.width === w && s.height === h)) return;
-      c.width = w;
-      c.height = h;
-      s.width = w;
-      s.height = h;
-      s.calculateSize?.();
-      if (s.zoomLevels) s.setZoomLevel?.(s.zoomLevels.initial);
-      s.applyCurrentZoomPan?.();
+    // Fallback: refit the slide if it opened before dims were resolved.
+    lightbox.on('loadComplete', ({ content: c }) => {
+      if (c.type !== 'image' || !c.element || !c.slide) return;
+      const w = c.element.naturalWidth, h = c.element.naturalHeight;
+      if (!w || (c.slide.width === w && c.slide.height === h)) return;
+      c.width = c.slide.width = w;
+      c.height = c.slide.height = h;
+      c.slide.calculateSize?.();
+      c.slide.setZoomLevel?.(c.slide.zoomLevels?.initial);
+      c.slide.applyCurrentZoomPan?.();
     });
 
     lightbox.init();
