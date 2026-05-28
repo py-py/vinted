@@ -35,24 +35,27 @@ def _store() -> FirestoreStore:
     return FirestoreStore()
 
 
-def _price_in_pln(
-    paid_price: float | None,
-    item_currency: str,
-    conversion: dict | None,
-) -> float | None:
-    """Convert an item's paid_price (in seller currency) to PLN if possible."""
-    if paid_price is None:
-        return None
-    if item_currency == "PLN":
-        return paid_price
-    if (
-        conversion
-        and conversion.get("buyer_currency") == "PLN"
-        and conversion.get("seller_currency") == item_currency
-        and conversion.get("rate")
-    ):
-        return paid_price * float(conversion["rate"])
-    return None
+def _allocate_pln(purchase: dict, items: list[dict]) -> dict[int, float]:
+    """Distribute the order's PLN total across items proportionally to their paid_price.
+
+    The order's `total_price` (in `currency`) already includes shipping + service fee.
+    Each item gets `total_price * item.paid_price / sum(items.paid_price)`, so fees are
+    split in proportion to item value. Returns {item_id: price_pln}; items without a
+    paid_price (or when the order isn't priced in PLN) are omitted.
+    """
+    if purchase.get("currency") != "PLN":
+        return {}
+    total = purchase.get("total_price")
+    if not isinstance(total, (int, float)) or not total:
+        return {}
+    items_sum: float = sum((i.get("paid_price") or 0.0) for i in items)
+    if not items_sum:
+        return {}
+    return {
+        int(i["id"]): float(total) * (i["paid_price"] / items_sum)
+        for i in items
+        if i.get("paid_price") is not None
+    }
 
 
 def _load_items() -> list[dict]:
@@ -66,26 +69,27 @@ def _load_items() -> list[dict]:
     purchases: dict[str, dict] = {
         snap.id: (snap.to_dict() or {}) for snap in store.purchases.stream()
     }
-
-    out: list[dict] = []
+    items_by_purchase: dict[str, list[dict]] = {}
     for item_snap in store.client.collection_group("items").stream():
         parent_id = item_snap.reference.parent.parent.id
-        purchase = purchases.get(parent_id) or {}
-        item = item_snap.to_dict() or {}
-        out.append(
-            {
-                **item,
-                "price_pln": _price_in_pln(
-                    item.get("paid_price"),
-                    item.get("currency", ""),
-                    purchase.get("conversion"),
-                ),
-                "seller_login": purchase.get("seller_login", ""),
-                "seller_country": purchase.get("seller_country", ""),
-                "order_date": purchase.get("date", ""),
-                "transaction_id": purchase.get("transaction_id"),
-            }
-        )
+        items_by_purchase.setdefault(parent_id, []).append(item_snap.to_dict() or {})
+
+    out: list[dict] = []
+    for tx_id, purchase in purchases.items():
+        items = items_by_purchase.get(tx_id, [])
+        pln_by_id = _allocate_pln(purchase, items)
+        for item in items:
+            item_id = item.get("id")
+            out.append(
+                {
+                    **item,
+                    "price_pln": pln_by_id.get(item_id) if isinstance(item_id, int) else None,
+                    "seller_login": purchase.get("seller_login", ""),
+                    "seller_country": purchase.get("seller_country", ""),
+                    "order_date": purchase.get("date", ""),
+                    "transaction_id": purchase.get("transaction_id"),
+                }
+            )
     out.sort(key=lambda x: x.get("order_date") or "", reverse=True)
     return out
 
