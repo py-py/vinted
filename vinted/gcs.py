@@ -32,9 +32,6 @@ class PhotoStore:
         self.client = storage.Client(project=os.environ["GOOGLE_CLOUD_PROJECT"])
         self.bucket = self.client.bucket(os.environ["VINTED_GCS_BUCKET"])
 
-    def _blob_name(self, item_id: int, url: str) -> str:
-        return f"items/{item_id}/images/{extract_token(url)}.jpeg"
-
     async def upload_photo(
         self,
         item_id: int,
@@ -45,7 +42,9 @@ class PhotoStore:
         Download a Vinted photo and store it under items/{item_id}/images/{token}.jpeg.
         Returns the gs:// URI on upload, or None if it already exists.
         """
-        blob = self.bucket.blob(self._blob_name(item_id, url))
+        token = extract_token(url)
+        path = f"items/{item_id}/images/{token}.jpeg"
+        blob = self.bucket.blob(path)
 
         # Cheap HEAD: avoids re-downloading photos we already have.
         if await asyncio.to_thread(blob.exists):
@@ -62,7 +61,8 @@ class PhotoStore:
                 if_generation_match=0,
             )
         except gcp_exceptions.PreconditionFailed:
-            # Race: another worker uploaded between exists() and upload_from_string.
+            # Object already exists — if_generation_match=0 forbids overwrite.
+            # Happens when another worker uploaded between exists() and upload_from_string.
             return None
 
         return f"gs://{self.bucket.name}/{blob.name}"
