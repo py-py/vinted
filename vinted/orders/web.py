@@ -88,6 +88,7 @@ def _load_items() -> list[dict]:
                     "seller_country": purchase.get("seller_country", ""),
                     "order_date": purchase.get("date", ""),
                     "transaction_id": purchase.get("transaction_id"),
+                    "conversation_id": purchase.get("conversation_id"),
                 }
             )
     out.sort(key=lambda x: x.get("order_date") or "", reverse=True)
