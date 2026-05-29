@@ -11,8 +11,13 @@
   <header class="border-b bg-white sticky top-0 z-20">
     <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
       <h1 class="text-2xl font-semibold">Purchased items</h1>
-      <span class="text-sm text-slate-500">{{ items|length }} items</span>
+      <span id="item-count" class="text-sm text-slate-500">{{ items|length }} items</span>
     </div>
+    {% if items %}
+    <div class="max-w-7xl mx-auto px-6 pb-3 -mt-1">
+      <div id="filters" class="flex flex-wrap items-center gap-2 text-sm"></div>
+    </div>
+    {% endif %}
   </header>
   <main class="max-w-7xl mx-auto px-6 py-8">
     {% if not items %}
@@ -160,8 +165,9 @@
       sold:     { label: 'SOLD',       classes: ['bg-green-600', 'text-white', 'hover:bg-green-700'] },
       reserved: { label: 'Reserved',   classes: ['bg-blue-600', 'text-white', 'hover:bg-blue-700'] },
       parted_sold: { label: 'Parted Sold', classes: ['bg-teal-600', 'text-white', 'hover:bg-teal-700'] },
+      wait_winter: { label: 'Wait for winter', classes: ['bg-sky-500', 'text-white', 'hover:bg-sky-600'] },
     };
-    const ORDER = ['none', 'reserved', 'listed', 'bought', 'sold', 'parted_sold'];
+    const ORDER = ['none', 'reserved', 'wait_winter', 'listed', 'bought', 'sold', 'parted_sold'];
     const ALL_CLASSES = Object.values(STATES).flatMap((s) => s.classes);
 
     const paint = (btn, status) => {
@@ -185,6 +191,7 @@
           });
           if (!res.ok) throw new Error(res.status);
           paint(btn, next);
+          applyFilter();
         } catch (e) {
           alert('Failed to update sale status');
         } finally {
@@ -192,6 +199,52 @@
         }
       });
     });
+
+    // Status filter: a toggle chip per status; hidden statuses are filtered out.
+    const active = new Set(ORDER);
+    const chips = new Map();
+    const countEl = document.getElementById('item-count');
+
+    const applyFilter = () => {
+      let visible = 0;
+      document.querySelectorAll('.grid > [data-tx]').forEach((card) => {
+        const status = card.querySelector('.sale-btn').dataset.status;
+        const show = active.has(status);
+        card.classList.toggle('hidden', !show);
+        if (show) visible++;
+      });
+      countEl.textContent = visible === document.querySelectorAll('.grid > [data-tx]').length
+        ? `${visible} items` : `${visible} shown`;
+    };
+
+    const filters = document.getElementById('filters');
+    if (filters) {
+      ORDER.forEach((status) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.textContent = STATES[status].label;
+        chip.className = 'rounded-full px-3 py-1 ring-1 transition';
+        chips.set(status, chip);
+        const paintChip = () => {
+          const on = active.has(status);
+          chip.classList.toggle('bg-slate-800', on);
+          chip.classList.toggle('text-white', on);
+          chip.classList.toggle('ring-slate-800', on);
+          chip.classList.toggle('bg-white', !on);
+          chip.classList.toggle('text-slate-400', !on);
+          chip.classList.toggle('ring-slate-300', !on);
+          chip.classList.toggle('line-through', !on);
+        };
+        chip.addEventListener('click', () => {
+          active.has(status) ? active.delete(status) : active.add(status);
+          paintChip();
+          applyFilter();
+        });
+        paintChip();
+        filters.appendChild(chip);
+      });
+      applyFilter();
+    }
   </script>
 </body>
 </html>
