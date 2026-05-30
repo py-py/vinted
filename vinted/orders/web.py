@@ -60,12 +60,12 @@ def _allocate_pln(purchase: dict, items: list[dict]) -> dict[int, float]:
     }
 
 
-def _load_items() -> list[dict]:
-    """Flat list of items with their parent purchase context, newest first.
+def _load_purchases() -> list[dict]:
+    """Purchases (transactions) newest first, each with its enriched items.
 
     Uses two queries: one stream over `purchases` for the order context, one
     collection_group("items") for all items across all purchases. Items are
-    joined to their parent purchase by document id.
+    joined to their parent purchase by document id and nested under it.
     """
     store = _store()
     purchases: dict[str, dict] = {
@@ -80,27 +80,40 @@ def _load_items() -> list[dict]:
     for tx_id, purchase in purchases.items():
         items = items_by_purchase.get(tx_id, [])
         pln_by_id = _allocate_pln(purchase, items)
-        for item in items:
-            item_id = item.get("id")
-            out.append(
-                {
-                    **item,
-                    "price_pln": pln_by_id.get(item_id) if isinstance(item_id, int) else None,
-                    "_sale_status": item.get("_sale_status") or "none",
-                    "seller_login": purchase.get("seller_login", ""),
-                    "seller_country": purchase.get("seller_country", ""),
-                    "order_date": purchase.get("date", ""),
-                    "tx_id": tx_id,
-                    "conversation_id": purchase.get("conversation_id"),
-                }
-            )
-    out.sort(key=lambda x: x.get("order_date") or "", reverse=True)
+        enriched = [
+            {
+                **item,
+                "price_pln": (
+                    pln_by_id.get(item.get("id")) if isinstance(item.get("id"), int) else None
+                ),
+                "_sale_status": item.get("_sale_status") or "none",
+            }
+            for item in items
+        ]
+        out.append(
+            {
+                "tx_id": tx_id,
+                "seller_login": purchase.get("seller_login", ""),
+                "seller_country": purchase.get("seller_country", ""),
+                "order_date": purchase.get("date", ""),
+                "conversation_id": purchase.get("conversation_id"),
+                "total_price": purchase.get("total_price"),
+                "currency": purchase.get("currency", ""),
+                "items": enriched,
+            }
+        )
+    out.sort(key=lambda p: p.get("order_date") or "", reverse=True)
     return out
 
 
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
-    return _env.get_template("items.html").render(items=_load_items())
+    purchases = _load_purchases()
+    context = {
+        "purchases": purchases,
+        "total_items": sum(len(p["items"]) for p in purchases),
+    }
+    return _env.get_template("items.html").render(**context)
 
 
 _SALE_STATUSES = {"none", "listed", "bought", "sold", "reserved", "parted_sold", "wait_winter"}

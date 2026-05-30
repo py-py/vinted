@@ -11,94 +11,114 @@
   <header class="border-b bg-white sticky top-0 z-20">
     <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
       <h1 class="text-2xl font-semibold">Purchased items</h1>
-      <span id="item-count" class="text-sm text-slate-500">{{ items|length }} items</span>
+      <span id="item-count" class="text-sm text-slate-500">{{ total_items }} items</span>
     </div>
-    {% if items %}
+    {% if purchases %}
     <div class="max-w-7xl mx-auto px-6 pb-3 -mt-1">
       <div id="filters" class="flex flex-wrap items-center gap-2 text-sm"></div>
     </div>
     {% endif %}
   </header>
   <main class="max-w-7xl mx-auto px-6 py-8">
-    {% if not items %}
+    {% if not purchases %}
       <p class="text-slate-500">No purchased items found in Firestore.</p>
     {% else %}
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-      {% for item in items %}
-      {% set photos = item.photo_urls or ([item.photo_url] if item.photo_url else []) %}
-      <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden"
-           data-tx="{{ item.tx_id }}" data-item="{{ item.id }}">
-        <div class="pswp-gallery aspect-square relative bg-slate-100 group">
-          {% if photos %}
-            {% for url in photos %}
-              <a href="{{ url }}"
-                 data-pswp-width="800" data-pswp-height="800"
-                 target="_blank" rel="noopener"
-                 class="{% if loop.first %}block w-full h-full{% else %}hidden{% endif %}">
-                {% if loop.first %}
-                  <img src="{{ url }}" alt="{{ item.title }}"
-                       class="w-full h-full object-cover group-hover:scale-105 transition"
-                       loading="lazy" decoding="async" referrerpolicy="no-referrer">
-                {% endif %}
-              </a>
-            {% endfor %}
-          {% else %}
-            <div class="w-full h-full flex items-center justify-center text-slate-400 text-sm">no photo</div>
-          {% endif %}
-          <div class="absolute bottom-2 right-2 z-10 flex gap-2">
-            {% if item.conversation_id %}
-              <a href="https://www.vinted.pl/inbox/{{ item.conversation_id }}"
-                 target="_blank" rel="noopener"
-                 class="bg-white/95 hover:bg-white rounded-full p-2 shadow ring-1 ring-slate-200 text-slate-700 hover:text-slate-900"
-                 title="Open conversation">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 0 1-4-.84L3 21l1.84-4A7.94 7.94 0 0 1 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                </svg>
-              </a>
-            {% endif %}
-            {% if item.url %}
-              <a href="{{ item.url }}" target="_blank" rel="noopener"
-                 class="bg-white/95 hover:bg-white rounded-full p-2 shadow ring-1 ring-slate-200 text-slate-700 hover:text-slate-900"
-                 title="Open on Vinted">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M14 5h5v5M19 5l-9 9M5 7v12h12"/>
-                </svg>
-              </a>
-            {% endif %}
-          </div>
-        </div>
-        <div class="p-3 space-y-1">
-          <div class="text-sm font-medium line-clamp-2 min-h-[2.5rem]">{{ item.title or "—" }}</div>
-          <div class="text-xs text-slate-500 flex justify-between gap-2">
-            <span class="truncate">{{ item.size or "—" }}</span>
-            <span class="truncate">{{ item.condition or "" }}</span>
-          </div>
-          {% if item.price_pln is not none %}
-            <div class="text-sm font-semibold">
-              {{ "%.2f"|format(item.price_pln) }} PLN
-              {% if item.paid_price is not none %}
-                <span class="text-xs font-normal text-slate-400" title="listing price">
-                  ({{ "%.2f"|format(item.paid_price) }} {{ item.currency }})
-                </span>
+    <div class="space-y-10">
+      {% for purchase in purchases %}
+      <section data-purchase data-tx="{{ purchase.tx_id }}">
+        <div class="flex items-end justify-between gap-4 mb-3 pb-2 border-b">
+          <div class="min-w-0">
+            <h2 class="text-lg font-semibold truncate">
+              {{ purchase.seller_login or "—" }}
+              {% if purchase.seller_country %}
+                <span class="text-sm font-normal text-slate-400">· {{ purchase.seller_country }}</span>
+              {% endif %}
+            </h2>
+            <div class="text-xs text-slate-400">
+              {% if purchase.order_date %}{{ purchase.order_date[:10] }} · {% endif %}
+              {{ purchase['items']|length }} item{{ "s" if purchase['items']|length != 1 else "" }}
+              {% if purchase.total_price is not none %}
+                · {{ "%.2f"|format(purchase.total_price) }} {{ purchase.currency }}
               {% endif %}
             </div>
-          {% elif item.paid_price is not none %}
-            <div class="text-sm font-semibold text-slate-500">
-              {{ "%.2f"|format(item.paid_price) }} {{ item.currency }}
-            </div>
-          {% endif %}
-          <div class="text-xs text-slate-400 truncate">
-            {{ item.seller_login or "—" }}{% if item.order_date %} · {{ item.order_date[:10] }}{% endif %}
           </div>
-          <button type="button" class="sale-btn w-full mt-1 rounded-md px-3 py-1.5 text-sm font-semibold transition"
-                  data-status="{{ item['_sale_status'] }}">
-          </button>
+          {% if purchase.conversation_id %}
+            <a href="https://www.vinted.pl/inbox/{{ purchase.conversation_id }}"
+               target="_blank" rel="noopener"
+               class="shrink-0 bg-white hover:bg-slate-50 rounded-full p-2 shadow-sm ring-1 ring-slate-200 text-slate-700 hover:text-slate-900"
+               title="Open conversation">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
+                   viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 0 1-4-.84L3 21l1.84-4A7.94 7.94 0 0 1 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+              </svg>
+            </a>
+          {% endif %}
         </div>
-      </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {% for item in purchase['items'] %}
+          {% set photos = item.photo_urls or ([item.photo_url] if item.photo_url else []) %}
+          <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden"
+               data-tx="{{ purchase.tx_id }}" data-item="{{ item.id }}">
+            <div class="pswp-gallery aspect-square relative bg-slate-100 group">
+              {% if photos %}
+                {% for url in photos %}
+                  <a href="{{ url }}"
+                     data-pswp-width="800" data-pswp-height="800"
+                     target="_blank" rel="noopener"
+                     class="{% if loop.first %}block w-full h-full{% else %}hidden{% endif %}">
+                    {% if loop.first %}
+                      <img src="{{ url }}" alt="{{ item.title }}"
+                           class="w-full h-full object-cover group-hover:scale-105 transition"
+                           loading="lazy" decoding="async" referrerpolicy="no-referrer">
+                    {% endif %}
+                  </a>
+                {% endfor %}
+              {% else %}
+                <div class="w-full h-full flex items-center justify-center text-slate-400 text-sm">no photo</div>
+              {% endif %}
+              {% if item.url %}
+                <div class="absolute bottom-2 right-2 z-10">
+                  <a href="{{ item.url }}" target="_blank" rel="noopener"
+                     class="bg-white/95 hover:bg-white rounded-full p-2 shadow ring-1 ring-slate-200 text-slate-700 hover:text-slate-900"
+                     title="Open on Vinted">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M14 5h5v5M19 5l-9 9M5 7v12h12"/>
+                    </svg>
+                  </a>
+                </div>
+              {% endif %}
+            </div>
+            <div class="p-3 space-y-1">
+              <div class="text-sm font-medium line-clamp-2 min-h-[2.5rem]">{{ item.title or "—" }}</div>
+              <div class="text-xs text-slate-500 flex justify-between gap-2">
+                <span class="truncate">{{ item.size or "—" }}</span>
+                <span class="truncate">{{ item.condition or "" }}</span>
+              </div>
+              {% if item.price_pln is not none %}
+                <div class="text-sm font-semibold">
+                  {{ "%.2f"|format(item.price_pln) }} PLN
+                  {% if item.paid_price is not none %}
+                    <span class="text-xs font-normal text-slate-400" title="listing price">
+                      ({{ "%.2f"|format(item.paid_price) }} {{ item.currency }})
+                    </span>
+                  {% endif %}
+                </div>
+              {% elif item.paid_price is not none %}
+                <div class="text-sm font-semibold text-slate-500">
+                  {{ "%.2f"|format(item.paid_price) }} {{ item.currency }}
+                </div>
+              {% endif %}
+              <button type="button" class="sale-btn w-full mt-1 rounded-md px-3 py-1.5 text-sm font-semibold transition"
+                      data-status="{{ item['_sale_status'] }}">
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
       {% endfor %}
     </div>
     {% endif %}
@@ -205,16 +225,22 @@
     const chips = new Map();
     const countEl = document.getElementById('item-count');
 
+    const cards = [...document.querySelectorAll('.grid > [data-tx]')];
+
     const applyFilter = () => {
       let visible = 0;
-      document.querySelectorAll('.grid > [data-tx]').forEach((card) => {
+      cards.forEach((card) => {
         const status = card.querySelector('.sale-btn').dataset.status;
         const show = active.has(status);
         card.classList.toggle('hidden', !show);
         if (show) visible++;
       });
-      countEl.textContent = visible === document.querySelectorAll('.grid > [data-tx]').length
-        ? `${visible} items` : `${visible} shown`;
+      // Hide a purchase section entirely when none of its items are visible.
+      document.querySelectorAll('[data-purchase]').forEach((section) => {
+        const anyVisible = section.querySelector('.grid > [data-tx]:not(.hidden)');
+        section.classList.toggle('hidden', !anyVisible);
+      });
+      countEl.textContent = visible === cards.length ? `${visible} items` : `${visible} shown`;
     };
 
     const filters = document.getElementById('filters');
