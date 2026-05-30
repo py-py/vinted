@@ -93,6 +93,7 @@ def _load_purchases() -> list[dict]:
         out.append(
             {
                 "tx_id": tx_id,
+                "seller_id": purchase.get("seller_id"),
                 "seller_login": purchase.get("seller_login", ""),
                 "seller_country": purchase.get("seller_country", ""),
                 "order_date": purchase.get("date", ""),
