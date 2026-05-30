@@ -21,6 +21,7 @@ cookies.json
 
 # Application data
 media
+examples/**
 
 # Docs
 README.md

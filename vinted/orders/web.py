@@ -1,11 +1,17 @@
 """
-FastAPI viewer for purchased Vinted items.
+FastAPI backend for the Vinted purchases viewer.
 
-Data is pulled from Firestore (purchases/{tx}/items/{id}). Photos are loaded
-directly from the Vinted CDN URLs stored in Firestore — no GCS access here.
+Exposes a JSON API under /api and serves the built React SPA
+(vinted/web-app/dist) at /. Data comes from Firestore
+(purchases/{tx}/items/{id}); photos are Vinted CDN URLs stored there.
 
-Run:
-    uvicorn vinted.orders.web:app --reload
+Dev:
+    uvicorn vinted.orders.web:app --reload     # API on :8000
+    (cd vinted/web-app && npm run dev)          # Vite on :5173, proxies /api -> :8000
+
+Prod / local:
+    (cd vinted/web-app && npm run build)        # -> vinted/web-app/dist
+    uvicorn vinted.orders.web:app               # serves API + built SPA
 """
 
 from __future__ import annotations
@@ -16,20 +22,17 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi.responses import HTMLResponse
-from jinja2 import Environment
-from jinja2 import FileSystemLoader
-from jinja2 import select_autoescape
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from ..firestore import FirestoreStore
 
 app = FastAPI(title="Vinted purchases")
 
-_TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
-_env = Environment(
-    loader=FileSystemLoader(_TEMPLATES_DIR),
-    autoescape=select_autoescape(["html"]),
-)
+# vinted/orders/web.py -> vinted/web-app/dist
+_DIST_DIR = Path(__file__).resolve().parent.parent / "web-app" / "dist"
+
+_SALE_STATUSES = {"none", "listed", "bought", "sold", "reserved", "parted_sold", "wait_winter"}
 
 
 @lru_cache(maxsize=1)
@@ -107,26 +110,43 @@ def _load_purchases() -> list[dict]:
     return out
 
 
-@app.get("/", response_class=HTMLResponse)
-def index() -> str:
-    purchases = _load_purchases()
-    context = {
-        "purchases": purchases,
-        "total_items": sum(len(p["items"]) for p in purchases),
-    }
-    return _env.get_template("items.html").render(**context)
+@app.get("/api/purchases")
+def api_purchases() -> list[dict]:
+    """All purchases, newest first, each with its nested items."""
+    return _load_purchases()
 
 
-_SALE_STATUSES = {"none", "listed", "bought", "sold", "reserved", "parted_sold", "wait_winter"}
+class ItemPatch(BaseModel):
+    """Partial update for an item. Only the sale status for now; editable fields
+    (title, price, …) will be added here as the modal editor grows.
+
+    The API uses the plain name `sale_status`; it is persisted to Firestore under
+    the custom field `_sale_status` (see FirestoreStore.set_item_status)."""
+
+    sale_status: str | None = None
 
 
-class StatusUpdate(BaseModel):
-    status: str
+@app.patch("/api/items/{tx_id}/{item_id}")
+def patch_item(tx_id: str, item_id: str, patch: ItemPatch) -> dict:
+    if patch.sale_status is not None:
+        if patch.sale_status not in _SALE_STATUSES:
+            raise HTTPException(status_code=422, detail=f"invalid status: {patch.sale_status!r}")
+        _store().set_item_status(tx_id, item_id, patch.sale_status)
+    return {"tx_id": tx_id, "item_id": item_id, "sale_status": patch.sale_status}
 
 
-@app.post("/items/{tx_id}/{item_id}/status")
-def set_status(tx_id: str, item_id: str, update: StatusUpdate) -> dict:
-    if update.status not in _SALE_STATUSES:
-        raise HTTPException(status_code=422, detail=f"invalid status: {update.status!r}")
-    _store().set_item_status(tx_id, item_id, update.status)
-    return {"tx_id": tx_id, "item_id": item_id, "status": update.status}
+# Serve the built SPA at / (registered last so /api/* takes precedence). When the
+# frontend hasn't been built yet, show a hint instead of crashing at startup.
+if _DIST_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=_DIST_DIR, html=True), name="spa")
+else:
+
+    @app.get("/", response_class=HTMLResponse)
+    def _frontend_not_built() -> str:
+        return (
+            "<!doctype html><meta charset=utf-8>"
+            "<h1>Frontend not built</h1>"
+            "<p>Dev: <code>cd vinted/web-app &amp;&amp; npm run dev</code> (Vite on :5173).</p>"
+            "<p>Or build it: <code>cd vinted/web-app &amp;&amp; npm run build</code>, then restart this server.</p>"  # NOQA: E501
+            "<p>API is live at <a href='/api/purchases'>/api/purchases</a>.</p>"
+        )
