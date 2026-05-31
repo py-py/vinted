@@ -10,12 +10,19 @@ Run:
 
 from __future__ import annotations
 
+import os
+import secrets
 from functools import lru_cache
 from pathlib import Path
 
+from dotenv import load_dotenv
+from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
+from fastapi import status
 from fastapi.responses import HTMLResponse
+from fastapi.security import HTTPBasic
+from fastapi.security import HTTPBasicCredentials
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
 from jinja2 import select_autoescape
@@ -23,7 +30,41 @@ from pydantic import BaseModel
 
 from ..firestore import FirestoreStore
 
-app = FastAPI(title="Vinted purchases")
+load_dotenv()
+
+_ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "")
+_ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+_security = HTTPBasic()
+
+
+def require_auth(credentials: HTTPBasicCredentials = Depends(_security)) -> str:
+    """Gate every route behind HTTP Basic auth (ADMIN_USERNAME / ADMIN_PASSWORD).
+
+    Fails closed: if credentials aren't configured the site is unreachable rather
+    than wide open. Uses constant-time comparison to avoid leaking length/contents
+    via timing.
+    """
+    if not _ADMIN_USERNAME or not _ADMIN_PASSWORD:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Admin auth not configured: set ADMIN_USERNAME and ADMIN_PASSWORD",
+        )
+    user_ok = secrets.compare_digest(
+        credentials.username.encode("utf-8"), _ADMIN_USERNAME.encode("utf-8")
+    )
+    pass_ok = secrets.compare_digest(
+        credentials.password.encode("utf-8"), _ADMIN_PASSWORD.encode("utf-8")
+    )
+    if not (user_ok and pass_ok):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
+
+
+app = FastAPI(title="Vinted purchases", dependencies=[Depends(require_auth)])
 
 _TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 _env = Environment(
