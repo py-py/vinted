@@ -5,7 +5,7 @@ Data is pulled from Firestore (purchases/{tx}/items/{id}). Photos are loaded
 directly from the Vinted CDN URLs stored in Firestore — no GCS access here.
 
 Run:
-    uvicorn vinted.orders.web:app --reload
+    uvicorn vinted.admin.web:app --reload
 """
 
 from __future__ import annotations

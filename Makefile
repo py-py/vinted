@@ -1,4 +1,4 @@
-.PHONY: build shell run orders-web
+.PHONY: build shell run admin-web
 
 build:
 	docker compose build
@@ -9,9 +9,9 @@ shell:
 run:
 	docker compose run --rm vinted $(CMD)
 
-orders-web:
+admin-web:
 	docker compose run --rm \
 		--publish 8000:8000 \
 		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
 		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
-		vinted uvicorn vinted.orders.web:app --reload --host 0.0.0.0 --port 8000
+		vinted uvicorn vinted.admin.web:app --reload --host 0.0.0.0 --port 8000
