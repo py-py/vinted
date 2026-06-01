@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vinted purchases</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.css">
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="border-b bg-white sticky top-0 z-20">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <h1 class="text-2xl font-semibold">Purchased items</h1>
+      <span id="item-count" class="text-sm text-slate-500">{{ total_items }} items</span>
+    </div>
+    {% if purchases %}
+    <div class="max-w-7xl mx-auto px-6 pb-3 -mt-1">
+      <div id="filters" class="flex flex-wrap items-center gap-2 text-sm"></div>
+    </div>
+    {% endif %}
+  </header>
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    {% if not purchases %}
+      <p class="text-slate-500">No purchased items found in Firestore.</p>
+    {% else %}
+    <div class="space-y-10">
+      {% for purchase in purchases %}
+      <section data-purchase data-tx="{{ purchase.tx_id }}">
+        <div class="flex items-end justify-between gap-4 mb-3 pb-2 border-b">
+          <div class="min-w-0">
+            <h2 class="text-lg font-semibold truncate">
+              {{ purchase.seller_login or "—" }}
+              {% if purchase.seller_country %}
+                <span class="text-sm font-normal text-slate-400">· {{ purchase.seller_country }}</span>
+              {% endif %}
+            </h2>
+            <div class="text-xs text-slate-400">
+              {% if purchase.order_date %}{{ purchase.order_date[:10] }} · {% endif %}
+              {{ purchase['items']|length }} item{{ "s" if purchase['items']|length != 1 else "" }}
+              {% if purchase.total_price is not none %}
+                · {{ "%.2f"|format(purchase.total_price) }} {{ purchase.currency }}
+              {% endif %}
+            </div>
+          </div>
+          <div class="shrink-0 flex items-center gap-2">
+            {% if purchase.seller_id %}
+              <a href="https://www.vinted.pl/member/{{ purchase.seller_id }}"
+                 target="_blank" rel="noopener"
+                 class="bg-white hover:bg-slate-50 rounded-full p-2 shadow-sm ring-1 ring-slate-200 text-slate-700 hover:text-slate-900"
+                 title="Open seller profile">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14a7 7 0 0 0-7 7h14a7 7 0 0 0-7-7z"/>
+                </svg>
+              </a>
+            {% endif %}
+            {% if purchase.conversation_id %}
+              <a href="https://www.vinted.pl/inbox/{{ purchase.conversation_id }}"
+                 target="_blank" rel="noopener"
+                 class="bg-white hover:bg-slate-50 rounded-full p-2 shadow-sm ring-1 ring-slate-200 text-slate-700 hover:text-slate-900"
+                 title="Open conversation">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 0 1-4-.84L3 21l1.84-4A7.94 7.94 0 0 1 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+              </a>
+            {% endif %}
+          </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {% for item in purchase['items'] %}
+          {% set photos = item.photo_urls or ([item.photo_url] if item.photo_url else []) %}
+          <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden"
+               data-tx="{{ purchase.tx_id }}" data-item="{{ item.id }}">
+            <div class="pswp-gallery aspect-square relative bg-slate-100 group">
+              {% if photos %}
+                {% for url in photos %}
+                  <a href="{{ url }}"
+                     data-pswp-width="800" data-pswp-height="800"
+                     target="_blank" rel="noopener"
+                     class="{% if loop.first %}block w-full h-full{% else %}hidden{% endif %}">
+                    {% if loop.first %}
+                      <img src="{{ url }}" alt="{{ item.title }}"
+                           class="w-full h-full object-cover group-hover:scale-105 transition"
+                           loading="lazy" decoding="async" referrerpolicy="no-referrer">
+                    {% endif %}
+                  </a>
+                {% endfor %}
+              {% else %}
+                <div class="w-full h-full flex items-center justify-center text-slate-400 text-sm">no photo</div>
+              {% endif %}
+              {% if item.url %}
+                <a href="{{ item.url }}" target="_blank" rel="noopener"
+                   class="absolute bottom-2 right-2 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-white/90 backdrop-blur text-slate-600 shadow-sm ring-1 ring-slate-200 hover:bg-white hover:text-slate-900 transition"
+                   title="Open on Vinted">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
+                       viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+                  </svg>
+                </a>
+              {% endif %}
+            </div>
+            <div class="p-3 space-y-1">
+              <div class="text-sm font-medium line-clamp-2 min-h-[2.5rem]">{{ item.title or "—" }}</div>
+              <div class="text-xs text-slate-500 flex justify-between gap-2">
+                <span class="truncate">{{ item.size or "—" }}</span>
+                <span class="truncate">{{ item.condition or "" }}</span>
+              </div>
+              {% if item.price_pln is not none %}
+                <div class="text-sm font-semibold">
+                  {{ "%.2f"|format(item.price_pln) }} PLN
+                  {% if item.paid_price is not none %}
+                    <span class="text-xs font-normal text-slate-400" title="listing price">
+                      ({{ "%.2f"|format(item.paid_price) }} {{ item.currency }})
+                    </span>
+                  {% endif %}
+                </div>
+              {% elif item.paid_price is not none %}
+                <div class="text-sm font-semibold text-slate-500">
+                  {{ "%.2f"|format(item.paid_price) }} {{ item.currency }}
+                </div>
+              {% endif %}
+              <button type="button" class="sale-btn w-full mt-1 rounded-md px-3 py-1.5 text-sm font-semibold transition"
+                      data-status="{{ item['_sale_status'] }}">
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </main>
+
+  <script type="module">
+    import PhotoSwipeLightbox from 'https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe-lightbox.esm.min.js';
+
+    // PhotoSwipe reads data-pswp-width/height per anchor at open time. We seed
+    // those lazily from natural image sizes: free from visible thumbnails, on
+    // hover/touch for hidden gallery items.
+    const resolve = (a, img) => {
+      const apply = () => {
+        if (img.naturalWidth) {
+          a.dataset.pswpWidth = img.naturalWidth;
+          a.dataset.pswpHeight = img.naturalHeight;
+        }
+      };
+      img.complete ? apply() : img.addEventListener('load', apply, { once: true });
+    };
+
+    document.querySelectorAll('.pswp-gallery a[data-pswp-width] > img')
+      .forEach((img) => resolve(img.parentElement, img));
+
+    document.querySelectorAll('.pswp-gallery').forEach((g) => {
+      const prime = () => {
+        g.removeEventListener('mouseenter', prime);
+        g.removeEventListener('touchstart', prime);
+        g.querySelectorAll('a[data-pswp-width]:not(:has(img))').forEach((a) => {
+          resolve(a, Object.assign(new Image(), { src: a.href }));
+        });
+      };
+      g.addEventListener('mouseenter', prime, { passive: true });
+      g.addEventListener('touchstart', prime, { passive: true });
+    });
+
+    const lightbox = new PhotoSwipeLightbox({
+      gallery: '.pswp-gallery',
+      children: 'a[data-pswp-width]',
+      pswpModule: () => import('https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.esm.min.js'),
+    });
+
+    // Fallback: refit the slide if it opened before dims were resolved.
+    lightbox.on('loadComplete', ({ content: c }) => {
+      if (c.type !== 'image' || !c.element || !c.slide) return;
+      const w = c.element.naturalWidth, h = c.element.naturalHeight;
+      if (!w || (c.slide.width === w && c.slide.height === h)) return;
+      c.width = c.slide.width = w;
+      c.height = c.slide.height = h;
+      c.slide.calculateSize?.();
+      c.slide.setZoomLevel?.(c.slide.zoomLevels?.initial);
+      c.slide.applyCurrentZoomPan?.();
+    });
+
+    lightbox.init();
+  </script>
+
+  <script>
+    // Cycle an item's sale status (none -> listed -> sold -> none) and persist it.
+    const STATES = {
+      none:     { label: 'Not listed', classes: ['bg-slate-100', 'text-slate-600', 'ring-1', 'ring-slate-300', 'hover:bg-slate-200'] },
+      listed:   { label: 'Listed',     classes: ['bg-amber-500', 'text-white', 'hover:bg-amber-600'] },
+      bought:   { label: 'Bought (unconfirmed)', classes: ['bg-lime-500', 'text-white', 'hover:bg-lime-600'] },
+      sold:     { label: 'SOLD',       classes: ['bg-green-600', 'text-white', 'hover:bg-green-700'] },
+      reserved: { label: 'Reserved',   classes: ['bg-blue-600', 'text-white', 'hover:bg-blue-700'] },
+      parted_sold: { label: 'Parted Sold', classes: ['bg-teal-600', 'text-white', 'hover:bg-teal-700'] },
+      wait_winter: { label: 'Wait for winter', classes: ['bg-sky-500', 'text-white', 'hover:bg-sky-600'] },
+    };
+    const ORDER = ['none', 'reserved', 'wait_winter', 'listed', 'bought', 'sold', 'parted_sold'];
+    const ALL_CLASSES = Object.values(STATES).flatMap((s) => s.classes);
+
+    const paint = (btn, status) => {
+      btn.dataset.status = status;
+      btn.textContent = STATES[status].label;
+      btn.classList.remove(...ALL_CLASSES);
+      btn.classList.add(...STATES[status].classes);
+    };
+
+    document.querySelectorAll('.sale-btn').forEach((btn) => {
+      paint(btn, STATES[btn.dataset.status] ? btn.dataset.status : 'none');
+      btn.addEventListener('click', async () => {
+        const card = btn.closest('[data-tx]');
+        const next = ORDER[(ORDER.indexOf(btn.dataset.status) + 1) % ORDER.length];
+        btn.disabled = true;
+        try {
+          const res = await fetch(`/items/${card.dataset.tx}/${card.dataset.item}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: next }),
+          });
+          if (!res.ok) throw new Error(res.status);
+          paint(btn, next);
+          applyFilter();
+        } catch (e) {
+          alert('Failed to update sale status');
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
+
+    // Status filter: a toggle chip per status; hidden statuses are filtered out.
+    const active = new Set(ORDER);
+    const chips = new Map();
+    const countEl = document.getElementById('item-count');
+
+    const cards = [...document.querySelectorAll('.grid > [data-tx]')];
+
+    const applyFilter = () => {
+      let visible = 0;
+      cards.forEach((card) => {
+        const status = card.querySelector('.sale-btn').dataset.status;
+        const show = active.has(status);
+        card.classList.toggle('hidden', !show);
+        if (show) visible++;
+      });
+      // Hide a purchase section entirely when none of its items are visible.
+      document.querySelectorAll('[data-purchase]').forEach((section) => {
+        const anyVisible = section.querySelector('.grid > [data-tx]:not(.hidden)');
+        section.classList.toggle('hidden', !anyVisible);
+      });
+      countEl.textContent = visible === cards.length ? `${visible} items` : `${visible} shown`;
+    };
+
+    const filters = document.getElementById('filters');
+    if (filters) {
+      ORDER.forEach((status) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.textContent = STATES[status].label;
+        chip.className = 'rounded-full px-3 py-1 ring-1 transition';
+        chips.set(status, chip);
+        const paintChip = () => {
+          const on = active.has(status);
+          chip.classList.toggle('bg-slate-800', on);
+          chip.classList.toggle('text-white', on);
+          chip.classList.toggle('ring-slate-800', on);
+          chip.classList.toggle('bg-white', !on);
+          chip.classList.toggle('text-slate-400', !on);
+          chip.classList.toggle('ring-slate-300', !on);
+          chip.classList.toggle('line-through', !on);
+        };
+        chip.addEventListener('click', () => {
+          active.has(status) ? active.delete(status) : active.add(status);
+          paintChip();
+          applyFilter();
+        });
+        paintChip();
+        filters.appendChild(chip);
+      });
+      applyFilter();
+    }
+  </script>
+</body>
+</html>

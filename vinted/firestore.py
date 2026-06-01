@@ -44,6 +44,16 @@ class FirestoreStore:
                     pairs.append((int(item_doc.id), list(urls)))
         return pairs
 
+    def set_item_status(self, transaction_id: str, item_id: str, status: str) -> None:
+        """Set a single item's sale status.
+
+        Stored under the custom field `_sale_status` (leading underscore marks fields
+        we add ourselves, not synced from Vinted) on purchases/{tx}/items/{id}. One of
+        "none" (not for sale), "listed" (listed for sale), "sold".
+        """
+        item_ref = self.purchases.document(transaction_id).collection("items").document(item_id)
+        item_ref.set({"_sale_status": status}, merge=True)
+
     def save_order(self, order: Order) -> None:
         if not order.transaction_id:
             raise ValueError(f"order has empty transaction_id: {order}")
