@@ -158,7 +158,15 @@ def index() -> str:
     return _env.get_template("items.html").render(**context)
 
 
-_SALE_STATUSES = {"none", "listed", "bought", "sold", "reserved", "parted_sold", "wait_winter"}
+_SALE_STATUSES = {
+    "none",
+    "listed",
+    "sold_unconfirmed",
+    "sold",
+    "reserved",
+    "parted_sold",
+    "wait_winter",
+}
 
 
 class StatusUpdate(BaseModel):

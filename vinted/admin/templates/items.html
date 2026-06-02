@@ -193,13 +193,13 @@
     const STATES = {
       none:     { label: 'Not listed', classes: ['bg-slate-100', 'text-slate-600', 'ring-1', 'ring-slate-300', 'hover:bg-slate-200'] },
       listed:   { label: 'Listed',     classes: ['bg-amber-500', 'text-white', 'hover:bg-amber-600'] },
-      bought:   { label: 'Bought (unconfirmed)', classes: ['bg-lime-500', 'text-white', 'hover:bg-lime-600'] },
+      sold_unconfirmed: { label: 'Sold (unconfirmed)', classes: ['bg-lime-500', 'text-white', 'hover:bg-lime-600'] },
       sold:     { label: 'SOLD',       classes: ['bg-green-600', 'text-white', 'hover:bg-green-700'] },
       reserved: { label: 'Reserved',   classes: ['bg-blue-600', 'text-white', 'hover:bg-blue-700'] },
       parted_sold: { label: 'Parted Sold', classes: ['bg-teal-600', 'text-white', 'hover:bg-teal-700'] },
       wait_winter: { label: 'Wait for winter', classes: ['bg-sky-500', 'text-white', 'hover:bg-sky-600'] },
     };
-    const ORDER = ['none', 'reserved', 'wait_winter', 'listed', 'bought', 'sold', 'parted_sold'];
+    const ORDER = ['none', 'reserved', 'wait_winter', 'listed', 'sold_unconfirmed', 'sold', 'parted_sold'];
     const ALL_CLASSES = Object.values(STATES).flatMap((s) => s.classes);
 
     const paint = (btn, status) => {
