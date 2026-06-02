@@ -1,5 +1,6 @@
-.PHONY: build shell run notify subscribe \
+.PHONY: build shell run admin-web orders notify subscribe \
 	gcp-enable gcp-secret gcp-sa gcp-deploy gcp-execute gcp-schedule gcp-setup gcp-logs
+
 
 # --- Config (override on the CLI, e.g. make gcp-deploy GCP_REGION=europe-west1) ---
 GCP_PROJECT  ?= vinted-492007
@@ -18,6 +19,19 @@ shell:
 
 run:
 	docker compose run --rm vinted $(CMD)
+
+admin-web:
+	docker compose run --rm \
+		--publish 8000:8000 \
+		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
+		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
+		vinted uvicorn vinted.admin.web:app --reload --host 0.0.0.0 --port 8000
+
+orders:
+	docker compose run --rm \
+		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
+		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
+		vinted python -m vinted.orders
 
 # --- Notifier (local) ---
 notify:

@@ -1,8 +1,7 @@
 """
-Fetch and refresh Vinted favourites via JSON API.
+Fetch Vinted favourites via JSON API.
 
-Cookies are stored in a local JSON file and auto-refreshed
-when the access token expires.
+Cookies are stored in a local JSON file.
 """
 
 from __future__ import annotations
@@ -22,14 +21,12 @@ load_dotenv()
 VINTED_USER_ID = os.environ["VINTED_USER_ID"]
 
 FAVOURITES_URL = "https://www.vinted.pl/api/v2/users/{user_id}/items/favourites"
-TOKEN_REFRESH_URL = "https://www.vinted.pl/oauth/token"
 
 COOKIES_PATH = Path(__file__).parent.parent / "cookies.json"
 
 # Minimum cookies required for authenticated API access
 REQUIRED_COOKIE_KEYS = [
     "access_token_web",
-    "refresh_token_web",
     "datadome",
     "cf_clearance",
 ]
@@ -44,34 +41,6 @@ def load_cookies(path: Path = COOKIES_PATH) -> dict[str, str]:
     missing = [k for k in REQUIRED_COOKIE_KEYS if k not in cookies]
     if missing:
         raise ValueError(f"Missing required cookies: {missing}")
-    return cookies
-
-
-def save_cookies(cookies: dict[str, str], path: Path = COOKIES_PATH) -> None:
-    path.write_text(json.dumps(cookies, indent=2))
-
-
-async def refresh_access_token(cookies: dict[str, str]) -> dict[str, str]:
-    """Use refresh_token_web to get a new access_token_web via OAuth."""
-    async with httpx.AsyncClient(
-        headers={"User-Agent": USER_AGENT},
-        cookies=cookies,
-        follow_redirects=True,
-    ) as client:
-        resp = await client.post(
-            TOKEN_REFRESH_URL,
-            data={
-                "grant_type": "refresh_token",
-                "client_id": "web",
-                "refresh_token": cookies["refresh_token_web"],
-            },
-        )
-        resp.raise_for_status()
-
-    # New tokens come as Set-Cookie headers
-    new_cookies = dict(resp.cookies)
-    cookies.update(new_cookies)
-    save_cookies(cookies)
     return cookies
 
 
@@ -92,7 +61,6 @@ async def fetch_favourites(
 
     all_items: list[dict] = []
     page = 1
-    refreshed = False
 
     async with httpx.AsyncClient(
         headers=headers,
@@ -101,14 +69,6 @@ async def fetch_favourites(
     ) as client:
         while True:
             resp = await client.get(url, params={"per_page": per_page, "page": page})
-
-            # Token expired — try refresh once
-            if resp.status_code == 401 and not refreshed:
-                cookies = await refresh_access_token(cookies)
-                client.cookies.update(cookies)
-                refreshed = True
-                continue
-
             resp.raise_for_status()
             data = resp.json()
             items = data.get("items", [])
