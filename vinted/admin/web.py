@@ -166,6 +166,7 @@ _SALE_STATUSES = {
     "reserved",
     "parted_sold",
     "wait_winter",
+    "trash",
 }
 
 

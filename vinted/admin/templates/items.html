@@ -198,8 +198,9 @@
       reserved: { label: 'Reserved',   classes: ['bg-blue-600', 'text-white', 'hover:bg-blue-700'] },
       parted_sold: { label: 'Parted Sold', classes: ['bg-teal-600', 'text-white', 'hover:bg-teal-700'] },
       wait_winter: { label: 'Wait for winter', classes: ['bg-sky-500', 'text-white', 'hover:bg-sky-600'] },
+      trash:    { label: 'Trash',      classes: ['bg-rose-700', 'text-white', 'hover:bg-rose-800'] },
     };
-    const ORDER = ['none', 'reserved', 'wait_winter', 'listed', 'sold_unconfirmed', 'sold', 'parted_sold'];
+    const ORDER = ['none', 'reserved', 'wait_winter', 'listed', 'sold_unconfirmed', 'sold', 'parted_sold', 'trash'];
     const ALL_CLASSES = Object.values(STATES).flatMap((s) => s.classes);
 
     const paint = (btn, status) => {
