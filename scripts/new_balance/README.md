@@ -69,6 +69,7 @@ CSV with columns:
 | column | meaning |
 |---|---|
 | `model` | full product name |
+| `category` | category path from GraphQL `categoryPath`, e.g. `Męskie / Obuwie / Piłkarskie` |
 | `price_PLN` | current sell price (gross, PLN) |
 | `price_before_discount_PLN` | pre-discount price, if on promo (else empty) |
 | `discount_%` | discount %, derived from the two prices above (empty if not on promo) |

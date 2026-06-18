@@ -30,7 +30,8 @@ MEDIA_DIR = Path(__file__).resolve().parents[2] / "media"
 PRODUCTS_QUERY = (
     "query($t:ListingType!,$id:ID!,$page:Int!,$limit:Int,$sort:String,$f:FiltersInput){"
     "products(id:$id,type:$t,page:$page,limit:$limit,sort:$sort,filters:$f){"
-    "items{id name niceUrl prices{sellPrice{gross} listPrice{gross} basePrice{gross}}}"
+    "items{id name niceUrl categoryPath{name} "
+    "prices{sellPrice{gross} listPrice{gross} basePrice{gross}}}"
     "pagination{itemsCount lastPage}}}"
 )
 
@@ -100,7 +101,8 @@ def scrape(slug, sort, filters, limit=96):
             before = base if on_sale else None
             # GraphQL has no discount-% field on products, so derive it from the prices
             discount = round((1 - sell / base) * 100) if on_sale else None
-            rows.append((it["name"], sell, before, discount, f"{SITE}/{it['niceUrl']}"))
+            category = " / ".join(c["name"] for c in (it.get("categoryPath") or []))
+            rows.append((it["name"], category, sell, before, discount, f"{SITE}/{it['niceUrl']}"))
         last = data["pagination"]["lastPage"]
         print(f"page {page}/{last} — {len(rows)} unique", file=sys.stderr)
         if page >= last or not items:
@@ -140,7 +142,9 @@ def main():
     out = MEDIA_DIR / f"newbalance_{slug.replace('/', '_')}.csv"
     with open(out, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["model", "price_PLN", "price_before_discount_PLN", "discount_%", "url"])
+        w.writerow(
+            ["model", "category", "price_PLN", "price_before_discount_PLN", "discount_%", "url"]
+        )
         w.writerows(rows)
     print(f"wrote {len(rows)} rows -> {out}", file=sys.stderr)
 
