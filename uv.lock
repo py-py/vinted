@@ -675,6 +675,15 @@ wheels = [
 ]
 
 [[package]]
+name = "petl"
+version = "1.7.19"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2e/97/e357f6b04f645712ec336d5ff5a1ef53aad6149fb53f39fd316c1b9a11cf/petl-1.7.19.tar.gz", hash = "sha256:238ff9ad3a85fcbbd041a8c24cfbcf6dd9e969f736b71b8ae25064648db0b0a0", size = 427585, upload-time = "2026-06-01T21:44:10.717Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/61/30/040c8afebe44b44d8ecef4a1f6ee947cbddba7eaf7527f18653cfff3f073/petl-1.7.19-py3-none-any.whl", hash = "sha256:51565902062d0b94284da6395581eb97ea8db0be1cf687e01861be825718c435", size = 234352, upload-time = "2026-06-01T21:44:09.216Z" },
+]
+
+[[package]]
 name = "platformdirs"
 version = "4.9.6"
 source = { registry = "https://pypi.org/simple" }
@@ -1078,6 +1087,7 @@ dependencies = [
     { name = "google-genai" },
     { name = "httpx" },
     { name = "jinja2" },
+    { name = "petl" },
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "uvicorn", extra = ["standard"] },
@@ -1098,6 +1108,7 @@ requires-dist = [
     { name = "google-genai", specifier = "==1.47.0" },
     { name = "httpx", specifier = "==0.28.1" },
     { name = "jinja2", specifier = "==3.1.4" },
+    { name = "petl", specifier = "==1.7.19" },
     { name = "pydantic", specifier = "==2.12.5" },
     { name = "python-dotenv", specifier = "==1.2.1" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.32.1" },
