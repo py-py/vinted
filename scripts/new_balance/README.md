@@ -62,6 +62,8 @@ CSV with columns:
 | `discount_%` | discount %, derived from `price` vs `price_before_discount` (empty if not on promo) |
 | `is_best_30d` | `True` if today's price ≤ the 30-day low. Only filled when `lowest_30d` ≠ `price_before_discount` (otherwise it adds nothing) |
 | `vs_lowest_30d_%` | today's price vs the 30-day low, signed: `-13` = 13% cheaper, `+50` = 50% pricier. Same fill condition as `is_best_30d` |
+| `sizes_in_stock` | JSON object mapping each in-stock size to its quantity, e.g. `{"41.5 Standardowa (D)": 12, "42 Standardowa (D)": 9}` (GraphQL `variants` — key is `option`, value is `availability.stock.amount`); only variants with stock > 0 |
+| `stock_total` | total pairs in stock across all sizes |
 | `url` | product page URL |
 
 `is_best_30d` / `vs_lowest_30d_%` cut through inflated "before" prices: a big `discount_%`

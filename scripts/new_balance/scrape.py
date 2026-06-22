@@ -73,6 +73,14 @@ query (
           gross
         }
       }
+      variants {
+        option
+        availability {
+          stock {
+            amount
+          }
+        }
+      }
     }
     pagination {
       itemsCount
@@ -120,6 +128,8 @@ class NewBalanceScraper:
         "discount_%",
         "is_best_30d",
         "vs_lowest_30d_%",
+        "sizes_in_stock",
+        "stock_total",
         "url",
     ]
 
@@ -172,6 +182,22 @@ class NewBalanceScraper:
         return {"fields": fields} if fields else None
 
     @staticmethod
+    def sizes(it):
+        """Sum stock across variants and map each in-stock size to its quantity.
+
+        Each variant `option` looks like '42.5 Standardowa (D)' (EU size + width);
+        we use it verbatim as the key. Returns (json_string, total_pairs) where the
+        JSON is e.g. {"42.5 Standardowa (D)": 15, ...} — only variants with stock > 0.
+        """
+        in_stock = {}
+        for v in it.get("variants") or []:
+            amount = ((v.get("availability") or {}).get("stock") or {}).get("amount") or 0
+            if amount <= 0:
+                continue
+            in_stock[v.get("option") or ""] = amount
+        return in_stock
+
+    @staticmethod
     def row(it):
         """Map one product item to a dict keyed by HEADER column names."""
         pr = it["prices"]
@@ -193,6 +219,7 @@ class NewBalanceScraper:
             is_best_30d = sell <= lowest_30d
             vs_lowest = round((sell / lowest_30d - 1) * 100)
         category = " / ".join(c["name"] for c in (it.get("categoryPath") or []))
+        in_stock = NewBalanceScraper.sizes(it)
         return {
             "model": it["name"],
             "category": category,
@@ -202,6 +229,8 @@ class NewBalanceScraper:
             "discount_%": discount,
             "is_best_30d": is_best_30d,
             "vs_lowest_30d_%": vs_lowest,
+            "sizes_in_stock": json.dumps(in_stock, ensure_ascii=False),
+            "stock_total": sum(in_stock.values()),
             "url": f"{SITE}/{it['niceUrl']}",
         }
 
