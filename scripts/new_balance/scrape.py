@@ -270,13 +270,43 @@ class NewBalanceScraper:
     def output_path(self):
         return MEDIA_DIR / f"newbalance_{self.slug.replace('/', '_')}.csv"
 
+    @staticmethod
+    def _sort_key(r):
+        """Rank a row for the output CSV — best offers first.
+
+        Sorts by one unified "real savings vs the 30-day low" %, ascending (most
+        negative = best deal):
+
+          * if `vs_lowest_30d_%` is filled, use it (today's price vs the EU-Omnibus
+            30-day low — the truest measure; positive = inflated "before" price, the
+            headline `discount_%` is fake → sinks to the bottom);
+          * otherwise the column is empty *because* the "before" price equals the
+            30-day low, so `discount_%` IS the genuine saving — fall back to
+            `-discount_%` (an 80%-off SKU with no separate 30-day low ranks at the top,
+            not the bottom);
+          * not on sale (no discount) → 0, between the real deals and the fake ones.
+
+        Tie-break by cheapest price.
+        """
+        inf = float("inf")
+        price = r["price_PLN"] if r["price_PLN"] is not None else inf
+        vs = r["vs_lowest_30d_%"]
+        discount = r["discount_%"]
+        if vs is not None:
+            savings = vs
+        elif discount is not None:
+            savings = -discount
+        else:
+            savings = 0
+        return (savings, price)
+
     def run(self):
         MEDIA_DIR.mkdir(parents=True, exist_ok=True)
         out = self.output_path()
+        rows = sorted(self.scrape(), key=self._sort_key)
         # header keeps column order fixed without petl having to sample the dicts
-        petl.tocsv(petl.fromdicts(self.scrape(), header=self.HEADER), str(out), encoding="utf-8")
-        count = petl.nrows(petl.fromcsv(str(out)))
-        print(f"wrote {count} rows -> {out}", file=sys.stderr)
+        petl.tocsv(petl.fromdicts(rows, header=self.HEADER), str(out), encoding="utf-8")
+        print(f"wrote {len(rows)} rows (best-price first) -> {out}", file=sys.stderr)
         return out
 
 

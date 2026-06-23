@@ -2,32 +2,52 @@
 
 Fresh snapshot of the same analysis as `new_balance.md` (which has the full scraper
 write-up and method). Discounted men's footwear in `/promocja` vs Vinted PL demand, to
-judge what's worth buying to flip. Captured **2026-06-22** (morning).
+judge what's worth buying to flip. Captured **2026-06-22** (morning), **re-captured the same
+evening** (see the *Evening update* boxes below — the newbalance.pl side was re-scraped; the
+Vinted demand sections §2–3 are the morning pull and were **not** re-fetched).
 
 Scraper unchanged — see `new_balance.md §1`. Today's CSVs:
-`media/newbalance_promocja.csv` (1059 rows), `…_meskie_obuwie.csv`, `…_damskie_obuwie.csv`.
+`media/newbalance_promocja.csv` (men's-footwear-filtered, **394 rows** evening / 359 morning),
+`…_meskie_obuwie.csv`, `…_damskie_obuwie.csv`.
 
 ---
 
 ## 1. What's in the sale today
 
-Of 1059 promo items, **359 are men's footwear** (`category` starts `Męskie / Obuwie`).
-Liquid silhouettes present, with their genuine-low check (`vs_lowest_30d_%` — today vs the
-EU-Omnibus 30-day low; negative = real low, positive = inflated "before" price):
+Of the men's-footwear promo (`category` starts `Męskie / Obuwie`), liquid silhouettes
+present, with their genuine-low check (`vs_lowest_30d_%` — today vs the EU-Omnibus 30-day
+low; negative = real low, positive = inflated "before" price).
 
-| silhouette | SKUs on sale | min price | med price | med discount | med vs 30d-low |
-|---|--:|--:|--:|--:|--:|
-| **1906R** | 18 | 400 | 470 | −38% | **−12%** (real) |
-| **1906** | 15 | 400 | 430 | −39% | **−20%** (real) |
-| 9060 | 10 | 500 | 550 | −31% | **+25%** (inflated) |
-| 327 | 10 | 300 | 335 | −37% | **+30%** (inflated) |
-| 550 | 7 | 300 | 400 | −33% | −11% (real) |
-| 1080 v14 | 5 | 590 | 590 | −31% | — |
-| 860 v14 | 2 | 500 | 500 | −33% | — |
+> **🌙 Evening update (2026-06-22):** the morning §1 table is replaced below by the evening
+> re-scrape (394 men's SKUs). The **medians shifted** (the listing now defaults to
+> `gross_sell_price` ascending, so more cheap SKUs paged in) — read these as the evening
+> truth. Two material changes: **2002R is back** (see note), and **1000 / 574** now show as
+> the largest discounted buckets.
 
-**Change vs the 2026-06-19 snapshot:** **2002R is gone** from the men's sale (it was a top
-pick three days ago). **1906R** now has the deepest discount presence (18 SKUs) and **327**
-has appeared. The 1906 family (1906 + 1906R = 33 SKUs) dominates the discounted shelf.
+| silhouette | SKUs on sale | min price | med price | med vs 30d-low |
+|---|--:|--:|--:|--:|
+| 1000 | 32 | 400 | 450 | **−10%** (real) |
+| 574 | 28 | 250 | 350 | **−14%** (real) |
+| **1906R** | 19 | 370* | 470 | **−10%** (real) |
+| **1906** | 18 | 400 | 440 | **−20%** (real) |
+| 327 | 13 | 300 | 370 | **+30%** (inflated) |
+| 9060 | 10 | 500 | 550 | **+25%** (inflated) |
+| 550 | 7 | 300 | 400 | −11% (real) |
+| 1080 v14 | 6 | 500 | 590 | −17% (real, running) |
+| 530 | 5 | 370 | 370 | +6% (inflated) |
+| **2002R** | 4 | 400 | 435 | −15% (real) |
+| 860 v14 | 2 | 500 | 500 | — |
+
+`*` the 1906R min (369.99, `M1906REF` white) is a **fake low** — its real 30-day low is
+299.99, so it sits **+23%** above it, and only 1 pair (44.5) is left. Ignore it; the genuine
+1906R deals are still the 399.99 (−15%) SKUs below.
+
+**Change vs the morning snapshot:** **2002R is back** in the men's sale (4 SKUs at 399–470,
+`U2002RRC` zielone is a genuine −15% but only 1 pair; `U2002RR` zielone is deep-stocked at
+399.99 / −40% but has no 30-day low to confirm) — and crucially **no 45+ sizes in any 2002R
+SKU**, so it's not actionable for the large-size flip play. **1906R** still leads the deep-real
+discounts (19 SKUs); **327** and **530** are present but fake-low. The 1906 family
+(1906 + 1906R = 37 SKUs) still dominates the discounted shelf.
 
 The `vs_lowest_30d_%` column matters: **9060 and 327 show big headline discounts off an
 inflated "before" price** — today's 9060 (500) sits **+25%** above its real 30-day low (400)
@@ -138,13 +158,16 @@ flip like black. Genuine-low greys with deep large sizes: **U1906RNG** (469.99, 
 Caveat: colour buckets are 1–14 items each, parsed by keyword from user-written titles —
 treat as direction, not precise numbers.
 
-### Actionable buys (genuine-low ~400, large size in stock, 2026-06-22)
+### Actionable buys (genuine-low ~400, large size in stock, 2026-06-22 — 🌙 evening re-check)
+Prices and 45+ stock below are **confirmed against the evening scrape** — they held essentially
+unchanged from the morning (only `U1906RNG` lost one pair of 46.5: ×3 → ×2, now Σ109).
+
 | SKU | colour | price | big-size stock (45+) | verdict |
 |---|---|--:|---|---|
 | **U1906RCT** | czarne (black) | 399.99 (−15%) | 45×3, 45.5×5 | ✅ best — liquid colour + large sizes |
-| **U1906RCU** | czarne (black) | 399.99 (−15%) | 45×4 | ✅ same, shallower |
+| **U1906RCU** | czarne (black) | 399.99 (−15%) | 45×4 (+44.5×8) | ✅ same, shallower 45+ |
 | **U1906WFA** | różowe (pink) | 399.99 (−20%) | 45×7, 45.5×6, 47.5×2 | ✅ deepest large-size stock (Σ=15); colour 2nd-tier |
-| **U1906RNG** | szare (grey) | 469.99 (−6%) | 45×6, 45.5×4, 46.5×3 | 🎲 arbitrage bet — Vinted-dear (638–699) but n=3–4 |
+| **U1906RNG** | szare (grey) | 469.99 (−6%) | 45×6, 45.5×4, 46.5×2 | 🎲 arbitrage bet — Vinted-dear (638–699) but n=3–4 |
 | U1906RCR | szare (grey) | 449.99 (−10%) | 45×4, 45.5×1 | 🎲 same bet, shallower |
 | U1906WFB | zielone (green) | 399.99 (−20%) | 45.5×3 | ❓ green absent from Vinted buckets — unverified |
 | U1906RNE / RND | niebieskie/żółte | 429.99 (−14%) | 45×1 | ⚠️ skip — blue is the weakest colour, thin stock |
@@ -170,8 +193,9 @@ treat as direction, not precise numbers.
 
 **Bottom line:** buy 1906/1906R in **large sizes (45+)**, **black first** then pink-for-size;
 take a small grey position as an upside bet (U1906RNG/RCR); skip blue/yellow. Everything else
-is fake-discount, oversupplied, or underwater. With 2002R cleared out, there's no second-tier
-silhouette this week.
+is fake-discount, oversupplied, or underwater. **2002R reappeared in the evening scrape** but
+isn't a second-tier flip: its only genuine −15% SKU has 1 pair and **no 2002R SKU carries a
+45+ size**, so it can't feed the large-size play that makes 1906/1906R work.
 
 Caveats: Vinted demand uses `favourite_count` as a proxy, not actual sales (prices are
 *asking*, not sold); single-snapshot counts; `search_text` token-matches so "1906" partially

@@ -66,6 +66,20 @@ CSV with columns:
 | `stock_total` | total pairs in stock across all sizes |
 | `url` | product page URL |
 
+Rows are written **best-price first**, sorted by one unified *real savings vs the 30-day
+low* %, ascending (most negative = best), with cheapest price as the tie-break:
+
+- if `vs_lowest_30d_%` is filled, it's used directly (today vs the EU-Omnibus 30-day low —
+  the truest measure; a **positive** value means the headline `discount_%` is off an
+  inflated "before" price and the SKU is actually *above* its 30-day low → sinks down);
+- if it's empty, that's *because* the "before" price equals the 30-day low, so
+  `discount_%` is itself the genuine saving → `-discount_%` is used. An 80%-off SKU with
+  no separate 30-day low lands at the **top**, not the bottom;
+- not on sale → 0, ranked between the real deals and the inflated ones.
+
+So the top rows are the actual best buys, whether the saving is proven by the Omnibus
+30-day low or by a genuine headline discount.
+
 `is_best_30d` / `vs_lowest_30d_%` cut through inflated "before" prices: a big `discount_%`
 off `price_before_discount` can still be *above* the 30-day low (positive `vs_lowest_30d_%`).
 
