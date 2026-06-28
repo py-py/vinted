@@ -1,7 +1,7 @@
 """
 Fetch Vinted catalog items via the authenticated JSON API.
 
-Unlike ``vinted.catalog`` (anonymous HTML scraping, safe to run on a server),
+Unlike ``vinted.scraper.catalog`` (anonymous HTML scraping, safe on a server),
 this uses cookies and returns the full, paginated result set.
 """
 
@@ -82,7 +82,7 @@ async def fetch_catalog_items(
 
 
 def parse_item_api(item: dict) -> dict:
-    """Map an API item to the same dict format as ``vinted.catalog.parse_item``."""
+    """Map an API item to the same dict format as ``vinted.scraper.catalog.parse_item``."""
     total = item.get("total_item_price") or {}
     price = item.get("price") or {}
     price_amount = total.get("amount") or price.get("amount", "0")
