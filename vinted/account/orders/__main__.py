@@ -10,7 +10,7 @@ from .photos import backfill_photos
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser(prog="python -m vinted.orders")
+    parser = argparse.ArgumentParser(prog="python -m vinted.account.orders")
     parser.add_argument(
         "--max-pages",
         type=int,

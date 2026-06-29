@@ -28,7 +28,7 @@ from jinja2 import FileSystemLoader
 from jinja2 import select_autoescape
 from pydantic import BaseModel
 
-from ..firestore import FirestoreStore
+from vinted.account.firestore import FirestoreStore
 
 load_dotenv()
 
@@ -166,6 +166,7 @@ _SALE_STATUSES = {
     "reserved",
     "parted_sold",
     "wait_winter",
+    "trash",
 }
 
 

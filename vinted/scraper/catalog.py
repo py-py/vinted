@@ -5,9 +5,9 @@ import re
 import httpx
 from bs4 import BeautifulSoup
 
-from .constants import CATALOG_URL
-from .constants import USER_AGENT
-from .utils import parse_item_id
+from ..constants import CATALOG_URL
+from ..constants import USER_AGENT
+from ..utils import parse_item_id
 
 
 def fetch_catalog_html(url: str) -> str:

@@ -9,10 +9,10 @@ from pathlib import Path
 import httpx
 from bs4 import BeautifulSoup
 
-from .constants import PRODUCT_URL
-from .constants import USER_AGENT
-from .models import VintedProduct
-from .models import VintedSeller
+from ..constants import PRODUCT_URL
+from ..constants import USER_AGENT
+from ..models import VintedProduct
+from ..models import VintedSeller
 
 
 async def scrape_product(product_id: str, catalog_id: str | None = None) -> VintedProduct:
@@ -138,7 +138,7 @@ async def main() -> None:
     catalog_id = sys.argv[2] if len(sys.argv) > 2 else None
 
     if product_id is None:
-        raise SystemExit("Usage: python -m vinted.scraper <product_id> [catalog_id]")
+        raise SystemExit("Usage: python -m vinted.scraper.item <product_id> [catalog_id]")
 
     product = await scrape_product(product_id, catalog_id=catalog_id)
 

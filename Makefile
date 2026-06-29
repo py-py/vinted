@@ -1,4 +1,6 @@
-.PHONY: build shell run admin-web orders notify subscribe \
+DEV_PORT ?= 8000
+
+.PHONY: build shell run admin-web orders scrape-item analyze cookies notify subscribe \
 	gcp-enable gcp-secret gcp-sa gcp-deploy gcp-execute gcp-schedule gcp-setup gcp-logs
 
 
@@ -22,7 +24,7 @@ run:
 
 admin-web:
 	docker compose run --rm \
-		--publish 8000:8000 \
+		--publish $(DEV_PORT):8000 \
 		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
 		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
 		vinted uvicorn vinted.admin.web:app --reload --host 0.0.0.0 --port 8000
@@ -31,7 +33,16 @@ orders:
 	docker compose run --rm \
 		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
 		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
-		vinted python -m vinted.orders
+		vinted python -m vinted.account.orders
+
+scrape-item:
+	docker compose run --rm vinted python -m vinted.scraper.item $(ITEM)
+
+analyze:
+	docker compose run --rm vinted python -m vinted.analyzer $(ITEM)
+
+cookies:
+	pbpaste | python scripts/parse_curl.py
 
 # --- Notifier (local) ---
 notify:

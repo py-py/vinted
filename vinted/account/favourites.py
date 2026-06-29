@@ -13,9 +13,8 @@ import sys
 from pathlib import Path
 
 import httpx
+from constants import USER_AGENT
 from dotenv import load_dotenv
-
-from .constants import USER_AGENT
 
 load_dotenv()
 VINTED_USER_ID = os.environ["VINTED_USER_ID"]
