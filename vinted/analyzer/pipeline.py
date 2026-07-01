@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import asyncio
 import mimetypes
 import os
 from pathlib import Path
@@ -9,14 +8,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google import genai
 
-from .constants import CATALOG_RECIPES
-from .constants import PROMPTS_DIR
-from .models import VintedProduct
+from ..constants import CATALOG_RECIPES
+from ..constants import PROMPTS_DIR
+from ..models import VintedProduct
+from ..scraper import save_images
+from ..scraper import scrape_product
+from ..telegram import send_message
 from .schemas import BaseAnalysis
 from .schemas import get_schema
-from .scraper import save_images
-from .scraper import scrape_product
-from .telegram import send_message
 
 load_dotenv()
 
@@ -76,7 +75,7 @@ def analyze_with_gemini(
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog="python -m vinted.analyzer")
     parser.add_argument("product_id")
     parser.add_argument("catalog_id", nargs="?", default=None)
     parser.add_argument("--force", action="store_true")
@@ -115,7 +114,3 @@ async def main() -> None:
 
     # Send to Telegram
     await send_message(product=product, summary=summary)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

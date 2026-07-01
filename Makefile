@@ -1,6 +1,6 @@
 DEV_PORT ?= 8000
 
-.PHONY: build shell run admin-web orders cookies
+.PHONY: build shell run admin-web orders scrape-item analyze cookies
 
 build:
 	docker compose build
@@ -22,7 +22,13 @@ orders:
 	docker compose run --rm \
 		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
 		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
-		vinted python -m vinted.orders
+		vinted python -m vinted.account.orders
+
+scrape-item:
+	docker compose run --rm vinted python -m vinted.scraper.item $(ITEM)
+
+analyze:
+	docker compose run --rm vinted python -m vinted.analyzer $(ITEM)
 
 cookies:
 	pbpaste | python scripts/parse_curl.py

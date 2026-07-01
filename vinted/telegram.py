@@ -5,7 +5,7 @@ import os
 import httpx
 from dotenv import load_dotenv
 
-from .exceptions import BadRequestHTTPException
+from .exceptions import TelegramMediaGroupHTTPException
 from .models import VintedProduct
 
 load_dotenv()
@@ -42,7 +42,7 @@ async def send_message(product: VintedProduct, summary: str) -> None:
             reply.raise_for_status()
         except httpx.HTTPStatusError:
             if reply.status_code == 400:
-                raise BadRequestHTTPException(
+                raise TelegramMediaGroupHTTPException(
                     message=reply.text,
                     status_code=reply.status_code,
                 )

@@ -17,8 +17,8 @@ import random
 
 import httpx
 
-from ..constants import USER_AGENT
-from ..favourites import load_cookies
+from ...constants import USER_AGENT
+from ..cookies import load_cookies
 from .models import CurrencyConversion
 from .models import Order
 from .models import OrderItem
