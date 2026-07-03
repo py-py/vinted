@@ -123,9 +123,10 @@
                   {{ "%.2f"|format(item.paid_price) }} {{ item.currency }}
                 </div>
               {% endif %}
-              <button type="button" class="sale-btn w-full mt-1 rounded-md px-3 py-1.5 text-sm font-semibold transition"
+              <select aria-label="Sale status"
+                      class="sale-select w-full mt-1 rounded-md px-2 py-1.5 text-sm font-semibold transition cursor-pointer appearance-none text-center"
                       data-status="{{ item['_sale_status'] }}">
-              </button>
+              </select>
             </div>
           </div>
           {% endfor %}
@@ -189,7 +190,7 @@
   </script>
 
   <script>
-    // Cycle an item's sale status (none -> listed -> sold -> none) and persist it.
+    // Pick an item's sale status from a dropdown and persist it.
     const STATES = {
       none:     { label: 'Not listed', classes: ['bg-slate-100', 'text-slate-600', 'ring-1', 'ring-slate-300', 'hover:bg-slate-200'] },
       listed:   { label: 'Listed',     classes: ['bg-amber-500', 'text-white', 'hover:bg-amber-600'] },
@@ -203,19 +204,24 @@
     const ORDER = ['none', 'reserved', 'wait_winter', 'listed', 'sold_unconfirmed', 'sold', 'parted_sold', 'trash'];
     const ALL_CLASSES = Object.values(STATES).flatMap((s) => s.classes);
 
-    const paint = (btn, status) => {
-      btn.dataset.status = status;
-      btn.textContent = STATES[status].label;
-      btn.classList.remove(...ALL_CLASSES);
-      btn.classList.add(...STATES[status].classes);
+    const paint = (sel, status) => {
+      sel.dataset.status = status;
+      sel.value = status;
+      sel.classList.remove(...ALL_CLASSES);
+      sel.classList.add(...STATES[status].classes);
     };
 
-    document.querySelectorAll('.sale-btn').forEach((btn) => {
-      paint(btn, STATES[btn.dataset.status] ? btn.dataset.status : 'none');
-      btn.addEventListener('click', async () => {
-        const card = btn.closest('[data-tx]');
-        const next = ORDER[(ORDER.indexOf(btn.dataset.status) + 1) % ORDER.length];
-        btn.disabled = true;
+    // Shared <option> markup for every dropdown.
+    const OPTIONS = ORDER.map((s) => `<option value="${s}">${STATES[s].label}</option>`).join('');
+
+    document.querySelectorAll('.sale-select').forEach((sel) => {
+      sel.innerHTML = OPTIONS;
+      paint(sel, STATES[sel.dataset.status] ? sel.dataset.status : 'none');
+      sel.addEventListener('change', async () => {
+        const card = sel.closest('[data-tx]');
+        const prev = sel.dataset.status;
+        const next = sel.value;
+        sel.disabled = true;
         try {
           const res = await fetch(`/items/${card.dataset.tx}/${card.dataset.item}/status`, {
             method: 'POST',
@@ -223,13 +229,13 @@
             body: JSON.stringify({ status: next }),
           });
           if (!res.ok) throw new Error(res.status);
-          paint(btn, next);
+          paint(sel, next);
           applyFilter();
         } catch (e) {
+          paint(sel, prev);
           alert('Failed to update sale status');
-        } finally {
-          btn.disabled = false;
         }
+        sel.disabled = false;
       });
     });
 
@@ -243,7 +249,7 @@
     const applyFilter = () => {
       let visible = 0;
       cards.forEach((card) => {
-        const status = card.querySelector('.sale-btn').dataset.status;
+        const status = card.querySelector('.sale-select').dataset.status;
         const show = active.has(status);
         card.classList.toggle('hidden', !show);
         if (show) visible++;
