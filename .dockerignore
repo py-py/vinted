@@ -18,6 +18,7 @@ venv
 # Secrets / Environment
 .env
 cookies.json
+notifier_state.json
 
 # Application data
 media

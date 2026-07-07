@@ -10,6 +10,9 @@ USER_AGENT = (
 CATALOG_URL = "https://www.vinted.pl/catalog?catalog[]={catalog_id}&order=newest_first&page={page}"
 PRODUCT_URL = "https://www.vinted.pl/items/{product_id}"
 
+# Notifier: max catalog pages to walk per poll (safety cap against floods)
+NOTIFIER_MAX_PAGES = 5
+
 CATALOG_WOMEN_SKI_BOOTS = "2652"
 
 CATALOG_RECIPES = {
