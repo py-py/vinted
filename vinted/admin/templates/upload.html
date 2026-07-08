@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Upload item</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="border-b bg-white sticky top-0 z-20">
+    <div class="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+      <h1 class="text-2xl font-semibold">Upload item</h1>
+      <a href="/" class="text-sm text-slate-500 hover:text-slate-900">&larr; Purchases</a>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-6 py-8">
+    {% if created %}
+    <div class="mb-6 rounded-lg bg-emerald-50 ring-1 ring-emerald-200 px-4 py-3 text-sm text-emerald-800">
+      Saved to <code class="font-mono">media/items/{{ created }}</code>
+    </div>
+    {% endif %}
+
+    <form method="post" action="/upload" enctype="multipart/form-data" class="space-y-6">
+      <div>
+        <label for="title" class="block text-sm font-medium mb-1">Title</label>
+        <input id="title" name="title" type="text" required maxlength="200"
+               class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-400"
+               placeholder="e.g. RevolutionRace Silence Pro Pants S/36">
+      </div>
+
+      <div>
+        <label for="description" class="block text-sm font-medium mb-1">Description</label>
+        <textarea id="description" name="description" rows="6"
+                  class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                  placeholder="Opis…"></textarea>
+      </div>
+
+      <div>
+        <label for="photos" class="block text-sm font-medium mb-1">Photos <span class="text-slate-400 font-normal">(3–4, up to 10)</span></label>
+        <input id="photos" name="photos" type="file" accept="image/*" multiple required
+               class="block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-white hover:file:bg-slate-700">
+        <div id="preview" class="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-3"></div>
+        <p id="hint" class="mt-2 text-xs text-slate-400">jpg, png, webp or gif · max 15 MB each</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button type="submit"
+                class="rounded-lg bg-slate-900 px-5 py-2.5 text-white font-medium hover:bg-slate-700">
+          Upload
+        </button>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    const input = document.getElementById("photos");
+    const preview = document.getElementById("preview");
+    const hint = document.getElementById("hint");
+    input.addEventListener("change", () => {
+      preview.innerHTML = "";
+      const files = [...input.files];
+      hint.textContent = files.length
+        ? files.length + " selected · " + (files.reduce((s, f) => s + f.size, 0) / 1048576).toFixed(1) + " MB total"
+        : "jpg, png, webp or gif · max 15 MB each";
+      files.forEach((file, i) => {
+        const url = URL.createObjectURL(file);
+        const wrap = document.createElement("div");
+        wrap.className = "relative aspect-square overflow-hidden rounded-lg ring-1 ring-slate-200";
+        wrap.innerHTML =
+          '<img src="' + url + '" class="h-full w-full object-cover" onload="URL.revokeObjectURL(this.src)">' +
+          '<span class="absolute top-1 left-1 rounded bg-black/60 px-1.5 text-xs text-white">' + (i + 1) + '</span>';
+        preview.appendChild(wrap);
+      });
+    });
+  </script>
+</body>
+</html>

@@ -10,17 +10,25 @@ Run:
 
 from __future__ import annotations
 
+import json
 import os
 import secrets
+import uuid
+from datetime import UTC
+from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import Depends
 from fastapi import FastAPI
+from fastapi import File
+from fastapi import Form
 from fastapi import HTTPException
+from fastapi import UploadFile
 from fastapi import status
 from fastapi.responses import HTMLResponse
+from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPBasic
 from fastapi.security import HTTPBasicCredentials
 from jinja2 import Environment
@@ -180,3 +188,72 @@ def set_status(tx_id: str, item_id: str, update: StatusUpdate) -> dict:
         raise HTTPException(status_code=422, detail=f"invalid status: {update.status!r}")
     _store().set_item_status(tx_id, item_id, update.status)
     return {"tx_id": tx_id, "item_id": item_id, "status": update.status}
+
+
+# --- Manual item upload ------------------------------------------------------
+
+_MEDIA_ITEMS_DIR = Path("media/items")
+_ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+_MAX_FILES = 10
+_MAX_BYTES = 15 * 1024 * 1024  # 15 MB per photo
+
+
+@app.get("/upload", response_class=HTMLResponse)
+def upload_form(created: str | None = None) -> str:
+    return _env.get_template("upload.html").render(created=created)
+
+
+@app.post("/upload")
+async def upload_item(
+    title: str = Form(...),
+    description: str = Form(""),
+    photos: list[UploadFile] = File(...),
+) -> RedirectResponse:
+    """Create media/items/{uuid4}/ from an uploaded title, description and photos.
+
+    Photos are saved as 1.<ext>, 2.<ext>, … in upload order; title/description are
+    written to meta.json alongside them.
+    """
+    title = title.strip()
+    if not title:
+        raise HTTPException(status_code=422, detail="title is required")
+
+    files = [f for f in photos if f.filename]
+    if not files:
+        raise HTTPException(status_code=422, detail="at least one photo is required")
+    if len(files) > _MAX_FILES:
+        raise HTTPException(status_code=422, detail=f"too many photos (max {_MAX_FILES})")
+
+    # Validate & read everything before touching the filesystem, so a rejected
+    # upload never leaves an orphaned folder behind.
+    payloads: list[tuple[str, bytes]] = []
+    for position, upload in enumerate(files, start=1):
+        ext = Path(upload.filename or "").suffix.lower()
+        if ext not in _ALLOWED_EXT:
+            raise HTTPException(status_code=422, detail=f"unsupported file type: {ext or '?'}")
+        data = await upload.read()
+        if len(data) > _MAX_BYTES:
+            raise HTTPException(status_code=422, detail=f"{upload.filename} exceeds 15 MB")
+        payloads.append((f"{position}{ext}", data))
+
+    item_id = str(uuid.uuid4())
+    folder = _MEDIA_ITEMS_DIR / item_id
+    folder.mkdir(parents=True, exist_ok=True)
+
+    saved: list[str] = []
+    for name, data in payloads:
+        (folder / name).write_bytes(data)
+        saved.append(name)
+
+    meta = {
+        "id": item_id,
+        "title": title,
+        "description": description.strip(),
+        "photos": saved,
+        "created_at": datetime.now(UTC).isoformat(),
+    }
+    (folder / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2))
+
+    return RedirectResponse(
+        url=f"/upload?created={item_id}", status_code=status.HTTP_303_SEE_OTHER
+    )
