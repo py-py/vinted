@@ -17,6 +17,7 @@ import uuid
 from datetime import UTC
 from datetime import datetime
 from functools import lru_cache
+from io import BytesIO
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -34,6 +35,9 @@ from fastapi.security import HTTPBasicCredentials
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
 from jinja2 import select_autoescape
+from PIL import Image
+from PIL import ImageOps
+from PIL import UnidentifiedImageError
 from pydantic import BaseModel
 
 from vinted.account.firestore import FirestoreStore
@@ -194,8 +198,48 @@ def set_status(tx_id: str, item_id: str, update: StatusUpdate) -> dict:
 
 _MEDIA_ITEMS_DIR = Path("media/items")
 _ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+_FORMAT_BY_EXT = {
+    ".jpg": "JPEG",
+    ".jpeg": "JPEG",
+    ".png": "PNG",
+    ".webp": "WEBP",
+    ".gif": "GIF",
+}
 _MAX_FILES = 10
 _MAX_BYTES = 15 * 1024 * 1024  # 15 MB per photo
+_MAX_SHORT_SIDE = 1200  # downscale so the shorter side is at most this many px
+
+
+def _compress_image(data: bytes, ext: str) -> bytes:
+    """Downscale so the shorter side is ≤ _MAX_SHORT_SIDE (no upscaling) and re-encode.
+
+    Format is preserved from the extension; lossy formats are re-saved at quality 85.
+    Raises ValueError if the bytes aren't a decodable image.
+    """
+    with Image.open(BytesIO(data)) as img:
+        img = ImageOps.exif_transpose(img)  # bake in orientation before resizing
+        width, height = img.size
+        short = min(width, height)
+        if short > _MAX_SHORT_SIDE:
+            scale = _MAX_SHORT_SIDE / short
+            img = img.resize(
+                (max(1, round(width * scale)), max(1, round(height * scale))),
+                Image.LANCZOS,
+            )
+
+        buf = BytesIO()
+        fmt = _FORMAT_BY_EXT[ext]
+        if fmt == "JPEG":
+            if img.mode not in ("RGB", "L"):
+                img = img.convert("RGB")  # JPEG has no alpha
+            img.save(buf, "JPEG", quality=85, optimize=True, progressive=True)
+        elif fmt == "WEBP":
+            img.save(buf, "WEBP", quality=85, method=6)
+        elif fmt == "PNG":
+            img.save(buf, "PNG", optimize=True)
+        else:  # GIF — saves the current (first) frame
+            img.save(buf, "GIF")
+        return buf.getvalue()
 
 
 @app.get("/upload", response_class=HTMLResponse)
@@ -234,6 +278,12 @@ async def upload_item(
         data = await upload.read()
         if len(data) > _MAX_BYTES:
             raise HTTPException(status_code=422, detail=f"{upload.filename} exceeds 15 MB")
+        try:
+            data = _compress_image(data, ext)
+        except (UnidentifiedImageError, OSError, ValueError):
+            raise HTTPException(
+                status_code=422, detail=f"{upload.filename} is not a readable image"
+            ) from None
         payloads.append((f"{position}{ext}", data))
 
     item_id = str(uuid.uuid4())
