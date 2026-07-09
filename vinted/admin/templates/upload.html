@@ -18,6 +18,7 @@
     {% if created %}
     <div class="mb-6 rounded-lg bg-emerald-50 ring-1 ring-emerald-200 px-4 py-3 text-sm text-emerald-800">
       Saved to <code class="font-mono">media/items/{{ created }}</code>
+      &middot; <a href="/items/{{ created }}/edit" class="font-medium underline hover:no-underline">Edit</a>
     </div>
     {% endif %}
 

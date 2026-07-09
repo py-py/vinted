@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from fastapi import Depends
 from fastapi import FastAPI
 
+from .routers import edit
 from .routers import items
 from .routers import uploads
 from .security import require_auth
@@ -23,3 +24,4 @@ load_dotenv()
 app = FastAPI(title="Vinted purchases", dependencies=[Depends(require_auth)])
 app.include_router(items.router)
 app.include_router(uploads.router)
+app.include_router(edit.router)
