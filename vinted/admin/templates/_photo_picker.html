@@ -1,0 +1,47 @@
+{#
+  File input + client-side thumbnail preview, shared by the upload and edit pages.
+
+  Vars: `label`, `required` (bool), `hint` (the idle caption), and `mark_new` —
+  when true the thumbnails are badged "new", since the page already shows the
+  photos that are stored. Otherwise they're numbered, matching the save order.
+#}
+<div>
+  <label for="photos" class="block text-sm font-medium mb-1">{{ label }}</label>
+  <input id="photos" name="photos" type="file" accept="image/*" multiple {% if required %}required{% endif %}
+         class="block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-white hover:file:bg-slate-700">
+  <div id="preview" class="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-3"></div>
+  <p id="hint" class="mt-2 text-xs text-slate-400">{{ hint }}</p>
+</div>
+
+<script>
+  (() => {
+    const input = document.getElementById("photos");
+    const preview = document.getElementById("preview");
+    const hint = document.getElementById("hint");
+    const IDLE_HINT = hint.textContent;
+    const MARK_NEW = {{ "true" if mark_new else "false" }};
+
+    input.addEventListener("change", () => {
+      preview.innerHTML = "";
+      const files = [...input.files];
+      const mb = (files.reduce((s, f) => s + f.size, 0) / 1048576).toFixed(1);
+      hint.textContent = files.length
+        ? `${files.length} selected · ${mb} MB total`
+        : IDLE_HINT;
+
+      files.forEach((file, i) => {
+        const url = URL.createObjectURL(file);
+        const wrap = document.createElement("div");
+        wrap.className =
+          "relative aspect-square overflow-hidden rounded-lg ring-1 " +
+          (MARK_NEW ? "ring-emerald-300" : "ring-slate-200");
+        const badge = MARK_NEW
+          ? '<span class="absolute inset-x-0 bottom-0 bg-emerald-600 py-0.5 text-center text-xs font-medium text-white">new</span>'
+          : `<span class="absolute top-1 left-1 rounded bg-black/60 px-1.5 text-xs text-white">${i + 1}</span>`;
+        wrap.innerHTML =
+          `<img src="${url}" class="h-full w-full object-cover" onload="URL.revokeObjectURL(this.src)">` + badge;
+        preview.appendChild(wrap);
+      });
+    });
+  })();
+</script>

@@ -1,31 +1,30 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Vinted purchases</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+{% extends "base.html" %}
+{% set container = "max-w-7xl" %}
+
+{% block title %}Vinted purchases{% endblock %}
+{% block heading %}Purchased items{% endblock %}
+
+{% block head %}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.css">
-</head>
-<body class="bg-slate-50 text-slate-900">
-  <header class="border-b bg-white sticky top-0 z-20">
-    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-      <h1 class="text-2xl font-semibold">Purchased items</h1>
-      <div class="flex items-center gap-4">
-        <span id="item-count" class="text-sm text-slate-500">{{ total_items }} items</span>
-        <a href="/upload"
-           class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
-          Upload item
-        </a>
-      </div>
-    </div>
-    {% if purchases %}
-    <div class="max-w-7xl mx-auto px-6 pb-3 -mt-1">
-      <div id="filters" class="flex flex-wrap items-center gap-2 text-sm"></div>
-    </div>
-    {% endif %}
-  </header>
-  <main class="max-w-7xl mx-auto px-6 py-8">
+{% endblock %}
+
+{% block actions %}
+  <span id="item-count" class="text-sm text-slate-500">{{ total_items }} items</span>
+  <a href="/upload"
+     class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+    Upload item
+  </a>
+{% endblock %}
+
+{% block header_extra %}
+  {% if purchases %}
+  <div class="{{ container }} mx-auto px-6 pb-3 -mt-1">
+    <div id="filters" class="flex flex-wrap items-center gap-2 text-sm"></div>
+  </div>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
     {% if not purchases %}
       <p class="text-slate-500">No purchased items found in Firestore.</p>
     {% else %}
@@ -141,8 +140,9 @@
       {% endfor %}
     </div>
     {% endif %}
-  </main>
+{% endblock %}
 
+{% block scripts %}
   <script type="module">
     import PhotoSwipeLightbox from 'https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe-lightbox.esm.min.js';
 
@@ -297,5 +297,4 @@
       applyFilter();
     }
   </script>
-</body>
-</html>
+{% endblock %}

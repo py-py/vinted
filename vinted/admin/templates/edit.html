@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Edit item{% endblock %}
+{% block heading %}Edit item{% endblock %}
+
+{% block actions %}
+  <a href="/upload" class="text-sm text-slate-500 hover:text-slate-900">Upload</a>
+  <a href="/" class="text-sm text-slate-500 hover:text-slate-900">&larr; Purchases</a>
+{% endblock %}
+
+{% block content %}
+  {% if saved %}
+  <div class="mb-6 rounded-lg bg-emerald-50 ring-1 ring-emerald-200 px-4 py-3 text-sm text-emerald-800">
+    Saved.
+  </div>
+  {% endif %}
+
+  <p class="mb-6 text-xs text-slate-400 font-mono">media/items/{{ item_id }}</p>
+
+  <form method="post" action="/items/{{ item_id }}/edit" enctype="multipart/form-data" class="space-y-6">
+    <div>
+      <label for="title" class="block text-sm font-medium mb-1">Title</label>
+      <input id="title" name="title" type="text" required maxlength="200" value="{{ meta.title or '' }}"
+             class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-400">
+    </div>
+
+    <div>
+      <label for="description" class="block text-sm font-medium mb-1">Description</label>
+      <textarea id="description" name="description" rows="6"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-400">{{ meta.description or '' }}</textarea>
+    </div>
+
+    <div>
+      <div class="block text-sm font-medium mb-1">
+        Photos
+        <span class="text-slate-400 font-normal">(tick to delete on save)</span>
+      </div>
+      {% if meta.photos %}
+      <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+        {% for name in meta.photos %}
+        <label class="group relative aspect-square block cursor-pointer overflow-hidden rounded-lg ring-1 ring-slate-200 has-[:checked]:ring-2 has-[:checked]:ring-rose-500">
+          <img src="/media/items/{{ item_id }}/{{ name }}" alt="{{ name }}"
+               class="h-full w-full object-cover transition group-has-[:checked]:opacity-30">
+          <input type="checkbox" name="delete" value="{{ name }}" class="peer sr-only">
+          <span class="absolute top-1 left-1 rounded bg-black/60 px-1.5 text-xs text-white">{{ loop.index }}</span>
+          <span class="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-slate-500 ring-1 ring-slate-200 peer-checked:bg-rose-600 peer-checked:text-white peer-checked:ring-rose-600">
+            &#10005;
+          </span>
+          <span class="absolute inset-x-0 bottom-0 hidden bg-rose-600 py-0.5 text-center text-xs font-medium text-white peer-checked:block">
+            delete
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-400">No photos.</p>
+      {% endif %}
+    </div>
+
+    {% with label = "Add photos", required = false, mark_new = true,
+            hint = "jpg, png, webp or gif · max 15 MB each · " ~ max_files ~ " photos in total" %}
+      {% include "_photo_picker.html" %}
+    {% endwith %}
+
+    <div class="flex items-center gap-3">
+      <button type="submit"
+              class="rounded-lg bg-slate-900 px-5 py-2.5 text-white font-medium hover:bg-slate-700">
+        Save
+      </button>
+    </div>
+  </form>
+{% endblock %}
