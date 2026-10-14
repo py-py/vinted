@@ -30,7 +30,7 @@ class OrderItem(BaseModel):
 
 class Order(BaseModel):
     transaction_id: int
-    conversation_id: int
+    conversation_id: int | str  # legacy numeric ids; newer conversations use UUID strings
     purchase_id: str = ""
     title: str
     date: str
