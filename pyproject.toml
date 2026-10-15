@@ -44,4 +44,4 @@ ignore = ["UP045"]
 force-single-line = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["vinted"]

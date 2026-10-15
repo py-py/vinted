@@ -17,8 +17,9 @@ import random
 
 import httpx
 
-from ...constants import USER_AGENT
-from ..cookies import load_cookies
+from vinted.account.cookies import load_cookies
+from vinted.constants import USER_AGENT
+
 from .models import CurrencyConversion
 from .models import Order
 from .models import OrderItem
