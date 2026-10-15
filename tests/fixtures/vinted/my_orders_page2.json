@@ -1,0 +1,41 @@
+{
+  "my_orders": [
+    {
+      "conversation_id": "01a07759-7e24-79be-8d62-23cf67dc6909",
+      "transaction_id": 22092994701,
+      "title": "Bundle 5 items",
+      "price": {
+        "amount": "121.79",
+        "currency_code": "PLN"
+      },
+      "status": "Order completed!",
+      "date": "2026-09-06T15:32:43Z",
+      "photo": null,
+      "photo_url": "https://images1.vinted.net/t/06_0111c_zKp6uGEU5chaM3NNeYQK1BWP/150x210/b153a094.jpeg?s=cc9aad23003df22d12f4f5636f3ce6554d4dc050",
+      "transaction_user_status": "completed"
+    },
+    {
+      "conversation_id": "01a07bdb-df96-747b-b2ec-4691e04105c1",
+      "transaction_id": 22114341059,
+      "title": "Bundle 2 items",
+      "price": {
+        "amount": "104.59",
+        "currency_code": "PLN"
+      },
+      "status": "Order completed!",
+      "date": "2026-09-07T12:35:22Z",
+      "photo": null,
+      "photo_url": "https://images1.vinted.net/t/06_004d7_qM6CzZGeuJkVv9GCjeE4FYZQ/150x210/d115131f.jpeg?s=5c54d662602ef91eaa79aab203b8dd0836b760aa",
+      "transaction_user_status": "completed"
+    }
+  ],
+  "pagination": {
+    "page": 2,
+    "per_page": 2,
+    "current_page": 2,
+    "total_entries": 210,
+    "total_pages": 105,
+    "time": 1792071841
+  },
+  "order_details_enabled": false
+}
