@@ -1,6 +1,6 @@
 DEV_PORT ?= 8000
 
-.PHONY: build shell run admin-web orders scrape-item analyze cookies
+.PHONY: build shell run admin-web orders scrape-item analyze cookies cookie-header
 
 build:
 	docker compose build
@@ -32,3 +32,6 @@ analyze:
 
 cookies:
 	pbpaste | python scripts/parse_curl.py
+
+cookie-header:
+	python scripts/cookie_header.py | pbcopy
