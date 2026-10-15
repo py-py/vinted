@@ -11,7 +11,7 @@ They reflect the API shape after ~2026-09:
     transactions/{tx} -> order.items[].
 
 Run:
-    python -m unittest discover tests
+    make test  (or: pytest tests)
 """
 
 from __future__ import annotations

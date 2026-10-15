@@ -19,6 +19,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pre-commit==4.3.0",
+    "pytest==9.1.1",
     "ruff==0.15.8",
 ]
 
@@ -41,3 +42,6 @@ ignore = ["UP045"]
 
 [tool.ruff.lint.isort]
 force-single-line = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

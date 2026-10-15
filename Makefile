@@ -1,6 +1,6 @@
 DEV_PORT ?= 8000
 
-.PHONY: build shell run admin-web orders scrape-item analyze cookies cookie-header
+.PHONY: build shell run test admin-web orders scrape-item analyze cookies cookie-header
 
 build:
 	docker compose build
@@ -10,6 +10,9 @@ shell:
 
 run:
 	docker compose run --rm vinted $(CMD)
+
+test:
+	docker compose run --rm vinted pytest $(ARGS)
 
 admin-web:
 	docker compose run --rm \
