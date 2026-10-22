@@ -1,81 +1,25 @@
 """
-FastAPI viewer for purchased Vinted items.
+Purchased Vinted items: list view and per-item sale status.
 
 Data is pulled from Firestore (purchases/{tx}/items/{id}). Photos are loaded
 directly from the Vinted CDN URLs stored in Firestore — no GCS access here.
-
-Run:
-    uvicorn vinted.admin.web:app --reload
 """
 
 from __future__ import annotations
 
-import os
-import secrets
-from functools import lru_cache
-from pathlib import Path
+from typing import Annotated
 
-from dotenv import load_dotenv
-from fastapi import Depends
-from fastapi import FastAPI
-from fastapi import HTTPException
-from fastapi import status
+from fastapi import APIRouter
+from fastapi import Path
 from fastapi.responses import HTMLResponse
-from fastapi.security import HTTPBasic
-from fastapi.security import HTTPBasicCredentials
-from jinja2 import Environment
-from jinja2 import FileSystemLoader
-from jinja2 import select_autoescape
 from pydantic import BaseModel
 
-from vinted.account.firestore import FirestoreStore
+from ..account.orders.models import SaleStatus
+from ..storage import FirestoreStore
+from .deps import StoreDep
+from .deps import templates
 
-load_dotenv()
-
-_ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "")
-_ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
-_security = HTTPBasic()
-
-
-def require_auth(credentials: HTTPBasicCredentials = Depends(_security)) -> str:
-    """Gate every route behind HTTP Basic auth (ADMIN_USERNAME / ADMIN_PASSWORD).
-
-    Fails closed: if credentials aren't configured the site is unreachable rather
-    than wide open. Uses constant-time comparison to avoid leaking length/contents
-    via timing.
-    """
-    if not _ADMIN_USERNAME or not _ADMIN_PASSWORD:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Admin auth not configured: set ADMIN_USERNAME and ADMIN_PASSWORD",
-        )
-    user_ok = secrets.compare_digest(
-        credentials.username.encode("utf-8"), _ADMIN_USERNAME.encode("utf-8")
-    )
-    pass_ok = secrets.compare_digest(
-        credentials.password.encode("utf-8"), _ADMIN_PASSWORD.encode("utf-8")
-    )
-    if not (user_ok and pass_ok):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return credentials.username
-
-
-app = FastAPI(title="Vinted purchases", dependencies=[Depends(require_auth)])
-
-_TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
-_env = Environment(
-    loader=FileSystemLoader(_TEMPLATES_DIR),
-    autoescape=select_autoescape(["html"]),
-)
-
-
-@lru_cache(maxsize=1)
-def _store() -> FirestoreStore:
-    return FirestoreStore()
+router = APIRouter(tags=["purchases"])
 
 
 def _allocate_pln(purchase: dict, items: list[dict]) -> dict[int, float]:
@@ -126,14 +70,13 @@ def _estimate_paid(purchase: dict, items: list[dict]) -> dict[int, tuple[float, 
     }
 
 
-def _load_purchases() -> list[dict]:
+def _load_purchases(store: FirestoreStore) -> list[dict]:
     """Purchases (transactions) newest first, each with its enriched items.
 
     Uses two queries: one stream over `purchases` for the order context, one
     collection_group("items") for all items across all purchases. Items are
     joined to their parent purchase by document id and nested under it.
     """
-    store = _store()
     purchases: dict[str, dict] = {
         snap.id: (snap.to_dict() or {}) for snap in store.purchases.stream()
     }
@@ -179,35 +122,32 @@ def _load_purchases() -> list[dict]:
     return out
 
 
-@app.get("/", response_class=HTMLResponse)
-def index() -> str:
-    purchases = _load_purchases()
+@router.get("/", response_class=HTMLResponse)
+def index(store: StoreDep) -> str:
+    purchases = _load_purchases(store)
     context = {
         "purchases": purchases,
         "total_items": sum(len(p["items"]) for p in purchases),
     }
-    return _env.get_template("items.html").render(**context)
-
-
-_SALE_STATUSES = {
-    "none",
-    "listed",
-    "sold_unconfirmed",
-    "sold",
-    "reserved",
-    "parted_sold",
-    "wait_winter",
-    "trash",
-}
+    return templates.get_template("items.html").render(**context)
 
 
 class StatusUpdate(BaseModel):
-    status: str
+    status: SaleStatus
 
 
-@app.post("/items/{tx_id}/{item_id}/status")
-def set_status(tx_id: str, item_id: str, update: StatusUpdate) -> dict:
-    if update.status not in _SALE_STATUSES:
-        raise HTTPException(status_code=422, detail=f"invalid status: {update.status!r}")
-    _store().set_item_status(tx_id, item_id, update.status)
-    return {"tx_id": tx_id, "item_id": item_id, "status": update.status}
+class StatusUpdateResult(BaseModel):
+    tx_id: str
+    item_id: str
+    status: SaleStatus
+
+
+@router.post("/items/{tx_id}/{item_id}/status")
+def set_status(
+    tx_id: Annotated[str, Path(description="Purchase (transaction) id")],
+    item_id: Annotated[str, Path(description="Item id within the purchase")],
+    update: StatusUpdate,
+    store: StoreDep,
+) -> StatusUpdateResult:
+    store.set_item_status(tx_id, item_id, update.status)
+    return StatusUpdateResult(tx_id=tx_id, item_id=item_id, status=update.status)

@@ -4,7 +4,7 @@ import argparse
 import asyncio
 import json
 
-from ..firestore import FirestoreStore
+from ...storage import FirestoreStore
 from .api import fetch_orders
 from .photos import backfill_photos
 

@@ -10,7 +10,8 @@ import os
 
 from google.cloud import firestore
 
-from .orders.models import Order
+from ..account.orders.models import Order
+from ..account.orders.models import SaleStatus
 
 PURCHASES_COLLECTION = "purchases"
 
@@ -49,12 +50,12 @@ class FirestoreStore:
                     pairs.append((int(item_doc.id), list(urls)))
         return pairs
 
-    def set_item_status(self, transaction_id: str, item_id: str, status: str) -> None:
+    def set_item_status(self, transaction_id: str, item_id: str, status: SaleStatus) -> None:
         """Set a single item's sale status.
 
         Stored under the custom field `_sale_status` (leading underscore marks fields
-        we add ourselves, not synced from Vinted) on purchases/{tx}/items/{id}. One of
-        "none" (not for sale), "listed" (listed for sale), "sold".
+        we add ourselves, not synced from Vinted) on purchases/{tx}/items/{id}. See
+        `SaleStatus` for the allowed values.
         """
         item_ref = self.purchases.document(transaction_id).collection("items").document(item_id)
         item_ref.set({"_sale_status": status}, merge=True)
