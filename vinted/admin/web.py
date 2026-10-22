@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import os
 import secrets
-from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated
@@ -32,6 +31,7 @@ from jinja2 import select_autoescape
 from pydantic import BaseModel
 
 from vinted.account.firestore import FirestoreStore
+from vinted.account.models import SaleStatus
 
 load_dotenv()
 
@@ -192,17 +192,6 @@ def index() -> str:
         "total_items": sum(len(p["items"]) for p in purchases),
     }
     return _env.get_template("items.html").render(**context)
-
-
-class SaleStatus(StrEnum):
-    NONE = "none"
-    LISTED = "listed"
-    SOLD_UNCONFIRMED = "sold_unconfirmed"
-    SOLD = "sold"
-    RESERVED = "reserved"
-    PARTED_SOLD = "parted_sold"
-    WAIT_WINTER = "wait_winter"
-    TRASH = "trash"
 
 
 class StatusUpdate(BaseModel):
