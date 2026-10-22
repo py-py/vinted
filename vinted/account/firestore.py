@@ -54,7 +54,7 @@ class FirestoreStore:
 
         Stored under the custom field `_sale_status` (leading underscore marks fields
         we add ourselves, not synced from Vinted) on purchases/{tx}/items/{id}. One of
-        "none" (not for sale), "listed" (listed for sale), "sold".
+        the `SaleStatus` values from `vinted.admin.web`.
         """
         item_ref = self.purchases.document(transaction_id).collection("items").document(item_id)
         item_ref.set({"_sale_status": status}, merge=True)

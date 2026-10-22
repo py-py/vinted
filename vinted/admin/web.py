@@ -5,20 +5,23 @@ Data is pulled from Firestore (purchases/{tx}/items/{id}). Photos are loaded
 directly from the Vinted CDN URLs stored in Firestore — no GCS access here.
 
 Run:
-    uvicorn vinted.admin.web:app --reload
+    fastapi dev
 """
 
 from __future__ import annotations
 
 import os
 import secrets
+from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
 from dotenv import load_dotenv
 from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
+from fastapi import Path as PathParam
 from fastapi import status
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBasic
@@ -36,8 +39,10 @@ _ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "")
 _ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 _security = HTTPBasic()
 
+CredentialsDep = Annotated[HTTPBasicCredentials, Depends(_security)]
 
-def require_auth(credentials: HTTPBasicCredentials = Depends(_security)) -> str:
+
+def require_auth(credentials: CredentialsDep) -> str:
     """Gate every route behind HTTP Basic auth (ADMIN_USERNAME / ADMIN_PASSWORD).
 
     Fails closed: if credentials aren't configured the site is unreachable rather
@@ -189,25 +194,32 @@ def index() -> str:
     return _env.get_template("items.html").render(**context)
 
 
-_SALE_STATUSES = {
-    "none",
-    "listed",
-    "sold_unconfirmed",
-    "sold",
-    "reserved",
-    "parted_sold",
-    "wait_winter",
-    "trash",
-}
+class SaleStatus(StrEnum):
+    NONE = "none"
+    LISTED = "listed"
+    SOLD_UNCONFIRMED = "sold_unconfirmed"
+    SOLD = "sold"
+    RESERVED = "reserved"
+    PARTED_SOLD = "parted_sold"
+    WAIT_WINTER = "wait_winter"
+    TRASH = "trash"
 
 
 class StatusUpdate(BaseModel):
-    status: str
+    status: SaleStatus
+
+
+class StatusUpdateResult(BaseModel):
+    tx_id: str
+    item_id: str
+    status: SaleStatus
 
 
 @app.post("/items/{tx_id}/{item_id}/status")
-def set_status(tx_id: str, item_id: str, update: StatusUpdate) -> dict:
-    if update.status not in _SALE_STATUSES:
-        raise HTTPException(status_code=422, detail=f"invalid status: {update.status!r}")
+def set_status(
+    tx_id: Annotated[str, PathParam(description="Purchase (transaction) id")],
+    item_id: Annotated[str, PathParam(description="Item id within the purchase")],
+    update: StatusUpdate,
+) -> StatusUpdateResult:
     _store().set_item_status(tx_id, item_id, update.status)
-    return {"tx_id": tx_id, "item_id": item_id, "status": update.status}
+    return StatusUpdateResult(tx_id=tx_id, item_id=item_id, status=update.status)
