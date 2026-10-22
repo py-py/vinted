@@ -30,8 +30,8 @@ from jinja2 import FileSystemLoader
 from jinja2 import select_autoescape
 from pydantic import BaseModel
 
-from vinted.account.firestore import FirestoreStore
-from vinted.account.models import SaleStatus
+from ..account.orders.models import SaleStatus
+from ..storage import FirestoreStore
 
 load_dotenv()
 
@@ -79,8 +79,12 @@ _env = Environment(
 
 
 @lru_cache(maxsize=1)
-def _store() -> FirestoreStore:
+def get_store() -> FirestoreStore:
+    """One shared Firestore client per process; override in tests via dependency_overrides."""
     return FirestoreStore()
+
+
+StoreDep = Annotated[FirestoreStore, Depends(get_store)]
 
 
 def _allocate_pln(purchase: dict, items: list[dict]) -> dict[int, float]:
@@ -131,14 +135,13 @@ def _estimate_paid(purchase: dict, items: list[dict]) -> dict[int, tuple[float, 
     }
 
 
-def _load_purchases() -> list[dict]:
+def _load_purchases(store: FirestoreStore) -> list[dict]:
     """Purchases (transactions) newest first, each with its enriched items.
 
     Uses two queries: one stream over `purchases` for the order context, one
     collection_group("items") for all items across all purchases. Items are
     joined to their parent purchase by document id and nested under it.
     """
-    store = _store()
     purchases: dict[str, dict] = {
         snap.id: (snap.to_dict() or {}) for snap in store.purchases.stream()
     }
@@ -185,8 +188,8 @@ def _load_purchases() -> list[dict]:
 
 
 @app.get("/", response_class=HTMLResponse)
-def index() -> str:
-    purchases = _load_purchases()
+def index(store: StoreDep) -> str:
+    purchases = _load_purchases(store)
     context = {
         "purchases": purchases,
         "total_items": sum(len(p["items"]) for p in purchases),
@@ -209,6 +212,7 @@ def set_status(
     tx_id: Annotated[str, PathParam(description="Purchase (transaction) id")],
     item_id: Annotated[str, PathParam(description="Item id within the purchase")],
     update: StatusUpdate,
+    store: StoreDep,
 ) -> StatusUpdateResult:
-    _store().set_item_status(tx_id, item_id, update.status)
+    store.set_item_status(tx_id, item_id, update.status)
     return StatusUpdateResult(tx_id=tx_id, item_id=item_id, status=update.status)

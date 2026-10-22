@@ -9,7 +9,7 @@ import asyncio
 import httpx
 
 from ...constants import USER_AGENT
-from ..gcs import PhotoStore
+from ...storage import PhotoStore
 
 _MAX_CONCURRENT_UPLOADS = 8
 

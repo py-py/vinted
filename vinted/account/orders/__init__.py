@@ -6,10 +6,12 @@ from .api import fetch_orders
 from .api import fetch_transaction
 from .models import Order
 from .models import OrderItem
+from .models import SaleStatus
 
 __all__ = [
     "Order",
     "OrderItem",
+    "SaleStatus",
     "build_order",
     "fetch_escrow_order",
     "fetch_escrow_order_items",
