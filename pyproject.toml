@@ -27,7 +27,7 @@ dev = [
 package = false
 
 [tool.fastapi]
-entrypoint = "vinted.admin.web:app"
+entrypoint = "vinted.admin.app:app"
 
 [tool.ruff]
 line-length = 99
