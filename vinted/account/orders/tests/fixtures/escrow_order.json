@@ -1,0 +1,120 @@
+{
+  "escrow_order": {
+    "id": 22646003889,
+    "seller_id": 312208246,
+    "buyer_id": 3131275209,
+    "current_user_side": "buyer",
+    "is_seller_business": false,
+    "is_suspended": false,
+    "conversation_id": "01a0e1f0-5731-7836-9bf0-76c74a079965",
+    "created_at": "2026-09-27T08:17:24Z",
+    "title": "Bundle 3 items",
+    "items": [
+      {
+        "id": 10092914997,
+        "title": "Rohelised Jordan Low/ Nike",
+        "is_deleted": false,
+        "photo_url": "https://images1.vinted.net/t/02_02205_FV74nK9WwMmP9FbAqyT1nody/150x210/f5e7291f.jpeg?s=0d16839253ef931785966bc22a17fe7d1c2131ad"
+      },
+      {
+        "id": 10149546725,
+        "title": "Neoonkollased space hippie 04",
+        "is_deleted": false,
+        "photo_url": "https://images1.vinted.net/t/02_01ad8_NuhoH4r4DJowJmR3Qs34XcTE/150x210/67f8ef47.jpeg?s=2040373cd0609c16b5c9a1531e649be1dcb896d2"
+      },
+      {
+        "id": 10149615955,
+        "title": "Beežid/hallid meeste space hippie 04",
+        "is_deleted": false,
+        "photo_url": "https://images1.vinted.net/t/05_0082d_XKENKF7Uie7MkfwAB8GRcSEz/150x210/b854244b.jpeg?s=9cfad36bcdd7c5f67b74c4aebf7d2ab12027f973"
+      }
+    ],
+    "status": "completed",
+    "transaction_status": 450,
+    "total_price": {
+      "amount": 169.25,
+      "currency_code": "PLN"
+    },
+    "shipment": {
+      "price_ex_vat": {
+        "amount": 9.25,
+        "currency_code": "PLN"
+      },
+      "vat_amount": {
+        "amount": 2.22,
+        "currency_code": "PLN"
+      }
+    },
+    "payment_data": {
+      "items_price": {
+        "price": {
+          "amount": "147.50",
+          "currency_code": "PLN"
+        }
+      },
+      "sales_tax_price": null,
+      "customs_tax_price": null,
+      "import_vat_price": null,
+      "service_fee_price": {
+        "price": {
+          "amount": "10.28",
+          "currency_code": "PLN"
+        },
+        "discount": null
+      },
+      "item_verification_fee_price": null,
+      "electronics_verification_fee_price": null,
+      "total_price_without_tax": {
+        "price": {
+          "amount": "157.78",
+          "currency_code": "PLN"
+        }
+      },
+      "shipment_price": {
+        "price": {
+          "amount": "11.47",
+          "currency_code": "PLN"
+        },
+        "discount": {
+          "amount": "5.14",
+          "currency_code": "PLN"
+        },
+        "price_excluding_vat": {
+          "amount": "9.25",
+          "currency_code": "PLN"
+        },
+        "vat_price": {
+          "amount": "2.22",
+          "currency_code": "PLN"
+        }
+      },
+      "total_price": {
+        "amount": "169.25",
+        "currency_code": "PLN"
+      },
+      "conversion_data": {
+        "items_price": {
+          "amount": "33.30",
+          "currency_code": "EUR"
+        },
+        "shipment_price": {
+          "amount": "2.59",
+          "currency_code": "EUR"
+        },
+        "base_rate": {
+          "amount": "1.00",
+          "currency_code": "EUR"
+        },
+        "rounded_rate": {
+          "amount": "4.43",
+          "currency_code": "PLN"
+        },
+        "provider": "Adyen N.V.",
+        "rate": "0.012"
+      }
+    },
+    "purchase_id": "KvXExBSJiW-oeW7GNGnNS",
+    "traits": []
+  },
+  "code": 0
+}

@@ -113,7 +113,8 @@
                 <div class="text-sm font-semibold">
                   {{ "%.2f"|format(item.price_pln) }} PLN
                   {% if item.paid_price is not none %}
-                    <span class="text-xs font-normal text-slate-400" title="listing price">
+                    <span class="text-xs font-normal text-slate-400"
+                          title="{{ 'estimated from order total' if item.paid_estimated else 'listing price' }}">
                       ({{ "%.2f"|format(item.paid_price) }} {{ item.currency }})
                     </span>
                   {% endif %}

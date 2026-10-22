@@ -17,8 +17,9 @@ import random
 
 import httpx
 
-from ...constants import USER_AGENT
-from ..cookies import load_cookies
+from vinted.account.cookies import load_cookies
+from vinted.constants import USER_AGENT
+
 from .models import CurrencyConversion
 from .models import Order
 from .models import OrderItem
@@ -143,8 +144,9 @@ async def build_order(client: httpx.AsyncClient, raw_order: dict) -> Order:
             OrderItem(
                 id=it["id"],
                 title=it.get("title", ""),
-                size=it.get("size", "") or "",
-                condition=it.get("status", "") or "",
+                # escrow items stopped returning size/status (~2026-09); transaction has them
+                size=it.get("size") or tx_item.get("size_title", "") or "",
+                condition=it.get("status") or tx_item.get("status", "") or "",
                 url=tx_item.get("url", ""),
                 catalog_id=tx_item.get("catalog_id"),
                 photo_url=it.get("photo_url", ""),
@@ -171,6 +173,8 @@ async def build_order(client: httpx.AsyncClient, raw_order: dict) -> Order:
         )
 
     total_price_dict = escrow.get("total_price") or {}
+    # my_orders moved the thumbnail from `photo.url` to top-level `photo_url` (~2026-09)
+    photo_url = (raw_order.get("photo") or {}).get("url") or raw_order.get("photo_url", "") or ""
     return Order(
         transaction_id=transaction_id,
         conversation_id=conversation_id,
@@ -182,7 +186,7 @@ async def build_order(client: httpx.AsyncClient, raw_order: dict) -> Order:
         seller_login=seller.get("login", ""),
         seller_country=seller.get("country_code", ""),
         items=items,
-        photo_url=(raw_order.get("photo") or {}).get("url", ""),
+        photo_url=photo_url,
         items_price=_amount(payment.get("items_price", {}).get("price")),
         service_fee=_amount(payment.get("service_fee_price", {}).get("price")),
         shipment_price=_amount(payment.get("shipment_price", {}).get("price")),

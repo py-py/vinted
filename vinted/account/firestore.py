@@ -15,6 +15,11 @@ from .orders.models import Order
 PURCHASES_COLLECTION = "purchases"
 
 
+def _non_empty(doc: dict) -> dict:
+    """Drop None/""/[]/{} values so a merge never blanks out previously saved data."""
+    return {k: v for k, v in doc.items() if v not in (None, "", [], {})}
+
+
 class FirestoreStore:
     """
     Firestore-backed store for Vinted data.
@@ -55,17 +60,34 @@ class FirestoreStore:
         item_ref.set({"_sale_status": status}, merge=True)
 
     def save_order(self, order: Order) -> None:
+        """Upsert an order and its items.
+
+        New docs are written in full. Existing docs are merged with only non-empty
+        fields: Vinted's API stopped returning some fields (paid_price, size, ...)
+        for older orders, and a re-sync must not wipe them or `_sale_status`.
+        """
         if not order.transaction_id:
             raise ValueError(f"order has empty transaction_id: {order}")
 
         purchase_ref = self.purchases.document(str(order.transaction_id))
-        order_doc = order.model_dump(exclude={"items"})
-        order_doc["updated_at"] = firestore.SERVER_TIMESTAMP
+        docs = [(purchase_ref, order.model_dump(exclude={"items"}))]
+        docs += [
+            (purchase_ref.collection("items").document(str(item.id)), item.model_dump())
+            for item in order.items
+        ]
+        existing = {
+            snap.reference.path
+            for snap in self.client.get_all([ref for ref, _ in docs])
+            if snap.exists
+        }
 
         batch = self.client.batch()
-        batch.set(purchase_ref, order_doc)
-        for item in order.items:
-            batch.set(purchase_ref.collection("items").document(str(item.id)), item.model_dump())
+        for ref, doc in docs:
+            if ref.path in existing:
+                doc = _non_empty(doc)
+            if ref is purchase_ref:
+                doc["updated_at"] = firestore.SERVER_TIMESTAMP
+            batch.set(ref, doc, merge=True)
         batch.commit()
 
     def save_orders(self, orders: list[Order]) -> None:
