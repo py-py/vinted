@@ -7,9 +7,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from vinted.account.orders.models import SaleStatus
-from vinted.admin import app
-from vinted.admin.deps import get_store
-from vinted.admin.purchases import _allocate_pln
+
+from .. import app
+from ..deps import get_store
+from ..purchases import _allocate_pln
 
 AUTH = ("admin", "secret")
 
@@ -99,9 +100,18 @@ def test_allocate_pln_includes_fees_proportionally() -> None:
     assert _allocate_pln(purchase, items) == {1: 55.0, 2: 55.0}
 
 
-def test_allocate_pln_skips_items_without_price() -> None:
+def test_allocate_pln_falls_back_to_listed_price() -> None:
     purchase = {"currency": "PLN", "total_price": 100.0}
-    items = [{"id": 1, "paid_price": 100.0}, {"id": 2}]
+    items = [
+        {"id": 1, "paid_price": 10.0, "listed_price": 25.0},
+        {"id": 2, "listed_price": 75.0},
+    ]
+    assert _allocate_pln(purchase, items) == {1: 25.0, 2: 75.0}
+
+
+def test_allocate_pln_skips_items_without_weight() -> None:
+    purchase = {"currency": "PLN", "total_price": 100.0}
+    items = [{"id": 1, "listed_price": 100.0}, {"id": 2}]
     assert _allocate_pln(purchase, items) == {1: 100.0}
 
 

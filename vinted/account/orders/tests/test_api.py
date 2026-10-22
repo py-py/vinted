@@ -24,12 +24,12 @@ from pathlib import Path
 import httpx
 import pytest
 
-from vinted.account.orders.api import ESCROW_ITEMS_URL
-from vinted.account.orders.api import ESCROW_ORDER_URL
-from vinted.account.orders.api import MY_ORDERS_URL
-from vinted.account.orders.api import TRANSACTION_URL
-from vinted.account.orders.api import build_order
-from vinted.account.orders.api import fetch_my_orders
+from ..api import ESCROW_ITEMS_URL
+from ..api import ESCROW_ORDER_URL
+from ..api import MY_ORDERS_URL
+from ..api import TRANSACTION_URL
+from ..api import build_order
+from ..api import fetch_my_orders
 
 pytestmark = pytest.mark.anyio
 
