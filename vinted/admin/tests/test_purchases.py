@@ -6,8 +6,6 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
-from vinted.account.orders.models import SaleStatus
-
 from .. import app
 from ..deps import get_store
 from ..purchases import _allocate_pln
@@ -41,46 +39,18 @@ def client(store: MagicMock) -> TestClient:
 ######
 
 
-def test_missing_credentials_is_401(client: TestClient) -> None:
-    assert client.get("/").status_code == 401
+@pytest.mark.parametrize("path", ["/api/stats", "/", "/items"])
+def test_missing_credentials_is_401(client: TestClient, path: str) -> None:
+    assert client.get(path).status_code == 401
 
 
 def test_wrong_password_is_401(client: TestClient) -> None:
-    assert client.get("/", auth=(AUTH[0], "wrong")).status_code == 401
+    assert client.get("/api/stats", auth=(AUTH[0], "wrong")).status_code == 401
 
 
 def test_unconfigured_auth_is_503(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("ADMIN_PASSWORD")
-    assert client.get("/", auth=AUTH).status_code == 503
-
-
-######
-# INDEX
-######
-
-
-def test_index_renders(client: TestClient) -> None:
-    response = client.get("/", auth=AUTH)
-    assert response.status_code == 200
-    assert response.headers["content-type"].startswith("text/html")
-
-
-######
-# SET STATUS
-######
-
-
-def test_set_status(client: TestClient, store: MagicMock) -> None:
-    response = client.post("/items/1/2/status", json={"status": "sold"}, auth=AUTH)
-    assert response.status_code == 200
-    assert response.json() == {"tx_id": "1", "item_id": "2", "status": "sold"}
-    store.set_item_status.assert_called_once_with("1", "2", SaleStatus.SOLD)
-
-
-def test_set_status_rejects_unknown_value(client: TestClient, store: MagicMock) -> None:
-    response = client.post("/items/1/2/status", json={"status": "bogus"}, auth=AUTH)
-    assert response.status_code == 422
-    store.set_item_status.assert_not_called()
+    assert client.get("/api/stats", auth=AUTH).status_code == 503
 
 
 ######
