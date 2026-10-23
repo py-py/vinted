@@ -1,6 +1,6 @@
 DEV_PORT ?= 8000
 
-.PHONY: build shell run test admin-web orders scrape-item analyze cookies cookie-header
+.PHONY: build shell run test admin-web web-dev web-build orders scrape-item analyze cookies cookie-header
 
 build:
 	docker compose build
@@ -20,6 +20,13 @@ admin-web:
 		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
 		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
 		vinted fastapi dev --host 0.0.0.0 --port 8000
+
+web-dev:
+	API_URL=http://localhost:$(DEV_PORT) npm --prefix web run dev
+
+web-build:
+	npm --prefix web ci
+	npm --prefix web run build
 
 orders:
 	docker compose run --rm \

@@ -1,7 +1,7 @@
 """
 JSON API for the web admin (`web/`): purchases, items with sale status, stats.
 
-Everything is derived from `_load_purchases` (one full Firestore read per request);
+Everything is derived from `load_purchases` (one full Firestore read per request);
 filtering and pagination happen in memory, which is fine at the current data size.
 """
 
@@ -18,9 +18,7 @@ from pydantic import BaseModel
 
 from ..account.orders.models import SaleStatus
 from .deps import StoreDep
-from .purchases import StatusUpdate
-from .purchases import StatusUpdateResult
-from .purchases import _load_purchases
+from .purchases import load_purchases
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -57,6 +55,16 @@ class Purchase(BaseModel):
     total_price: float | None = None
     currency: str = ""
     items: list[Item]
+
+
+class StatusUpdate(BaseModel):
+    status: SaleStatus
+
+
+class StatusUpdateResult(BaseModel):
+    tx_id: str
+    item_id: str
+    status: SaleStatus
 
 
 class Page[T](BaseModel):
@@ -131,7 +139,7 @@ def list_purchases(
     date_from: Annotated[date | None, Query(description="Order date, inclusive")] = None,
     date_to: Annotated[date | None, Query(description="Order date, inclusive")] = None,
 ) -> list[Purchase]:
-    purchases = [_to_purchase(p) for p in _load_purchases(store)]
+    purchases = [_to_purchase(p) for p in load_purchases(store)]
     if q:
         purchases = [
             p for p in purchases if _matches(q, p.seller_login, *(i.title for i in p.items))
@@ -151,7 +159,7 @@ def list_items(
     page: Annotated[int, Query(ge=1)] = 1,
     size: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> Page[Item]:
-    items = [i for p in map(_to_purchase, _load_purchases(store)) for i in p.items]
+    items = [i for p in map(_to_purchase, load_purchases(store)) for i in p.items]
     if status:
         items = [i for i in items if i.status in status]
     if q:
@@ -173,7 +181,7 @@ def update_item_status(
 
 @router.get("/stats")
 def get_stats(store: StoreDep) -> Stats:
-    purchases = [_to_purchase(p) for p in _load_purchases(store)]
+    purchases = [_to_purchase(p) for p in load_purchases(store)]
     items = [i for p in purchases for i in p.items]
 
     by_month: dict[str, MonthStats] = {}

@@ -1,25 +1,11 @@
 """
-Purchased Vinted items: list view and per-item sale status.
-
-Data is pulled from Firestore (purchases/{tx}/items/{id}). Photos are loaded
-directly from the Vinted CDN URLs stored in Firestore — no GCS access here.
+Purchased Vinted items loaded from Firestore (purchases/{tx}/items/{id}), with
+per-item PLN prices derived from the order totals. Served by `api.py`.
 """
 
 from __future__ import annotations
 
-from typing import Annotated
-
-from fastapi import APIRouter
-from fastapi import Path
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
-
-from ..account.orders.models import SaleStatus
 from ..storage import FirestoreStore
-from .deps import StoreDep
-from .deps import templates
-
-router = APIRouter(tags=["purchases"])
 
 
 def _allocate_pln(purchase: dict, items: list[dict]) -> dict[int, float]:
@@ -70,7 +56,7 @@ def _estimate_paid(purchase: dict, items: list[dict]) -> dict[int, tuple[float, 
     }
 
 
-def _load_purchases(store: FirestoreStore) -> list[dict]:
+def load_purchases(store: FirestoreStore) -> list[dict]:
     """Purchases (transactions) newest first, each with its enriched items.
 
     Uses two queries: one stream over `purchases` for the order context, one
@@ -120,34 +106,3 @@ def _load_purchases(store: FirestoreStore) -> list[dict]:
         )
     out.sort(key=lambda p: p.get("order_date") or "", reverse=True)
     return out
-
-
-@router.get("/", response_class=HTMLResponse)
-def index(store: StoreDep) -> str:
-    purchases = _load_purchases(store)
-    context = {
-        "purchases": purchases,
-        "total_items": sum(len(p["items"]) for p in purchases),
-    }
-    return templates.get_template("items.html").render(**context)
-
-
-class StatusUpdate(BaseModel):
-    status: SaleStatus
-
-
-class StatusUpdateResult(BaseModel):
-    tx_id: str
-    item_id: str
-    status: SaleStatus
-
-
-@router.post("/items/{tx_id}/{item_id}/status")
-def set_status(
-    tx_id: Annotated[str, Path(description="Purchase (transaction) id")],
-    item_id: Annotated[str, Path(description="Item id within the purchase")],
-    update: StatusUpdate,
-    store: StoreDep,
-) -> StatusUpdateResult:
-    store.set_item_status(tx_id, item_id, update.status)
-    return StatusUpdateResult(tx_id=tx_id, item_id=item_id, status=update.status)

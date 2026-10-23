@@ -28,3 +28,7 @@ docs
 
 # Claude Code
 .claude
+
+# Web build artifacts (built inside the image)
+web/node_modules
+web/dist
