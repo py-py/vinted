@@ -60,6 +60,12 @@ class PhotoStore:
         except gcp_exceptions.NotFound:
             return None
 
+    def delete_sale_photos(self, sale_id: str) -> None:
+        """Delete every photo stored for a sale."""
+        blobs = list(self.client.list_blobs(self.bucket, prefix=f"sales/{sale_id}/images/"))
+        if blobs:
+            self.bucket.delete_blobs(blobs)
+
     async def upload_photo(
         self,
         item_id: int,
