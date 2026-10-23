@@ -1,8 +1,8 @@
 # web — Vinted admin UI
 
 React SPA for the Vinted resale tracker: browse purchased items, set their sale status,
-see spend/sell-through stats. Talks only to the FastAPI app in `../vinted/admin`
-(JSON under `/api`); there is no other backend.
+see spend/sell-through stats, create items for sale. Talks only to the FastAPI app in
+`../vinted/admin` (JSON under `/api`); there is no other backend.
 
 Stack: React 19, TypeScript 6, Vite 8, Tailwind 4, shadcn/ui (radix-nova preset),
 TanStack Query, React Router 8, Recharts (via shadcn `chart`), Lucide icons.
@@ -22,7 +22,8 @@ Done = `npm run build` and `npm run lint` pass, and the page was checked in a br
 
 ## Layout
 
-- `src/pages/` — one file per route: `Dashboard` (`/`), `Items` (`/items`), `Purchases` (`/purchases`).
+- `src/pages/` — one file per route: `Dashboard` (`/`), `Items` (`/items`), `Purchases` (`/purchases`),
+  `Sales` (`/sales`).
 - `src/components/layout/` — `AdminLayout` (sidebar + header + `<Outlet/>`), `AppSidebar` (nav list).
 - `src/components/shared/` — app components reused across pages (`StatusSelect`, `ItemCard`,
   `Pagination`, `SearchInput`, `PurchaseSheet`, …).
@@ -30,6 +31,7 @@ Done = `npm run build` and `npm run lint` pass, and the page was checked in a br
   unless necessary. Lint warnings there are expected.
 - `src/lib/api.ts` — the only place that calls `fetch`; type aliases over the generated schema.
 - `src/lib/status.ts` — sale status labels, colors and display order.
+- `src/lib/image.ts` — `resizeImage`: canvas resize to 1600px on the longest side + JPEG re-encode.
 - `src/types/api.ts` — **generated**, never edit by hand.
 
 ## Nuances
@@ -42,7 +44,8 @@ Done = `npm run build` and `npm run lint` pass, and the page was checked in a br
   never prompts. In production the browser prompts once and sends credentials same-origin.
 - **Real data.** The dev API reads the production Firestore. GETs are safe; changing a sale
   status (`PATCH /api/items/{tx}/{item}`) writes to it — don't click status dropdowns while
-  testing unless that's intended.
+  testing unless that's intended. Saving a new sale (`POST /api/sales`) writes to Firestore
+  (`sales/{id}`) and GCS (`sales/{id}/images/`) too.
 - **Port 8000 may be taken** locally (ssh tunnel); start the API elsewhere and set `API_URL`.
 - **Filters live in the URL** (`useUrlParams` in `src/hooks/use-url-params.ts`): `q`, `status`,
   `page`, `from`, `to`, `tx` (open purchase). Changing a filter resets `page`.
@@ -50,6 +53,8 @@ Done = `npm run build` and `npm run lint` pass, and the page was checked in a br
   filters on the server and the page paginates client-side. The backend loads all of Firestore per
   request, so keep requests few (TanStack Query `staleTime` is 30s).
 - **After a mutation** `StatusSelect` invalidates all queries, so Dashboard stats and lists refresh.
+- **Sale photos are resized in the browser** before upload (`NewSaleDialog` → `resizeImage`);
+  the API only checks they are JPEGs up to 5 MB, max 20 per sale.
 - **Sale statuses** mirror `SaleStatus` in `vinted/account/orders/models.py`. Adding one means:
   backend enum → `gen:api` → `STATUSES` + `STATUS_ORDER` in `src/lib/status.ts`.
 - **Vinted images** are hot-linked from the Vinted CDN; keep `referrerPolicy="no-referrer"` on `<img>`.
