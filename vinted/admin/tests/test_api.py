@@ -79,9 +79,9 @@ def test_api_requires_auth(store: MagicMock) -> None:
     assert TestClient(app).get("/api/items").status_code == 401
 
 
-######
-# PURCHASES
-######
+###############################################################################
+#  Purchases — Search and Date Filters
+###############################################################################
 
 
 def test_purchases_newest_first_with_items(client: TestClient) -> None:
@@ -102,9 +102,9 @@ def test_purchases_date_range(client: TestClient) -> None:
     assert [p["tx_id"] for p in body] == ["1"]
 
 
-######
-# ITEMS
-######
+###############################################################################
+#  Items — Status Filter, Search and Pagination
+###############################################################################
 
 
 def test_items_flat_list(client: TestClient) -> None:
@@ -148,9 +148,9 @@ def test_update_item_status(client: TestClient, store: MagicMock) -> None:
     store.set_item_status.assert_called_once_with("1", "12", SaleStatus.LISTED)
 
 
-######
-# STATS
-######
+###############################################################################
+#  Stats — Totals and Monthly Breakdown
+###############################################################################
 
 
 def test_stats(client: TestClient) -> None:
@@ -165,9 +165,9 @@ def test_stats(client: TestClient) -> None:
     ]
 
 
-######
-# PHOTOS
-######
+###############################################################################
+#  Photos — GCS Fallback for Deleted Listings
+###############################################################################
 
 
 @pytest.fixture

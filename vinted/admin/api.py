@@ -28,9 +28,9 @@ from .purchases import load_purchases
 router = APIRouter(prefix="/api", tags=["api"])
 
 
-######
-# SCHEMAS
-######
+###############################################################################
+#  Schemas — API Request and Response Models
+###############################################################################
 
 
 class Item(BaseModel):
@@ -102,9 +102,9 @@ class Stats(BaseModel):
     by_month: list[MonthStats]
 
 
-######
-# HELPERS
-######
+###############################################################################
+#  Helpers — Firestore Docs to API Models
+###############################################################################
 
 
 def _stored_photo_url(item_id: int, url: str) -> str:
@@ -149,9 +149,9 @@ def _matches(query: str, *fields: str) -> bool:
     return any(query in f.casefold() for f in fields)
 
 
-######
-# ROUTES
-######
+###############################################################################
+#  Routes — Purchases, Items, Stats and Photos
+###############################################################################
 
 
 @router.get("/purchases")

@@ -34,9 +34,9 @@ def client(store: MagicMock) -> TestClient:
     return TestClient(app)
 
 
-######
-# AUTH
-######
+###############################################################################
+#  Auth — HTTP Basic Gate
+###############################################################################
 
 
 @pytest.mark.parametrize("path", ["/api/stats", "/", "/items"])
@@ -53,9 +53,9 @@ def test_unconfigured_auth_is_503(client: TestClient, monkeypatch: pytest.Monkey
     assert client.get("/api/stats", auth=AUTH).status_code == 503
 
 
-######
-# ALLOCATE PLN
-######
+###############################################################################
+#  Allocate PLN — Splitting Order Totals Across Items
+###############################################################################
 
 
 def test_allocate_pln_splits_total_by_paid_price() -> None:
