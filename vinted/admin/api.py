@@ -1,5 +1,5 @@
 """
-JSON API for the web admin (`web/`): purchases, items with sale status, stats.
+JSON API for the web admin (`web/`): purchases, items with sale status and sell price, stats.
 
 Everything is derived from `load_purchases` (one full Firestore read per request);
 filtering and pagination happen in memory, which is fine at the current data size.
@@ -53,6 +53,7 @@ class Item(BaseModel):
     paid_estimated: bool = False
     currency: str = ""
     price_pln: float | None = None
+    sell_price: float | None = Field(default=None, description="Resale price, PLN")
     status: SaleStatus = SaleStatus.NONE
     order_date: str = ""
     seller_login: str = ""
@@ -80,6 +81,16 @@ class StatusUpdateResult(BaseModel):
     status: SaleStatus
 
 
+class SellPriceUpdate(BaseModel):
+    sell_price: float | None = Field(ge=0, description="PLN; null clears it")
+
+
+class SellPriceUpdateResult(BaseModel):
+    tx_id: str
+    item_id: str
+    sell_price: float | None
+
+
 class Page[T](BaseModel):
     items: list[T]
     total: int
@@ -98,6 +109,8 @@ class Stats(BaseModel):
     purchases: int
     items: int
     spent_pln: float
+    sold_pln: float
+    sold_items: int = Field(description="Items with a sell price set")
     by_status: dict[SaleStatus, int]
     by_month: list[MonthStats]
 
@@ -131,6 +144,7 @@ def _to_item(purchase: dict, item: dict) -> Item:
         paid_estimated=item.get("paid_estimated", False),
         currency=item.get("currency") or "",
         price_pln=item.get("price_pln"),
+        sell_price=item.get("_sell_price"),
         status=SaleStatus(raw_status) if raw_status in SaleStatus else SaleStatus.NONE,
         order_date=purchase.get("order_date") or "",
         seller_login=purchase.get("seller_login") or "",
@@ -178,6 +192,9 @@ def list_items(
     store: StoreDep,
     status: Annotated[list[SaleStatus] | None, Query(description="Keep only these")] = None,
     q: Annotated[str | None, Query(description="Search in title and seller login")] = None,
+    has_sell_price: Annotated[
+        bool | None, Query(description="Keep only items with (true) or without (false) one")
+    ] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     size: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> Page[Item]:
@@ -186,6 +203,8 @@ def list_items(
         items = [i for i in items if i.status in status]
     if q:
         items = [i for i in items if _matches(q, i.title, i.seller_login)]
+    if has_sell_price is not None:
+        items = [i for i in items if (i.sell_price is not None) == has_sell_price]
     start = (page - 1) * size
     return Page(items=items[start : start + size], total=len(items), page=page, size=size)
 
@@ -201,10 +220,22 @@ def update_item_status(
     return StatusUpdateResult(tx_id=tx_id, item_id=item_id, status=update.status)
 
 
+@router.patch("/items/{tx_id}/{item_id}/sell-price")
+def update_item_sell_price(
+    tx_id: Annotated[str, Path(description="Purchase (transaction) id")],
+    item_id: Annotated[str, Path(description="Item id within the purchase")],
+    update: SellPriceUpdate,
+    store: StoreDep,
+) -> SellPriceUpdateResult:
+    store.set_item_sell_price(tx_id, item_id, update.sell_price)
+    return SellPriceUpdateResult(tx_id=tx_id, item_id=item_id, sell_price=update.sell_price)
+
+
 @router.get("/stats")
 def get_stats(store: StoreDep) -> Stats:
     purchases = [_to_purchase(p) for p in load_purchases(store)]
     items = [i for p in purchases for i in p.items]
+    sold = [i for i in items if i.sell_price is not None]
 
     by_month: dict[str, MonthStats] = {}
     for p in purchases:
@@ -222,6 +253,8 @@ def get_stats(store: StoreDep) -> Stats:
         purchases=len(purchases),
         items=len(items),
         spent_pln=sum(i.price_pln or 0.0 for i in items),
+        sold_pln=sum(i.sell_price or 0.0 for i in sold),
+        sold_items=len(sold),
         by_status=Counter(i.status for i in items),
         by_month=[by_month[m] for m in sorted(by_month)],
     )

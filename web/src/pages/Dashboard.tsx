@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { BadgeCheck, Package, Tag, Wallet } from "lucide-react"
+import { BadgeCheck, Banknote, Package, Tag, Wallet } from "lucide-react"
 import { Link } from "react-router"
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts"
 
@@ -63,12 +63,18 @@ function KpiRow({ stats }: { stats: Stats }) {
   const sold = countOf(stats, SOLD)
   const sellThrough = stats.items ? Math.round((sold / stats.items) * 100) : 0
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
       <StatCard
         title="Spent"
         value={`${Math.round(stats.spent_pln).toLocaleString("pl-PL")} PLN`}
         hint={`${stats.purchases} purchases`}
         icon={Wallet}
+      />
+      <StatCard
+        title="Sales"
+        value={`${Math.round(stats.sold_pln).toLocaleString("pl-PL")} PLN`}
+        hint={`${stats.sold_items} items with sell price`}
+        icon={Banknote}
       />
       <StatCard
         title="Items"
@@ -220,8 +226,8 @@ function RecentPurchases({
 function DashboardSkeleton() {
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {Array.from({ length: 4 }, (_, i) => (
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        {Array.from({ length: 5 }, (_, i) => (
           <Skeleton key={i} className="h-28 rounded-xl" />
         ))}
       </div>

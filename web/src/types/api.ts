@@ -55,6 +55,23 @@ export interface paths {
         patch: operations["update_item_status_api_items__tx_id___item_id__patch"];
         trace?: never;
     };
+    "/api/items/{tx_id}/{item_id}/sell-price": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Item Sell Price */
+        patch: operations["update_item_sell_price_api_items__tx_id___item_id__sell_price_patch"];
+        trace?: never;
+    };
     "/api/stats": {
         parameters: {
             query?: never;
@@ -149,6 +166,11 @@ export interface components {
             currency: string;
             /** Price Pln */
             price_pln?: number | null;
+            /**
+             * Sell Price
+             * @description Resale price, PLN
+             */
+            sell_price?: number | null;
             /** @default none */
             status: components["schemas"]["SaleStatus"];
             /**
@@ -222,6 +244,23 @@ export interface components {
          * @enum {string}
          */
         SaleStatus: "none" | "listed" | "sold_unconfirmed" | "sold" | "reserved" | "parted_sold" | "wait_winter" | "trash";
+        /** SellPriceUpdate */
+        SellPriceUpdate: {
+            /**
+             * Sell Price
+             * @description PLN; null clears it
+             */
+            sell_price: number | null;
+        };
+        /** SellPriceUpdateResult */
+        SellPriceUpdateResult: {
+            /** Tx Id */
+            tx_id: string;
+            /** Item Id */
+            item_id: string;
+            /** Sell Price */
+            sell_price: number | null;
+        };
         /** Stats */
         Stats: {
             /** Purchases */
@@ -230,6 +269,13 @@ export interface components {
             items: number;
             /** Spent Pln */
             spent_pln: number;
+            /** Sold Pln */
+            sold_pln: number;
+            /**
+             * Sold Items
+             * @description Items with a sell price set
+             */
+            sold_items: number;
             /** By Status */
             by_status: {
                 [key: string]: number;
@@ -314,6 +360,8 @@ export interface operations {
                 status?: components["schemas"]["SaleStatus"][] | null;
                 /** @description Search in title and seller login */
                 q?: string | null;
+                /** @description Keep only items with (true) or without (false) one */
+                has_sell_price?: boolean | null;
                 page?: number;
                 size?: number;
             };
@@ -368,6 +416,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatusUpdateResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_item_sell_price_api_items__tx_id___item_id__sell_price_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Purchase (transaction) id */
+                tx_id: string;
+                /** @description Item id within the purchase */
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SellPriceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SellPriceUpdateResult"];
                 };
             };
             /** @description Validation Error */
