@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router"
 
 import { AdminLayout } from "@/components/layout/AdminLayout"
+import { DashboardPage } from "@/pages/Dashboard"
 import { ItemsPage } from "@/pages/Items"
 import { PlaceholderPage } from "@/pages/Placeholder"
 
@@ -9,7 +10,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<AdminLayout />}>
-          <Route index element={<PlaceholderPage title="Dashboard" />} />
+          <Route index element={<DashboardPage />} />
           <Route path="items" element={<ItemsPage />} />
           <Route path="purchases" element={<PlaceholderPage title="Purchases" />} />
         </Route>
