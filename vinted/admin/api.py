@@ -1,5 +1,5 @@
 """
-JSON API for the web admin (`web/`): purchases, items with sale status, stats.
+JSON API for the web admin (`web/`): purchases, items with sale status, stats, sales.
 
 Everything is derived from `load_purchases` (one full Firestore read per request);
 filtering and pagination happen in memory, which is fine at the current data size.
@@ -7,15 +7,18 @@ filtering and pagination happen in memory, which is fine at the current data siz
 
 from __future__ import annotations
 
+import uuid
 from collections import Counter
 from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter
+from fastapi import Form
 from fastapi import HTTPException
 from fastapi import Path
 from fastapi import Query
 from fastapi import Response
+from fastapi import UploadFile
 from pydantic import BaseModel
 from pydantic import Field
 
@@ -26,6 +29,14 @@ from .deps import StoreDep
 from .purchases import load_purchases
 
 router = APIRouter(prefix="/api", tags=["api"])
+
+# The web app resizes photos to 1600px on the longest side before upload (~0.3 MB each).
+MAX_SALE_PHOTOS = 20
+MAX_SALE_PHOTO_BYTES = 5 * 1024 * 1024
+# Firestore auto-ids (`store.new_sale_id()`): 20 alphanumeric characters.
+SALE_ID_PATTERN = r"^[A-Za-z0-9]{20}$"
+# Placeholder in `PUT /sales/{id}` layout for the next uploaded file.
+NEW_PHOTO = "new"
 
 
 ###############################################################################
@@ -78,6 +89,16 @@ class StatusUpdateResult(BaseModel):
     tx_id: str
     item_id: str
     status: SaleStatus
+
+
+class Sale(BaseModel):
+    id: str
+    title: str
+    description: str = ""
+    price_pln: float | None = None
+    photo_ids: list[str] = Field(default=[], description="Same order as photo_urls")
+    photo_urls: list[str] = []
+    created_at: str = ""
 
 
 class Page[T](BaseModel):
@@ -142,6 +163,35 @@ def _to_purchase(purchase: dict) -> Purchase:
         **{k: v for k, v in purchase.items() if k != "items"},
         items=[_to_item(purchase, i) for i in purchase["items"] if i.get("id") is not None],
     )
+
+
+def _to_sale(sale_id: str, sale: dict) -> Sale:
+    created_at = sale.get("created_at")
+    return Sale(
+        id=sale_id,
+        title=sale.get("title") or "",
+        description=sale.get("description") or "",
+        price_pln=sale.get("price_pln"),
+        photo_ids=sale.get("photos") or [],
+        photo_urls=[
+            router.url_path_for("get_sale_photo", sale_id=sale_id, photo_id=photo_id)
+            for photo_id in sale.get("photos") or []
+        ],
+        created_at=created_at.isoformat() if created_at else "",
+    )
+
+
+def _read_jpegs(photos: list[UploadFile]) -> list[bytes]:
+    data = [photo.file.read(MAX_SALE_PHOTO_BYTES + 1) for photo in photos]
+    for photo, blob in zip(photos, data):
+        if len(blob) > MAX_SALE_PHOTO_BYTES or not blob.startswith(b"\xff\xd8"):
+            raise HTTPException(422, f"{photo.filename}: expected a JPEG up to 5 MB")
+    return data
+
+
+def _check_photo_count(count: int) -> None:
+    if not 1 <= count <= MAX_SALE_PHOTOS:
+        raise HTTPException(422, f"Expected 1–{MAX_SALE_PHOTOS} photos, got {count}")
 
 
 def _matches(query: str, *fields: str) -> bool:
@@ -241,6 +291,126 @@ def get_photo(
     if data is None:
         raise HTTPException(status_code=404, detail="Photo not found")
     # Token is content-addressed, so the bytes never change.
+    return Response(
+        data,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "private, max-age=31536000, immutable"},
+    )
+
+
+###############################################################################
+#  Routes — Sales Created in the Admin
+###############################################################################
+
+
+@router.get("/sales")
+def list_sales(store: StoreDep) -> list[Sale]:
+    return [_to_sale(sale_id, sale) for sale_id, sale in store.list_sales()]
+
+
+@router.post("/sales", status_code=201)
+def create_sale(
+    title: Annotated[str, Form(min_length=1, max_length=100)],
+    photos: Annotated[list[UploadFile], Form(description="JPEGs, already resized")],
+    store: StoreDep,
+    photo_store: PhotoStoreDep,
+    description: Annotated[str, Form(max_length=5000)] = "",
+    price_pln: Annotated[float | None, Form(gt=0)] = None,
+) -> Sale:
+    _check_photo_count(len(photos))
+    data = _read_jpegs(photos)
+
+    sale_id = store.new_sale_id()
+    photo_ids = [uuid.uuid4().hex for _ in data]
+    for photo_id, blob in zip(photo_ids, data):
+        photo_store.upload_sale_photo(sale_id, photo_id, blob)
+    sale = {
+        "title": title.strip(),
+        "description": description.strip(),
+        "price_pln": price_pln,
+        "photos": photo_ids,
+    }
+    store.save_sale(sale_id, sale)
+    return _to_sale(sale_id, sale)
+
+
+@router.put("/sales/{sale_id}")
+def update_sale(
+    sale_id: Annotated[str, Path(pattern=SALE_ID_PATTERN)],
+    title: Annotated[str, Form(min_length=1, max_length=100)],
+    layout: Annotated[
+        list[str],
+        Form(
+            description=(
+                "Final photo order: an existing photo id keeps that photo, "
+                f'"{NEW_PHOTO}" takes the next file from `photos`. Ids left out are deleted.'
+            )
+        ),
+    ],
+    store: StoreDep,
+    photo_store: PhotoStoreDep,
+    photos: Annotated[
+        list[UploadFile] | None, Form(description="New JPEGs, in layout order")
+    ] = None,
+    description: Annotated[str, Form(max_length=5000)] = "",
+    price_pln: Annotated[float | None, Form(gt=0)] = None,
+) -> Sale:
+    sale = store.get_sale(sale_id)
+    if sale is None:
+        raise HTTPException(status_code=404, detail="Sale not found")
+    photos = photos or []
+    existing = set(sale.get("photos") or [])
+    if unknown := [p for p in layout if p != NEW_PHOTO and p not in existing]:
+        raise HTTPException(422, f"Unknown photo ids: {', '.join(unknown)}")
+    if layout.count(NEW_PHOTO) != len(photos):
+        raise HTTPException(422, f'Expected one file per "{NEW_PHOTO}" in layout')
+    _check_photo_count(len(layout))
+    data = iter(_read_jpegs(photos))
+
+    photo_ids = []
+    for entry in layout:
+        if entry == NEW_PHOTO:
+            entry = uuid.uuid4().hex
+            photo_store.upload_sale_photo(sale_id, entry, next(data))
+        photo_ids.append(entry)
+    fields = {
+        "title": title.strip(),
+        "description": description.strip(),
+        "price_pln": price_pln,
+        "photos": photo_ids,
+    }
+    store.update_sale(sale_id, fields)
+    # After the doc no longer references them, like delete_sale.
+    for photo_id in existing - set(photo_ids):
+        photo_store.delete_sale_photo(sale_id, photo_id)
+    return _to_sale(sale_id, {**sale, **fields})
+
+
+@router.delete("/sales/{sale_id}", status_code=204)
+def delete_sale(
+    sale_id: Annotated[str, Path(pattern=SALE_ID_PATTERN)],
+    store: StoreDep,
+    photo_store: PhotoStoreDep,
+) -> None:
+    # Doc first: if photo cleanup fails, only unreferenced blobs are left behind.
+    if not store.delete_sale(sale_id):
+        raise HTTPException(status_code=404, detail="Sale not found")
+    photo_store.delete_sale_photos(sale_id)
+
+
+@router.get(
+    "/sales/{sale_id}/photos/{photo_id}",
+    response_class=Response,
+    responses={200: {"content": {"image/jpeg": {}}}, 404: {"description": "Not in GCS"}},
+)
+def get_sale_photo(
+    sale_id: Annotated[str, Path(pattern=SALE_ID_PATTERN)],
+    photo_id: Annotated[str, Path(pattern=r"^[0-9a-f]{32}$")],
+    photos: PhotoStoreDep,
+) -> Response:
+    data = photos.download_sale_photo(sale_id, photo_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail="Photo not found")
     return Response(
         data,
         media_type="image/jpeg",

@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { useDeferredValue } from "react"
 
+import { CardGrid } from "@/components/shared/CardGrid"
 import { ItemCard } from "@/components/shared/ItemCard"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { Pagination } from "@/components/shared/Pagination"
@@ -64,30 +65,22 @@ export function ItemsPage() {
       {isError ? (
         <p className="text-sm text-destructive">Failed to load items: {error.message}</p>
       ) : isPending ? (
-        <ItemGrid>
+        <CardGrid>
           {Array.from({ length: 10 }, (_, i) => (
             <Skeleton key={i} className="aspect-[3/4] rounded-xl" />
           ))}
-        </ItemGrid>
+        </CardGrid>
       ) : data.items.length === 0 ? (
         <p className="text-sm text-muted-foreground">No items match the filters.</p>
       ) : (
-        <ItemGrid>
+        <CardGrid>
           {data.items.map((item) => (
             <ItemCard key={`${item.tx_id}/${item.id}`} item={item} />
           ))}
-        </ItemGrid>
+        </CardGrid>
       )}
 
       <Pagination page={page} pages={pages} onPageChange={(p) => update({ page: String(p) })} />
-    </div>
-  )
-}
-
-function ItemGrid({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
-      {children}
     </div>
   )
 }

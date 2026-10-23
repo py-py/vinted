@@ -89,10 +89,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sales */
+        get: operations["list_sales_api_sales_get"];
+        put?: never;
+        /** Create Sale */
+        post: operations["create_sale_api_sales_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sales/{sale_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Sale */
+        put: operations["update_sale_api_sales__sale_id__put"];
+        post?: never;
+        /** Delete Sale */
+        delete: operations["delete_sale_api_sales__sale_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sales/{sale_id}/photos/{photo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Sale Photo */
+        get: operations["get_sale_photo_api_sales__sale_id__photos__photo_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Body_create_sale_api_sales_post */
+        Body_create_sale_api_sales_post: {
+            /** Title */
+            title: string;
+            /**
+             * Photos
+             * @description JPEGs, already resized
+             */
+            photos: string[];
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Price Pln */
+            price_pln?: number | null;
+        };
+        /** Body_update_sale_api_sales__sale_id__put */
+        Body_update_sale_api_sales__sale_id__put: {
+            /** Title */
+            title: string;
+            /**
+             * Layout
+             * @description Final photo order: an existing photo id keeps that photo, "new" takes the next file from `photos`. Ids left out are deleted.
+             */
+            layout: string[];
+            /**
+             * Photos
+             * @description New JPEGs, in layout order
+             */
+            photos?: string[] | null;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Price Pln */
+            price_pln?: number | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -216,6 +308,36 @@ export interface components {
             currency: string;
             /** Items */
             items: components["schemas"]["Item"][];
+        };
+        /** Sale */
+        Sale: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Price Pln */
+            price_pln?: number | null;
+            /**
+             * Photo Ids
+             * @description Same order as photo_urls
+             * @default []
+             */
+            photo_ids: string[];
+            /**
+             * Photo Urls
+             * @default []
+             */
+            photo_urls: string[];
+            /**
+             * Created At
+             * @default
+             */
+            created_at: string;
         };
         /**
          * SaleStatus
@@ -408,6 +530,162 @@ export interface operations {
             path: {
                 item_id: number;
                 token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": unknown;
+                };
+            };
+            /** @description Not in GCS */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sales_api_sales_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Sale"][];
+                };
+            };
+        };
+    };
+    create_sale_api_sales_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_create_sale_api_sales_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Sale"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_sale_api_sales__sale_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sale_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_update_sale_api_sales__sale_id__put"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Sale"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_sale_api_sales__sale_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sale_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sale_photo_api_sales__sale_id__photos__photo_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sale_id: string;
+                photo_id: string;
             };
             cookie?: never;
         };
