@@ -53,7 +53,7 @@ Done = `npm run build` and `npm run lint` pass, and the page was checked in a br
   filters on the server and the page paginates client-side. The backend loads all of Firestore per
   request, so keep requests few (TanStack Query `staleTime` is 30s).
 - **After a mutation** `StatusSelect` invalidates all queries, so Dashboard stats and lists refresh.
-- **Sale photos are resized in the browser** before upload (`NewSaleDialog` → `resizeImage`);
+- **Sale photos are resized in the browser** before upload (`SaleDialog` → `resizeImage`);
   the API only checks they are JPEGs up to 5 MB, max 20 per sale.
 - **Sale statuses** mirror `SaleStatus` in `vinted/account/orders/models.py`. Adding one means:
   backend enum → `gen:api` → `STATUSES` + `STATUS_ORDER` in `src/lib/status.ts`.
