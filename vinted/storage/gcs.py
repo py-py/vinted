@@ -1,7 +1,9 @@
 """
 GCS client for storing Vinted purchase photos.
 
-Layout: items/{item_id}/images/{token}.jpeg
+Layout:
+    items/{item_id}/images/{token}.jpeg    -> purchase photos copied from the Vinted CDN
+    sales/{sale_id}/images/{photo_id}.jpeg -> photos uploaded for sale items in the admin
 Project/bucket are read from env: GOOGLE_CLOUD_PROJECT, VINTED_GCS_BUCKET.
 """
 
@@ -31,6 +33,10 @@ def photo_path(item_id: int, token: str) -> str:
     return f"items/{item_id}/images/{token}.jpeg"
 
 
+def sale_photo_path(sale_id: str, photo_id: str) -> str:
+    return f"sales/{sale_id}/images/{photo_id}.jpeg"
+
+
 class PhotoStore:
     def __init__(self) -> None:
         self.client = storage.Client(project=os.environ["GOOGLE_CLOUD_PROJECT"])
@@ -40,6 +46,17 @@ class PhotoStore:
         """Read a stored photo; None if it was never backfilled."""
         try:
             return self.bucket.blob(photo_path(item_id, token)).download_as_bytes()
+        except gcp_exceptions.NotFound:
+            return None
+
+    def upload_sale_photo(self, sale_id: str, photo_id: str, data: bytes) -> None:
+        self.bucket.blob(sale_photo_path(sale_id, photo_id)).upload_from_string(
+            data, content_type="image/jpeg"
+        )
+
+    def download_sale_photo(self, sale_id: str, photo_id: str) -> bytes | None:
+        try:
+            return self.bucket.blob(sale_photo_path(sale_id, photo_id)).download_as_bytes()
         except gcp_exceptions.NotFound:
             return None
 
