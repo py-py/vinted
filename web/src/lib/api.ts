@@ -25,6 +25,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { ...(json && { "Content-Type": "application/json" }), ...init?.headers },
   })
   if (!res.ok) throw new ApiError(res.status, `${res.status} ${res.statusText}`)
+  if (res.status === 204) return undefined as T
   return res.json() as Promise<T>
 }
 
@@ -91,5 +92,8 @@ export const api = {
     if (pricePln != null) body.set("price_pln", String(pricePln))
     photos.forEach((photo, i) => body.append("photos", photo, `photo-${i + 1}.jpg`))
     return request("/sales", { method: "POST", body })
+  },
+  deleteSale(id: string): Promise<void> {
+    return request(`/sales/${id}`, { method: "DELETE" })
   },
 }
