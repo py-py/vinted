@@ -14,11 +14,12 @@ export function ItemCard({ item }: { item: Item }) {
 
   return (
     <Card className="gap-0 overflow-hidden py-0">
-      <div className="group relative aspect-square bg-muted">
+      <div className="group relative aspect-square overflow-hidden bg-muted">
         {cover ? (
           <button
             type="button"
-            className="size-full cursor-zoom-in"
+            // absolute: otherwise a portrait photo stretches the aspect-square box
+            className="absolute inset-0 cursor-zoom-in"
             onClick={() => setGalleryOpen(true)}
             aria-label={`Open photos of ${item.title}`}
           >
