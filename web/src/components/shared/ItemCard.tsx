@@ -3,6 +3,7 @@ import { useState } from "react"
 
 import { Photo } from "@/components/shared/Photo"
 import { PhotoGallery } from "@/components/shared/PhotoGallery"
+import { SellPriceInput } from "@/components/shared/SellPriceInput"
 import { StatusSelect } from "@/components/shared/StatusSelect"
 import { Card } from "@/components/ui/card"
 import type { Item } from "@/lib/api"
@@ -69,8 +70,9 @@ export function ItemCard({ item }: { item: Item }) {
             </span>
           )}
         </div>
-        <div className="pt-1">
+        <div className="space-y-2 pt-1">
           <StatusSelect item={item} />
+          <SellPriceInput item={item} />
         </div>
       </div>
       {cover && (

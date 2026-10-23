@@ -35,7 +35,13 @@ PURCHASES = {
 }
 ITEMS = {
     "1": [
-        {"id": 11, "title": "Nike Dunk", "paid_price": 30.0, "_sale_status": "sold"},
+        {
+            "id": 11,
+            "title": "Nike Dunk",
+            "paid_price": 30.0,
+            "_sale_status": "sold",
+            "_sell_price": 45.5,
+        },
         {"id": 12, "title": "NB 9060", "paid_price": 90.0, "photo_url": "http://p/12.jpg"},
     ],
     "2": [{"id": 21, "title": "Samba", "paid_price": 50.0, "_sale_status": "legacy"}],
@@ -148,6 +154,25 @@ def test_update_item_status(client: TestClient, store: MagicMock) -> None:
     store.set_item_status.assert_called_once_with("1", "12", SaleStatus.LISTED)
 
 
+@pytest.mark.parametrize("price", [80.0, None])
+def test_update_item_sell_price(client: TestClient, store: MagicMock, price: float | None) -> None:
+    response = client.patch("/api/items/1/12/sell-price", json={"sell_price": price})
+    assert response.status_code == 200
+    assert response.json() == {"tx_id": "1", "item_id": "12", "sell_price": price}
+    store.set_item_sell_price.assert_called_once_with("1", "12", price)
+
+
+def test_update_item_sell_price_rejects_negative(client: TestClient) -> None:
+    response = client.patch("/api/items/1/12/sell-price", json={"sell_price": -1})
+    assert response.status_code == 422
+
+
+def test_items_sell_price(client: TestClient) -> None:
+    by_id = {i["id"]: i for i in client.get("/api/items").json()["items"]}
+    assert by_id[11]["sell_price"] == 45.5
+    assert by_id[12]["sell_price"] is None
+
+
 ###############################################################################
 #  Stats — Totals and Monthly Breakdown
 ###############################################################################
@@ -158,6 +183,8 @@ def test_stats(client: TestClient) -> None:
     assert body["purchases"] == 2
     assert body["items"] == 3
     assert body["spent_pln"] == 170.0
+    assert body["sold_pln"] == 45.5
+    assert body["sold_items"] == 1
     assert body["by_status"] == {"sold": 1, "none": 2}
     assert body["by_month"] == [
         {"month": "2026-09", "purchases": 1, "items": 2, "spent_pln": 120.0},

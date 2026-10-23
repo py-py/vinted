@@ -60,6 +60,17 @@ class FirestoreStore:
         item_ref = self.purchases.document(transaction_id).collection("items").document(item_id)
         item_ref.set({"_sale_status": status}, merge=True)
 
+    def set_item_sell_price(
+        self, transaction_id: str, item_id: str, sell_price: float | None
+    ) -> None:
+        """Set (or clear, with None) the PLN price an item was resold for.
+
+        Stored under the custom field `_sell_price` on purchases/{tx}/items/{id}.
+        """
+        item_ref = self.purchases.document(transaction_id).collection("items").document(item_id)
+        value = firestore.DELETE_FIELD if sell_price is None else sell_price
+        item_ref.set({"_sell_price": value}, merge=True)
+
     def save_order(self, order: Order) -> None:
         """Upsert an order and its items.
 

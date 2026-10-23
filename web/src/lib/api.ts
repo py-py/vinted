@@ -63,4 +63,10 @@ export const api = {
       body: JSON.stringify({ status }),
     })
   },
+  setSellPrice(txId: string, itemId: number, sellPrice: number | null) {
+    return request(`/items/${txId}/${itemId}/sell-price`, {
+      method: "PATCH",
+      body: JSON.stringify({ sell_price: sellPrice }),
+    })
+  },
 }
