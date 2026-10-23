@@ -1,0 +1,56 @@
+import type { components } from "@/types/api"
+
+type Schemas = components["schemas"]
+export type Item = Schemas["Item"]
+export type Purchase = Schemas["Purchase"]
+export type ItemsPage = Schemas["Page_Item_"]
+export type SaleStatus = Schemas["SaleStatus"]
+export type Stats = Schemas["Stats"]
+
+export class ApiError extends Error {
+  status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+  }
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`/api${path}`, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...init?.headers },
+  })
+  if (!res.ok) throw new ApiError(res.status, `${res.status} ${res.statusText}`)
+  return res.json() as Promise<T>
+}
+
+export type ItemsQuery = {
+  status?: SaleStatus[]
+  q?: string
+  page?: number
+  size?: number
+}
+
+export const api = {
+  items({ status = [], q, page, size }: ItemsQuery): Promise<ItemsPage> {
+    const params = new URLSearchParams()
+    status.forEach((s) => params.append("status", s))
+    if (q) params.set("q", q)
+    if (page) params.set("page", String(page))
+    if (size) params.set("size", String(size))
+    return request(`/items?${params}`)
+  },
+  purchases(): Promise<Purchase[]> {
+    return request("/purchases")
+  },
+  stats(): Promise<Stats> {
+    return request("/stats")
+  },
+  setStatus(txId: string, itemId: number, status: SaleStatus) {
+    return request(`/items/${txId}/${itemId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    })
+  },
+}
