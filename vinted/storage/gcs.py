@@ -60,6 +60,12 @@ class PhotoStore:
         except gcp_exceptions.NotFound:
             return None
 
+    def delete_sale_photo(self, sale_id: str, photo_id: str) -> None:
+        try:
+            self.bucket.blob(sale_photo_path(sale_id, photo_id)).delete()
+        except gcp_exceptions.NotFound:
+            pass
+
     def delete_sale_photos(self, sale_id: str) -> None:
         """Delete every photo stored for a sale."""
         blobs = list(self.client.list_blobs(self.bucket, prefix=f"sales/{sale_id}/images/"))

@@ -296,8 +296,73 @@ def test_list_sales(client: TestClient, store: MagicMock) -> None:
     [sale] = client.get("/api/sales").json()
     assert sale["title"] == "Samba"
     assert sale["price_pln"] is None
+    assert sale["photo_ids"] == [PHOTO_ID]
     assert sale["photo_urls"] == [f"/api/sales/{SALE_ID}/photos/{PHOTO_ID}"]
     assert sale["created_at"] == "2026-10-23T12:00:00+00:00"
+
+
+OLD_A, OLD_B = "a" * 32, "b" * 32
+
+
+@pytest.fixture
+def stored_sale(store: MagicMock) -> dict:
+    sale = {"title": "Old", "description": "d", "price_pln": 10.0, "photos": [OLD_A, OLD_B]}
+    store.get_sale.return_value = sale
+    return sale
+
+
+def test_update_sale(
+    client: TestClient, store: MagicMock, photos: MagicMock, stored_sale: dict
+) -> None:
+    resp = client.put(
+        f"/api/sales/{SALE_ID}",
+        data={"title": "New", "layout": ["new", OLD_B]},
+        files={"photos": ("c.jpg", JPEG, "image/jpeg")},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["title"] == "New"
+    assert body["description"] == ""
+    assert body["price_pln"] is None
+    new_id = body["photo_ids"][0]
+    assert body["photo_ids"] == [new_id, OLD_B]
+    photos.upload_sale_photo.assert_called_once_with(SALE_ID, new_id, JPEG)
+    photos.delete_sale_photo.assert_called_once_with(SALE_ID, OLD_A)
+    assert store.update_sale.call_args.args[1]["photos"] == [new_id, OLD_B]
+
+
+def test_update_sale_reorder_only(
+    client: TestClient, store: MagicMock, photos: MagicMock, stored_sale: dict
+) -> None:
+    data = {"title": "Old", "layout": [OLD_B, OLD_A], "price_pln": "12.5"}
+    resp = client.put(f"/api/sales/{SALE_ID}", data=data)
+    assert resp.status_code == 200
+    assert resp.json()["photo_ids"] == [OLD_B, OLD_A]
+    assert resp.json()["price_pln"] == 12.5
+    photos.upload_sale_photo.assert_not_called()
+    photos.delete_sale_photo.assert_not_called()
+
+
+def test_update_sale_rejects_foreign_photo_id(
+    client: TestClient, store: MagicMock, photos: MagicMock, stored_sale: dict
+) -> None:
+    resp = client.put(f"/api/sales/{SALE_ID}", data={"title": "x", "layout": ["c" * 32]})
+    assert resp.status_code == 422
+    store.update_sale.assert_not_called()
+
+
+def test_update_sale_rejects_file_count_mismatch(
+    client: TestClient, store: MagicMock, photos: MagicMock, stored_sale: dict
+) -> None:
+    resp = client.put(f"/api/sales/{SALE_ID}", data={"title": "x", "layout": ["new", OLD_A]})
+    assert resp.status_code == 422
+    store.update_sale.assert_not_called()
+
+
+def test_update_sale_missing(client: TestClient, store: MagicMock, photos: MagicMock) -> None:
+    store.get_sale.return_value = None
+    resp = client.put(f"/api/sales/{SALE_ID}", data={"title": "x", "layout": [OLD_A]})
+    assert resp.status_code == 404
 
 
 def test_delete_sale(client: TestClient, store: MagicMock, photos: MagicMock) -> None:
