@@ -11,10 +11,12 @@ from dotenv import load_dotenv
 from fastapi import Depends
 from fastapi import FastAPI
 
+from . import api
 from . import purchases
 from .auth import require_auth
 
 load_dotenv()
 
 app = FastAPI(title="Vinted admin", dependencies=[Depends(require_auth)])
+app.include_router(api.router)
 app.include_router(purchases.router)
