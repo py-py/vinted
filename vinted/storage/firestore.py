@@ -70,6 +70,13 @@ class FirestoreStore:
     def save_sale(self, sale_id: str, sale: dict) -> None:
         self.sales.document(sale_id).set({**sale, "created_at": firestore.SERVER_TIMESTAMP})
 
+    def get_sale(self, sale_id: str) -> dict | None:
+        snap = self.sales.document(sale_id).get()
+        return (snap.to_dict() or {}) if snap.exists else None
+
+    def update_sale(self, sale_id: str, fields: dict) -> None:
+        self.sales.document(sale_id).update({**fields, "updated_at": firestore.SERVER_TIMESTAMP})
+
     def delete_sale(self, sale_id: str) -> bool:
         """Delete a sale doc; False if it didn't exist."""
         ref = self.sales.document(sale_id)
