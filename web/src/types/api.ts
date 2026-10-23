@@ -360,6 +360,8 @@ export interface operations {
                 status?: components["schemas"]["SaleStatus"][] | null;
                 /** @description Search in title and seller login */
                 q?: string | null;
+                /** @description Keep only items with (true) or without (false) one */
+                has_sell_price?: boolean | null;
                 page?: number;
                 size?: number;
             };

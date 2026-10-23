@@ -167,6 +167,12 @@ def test_update_item_sell_price_rejects_negative(client: TestClient) -> None:
     assert response.status_code == 422
 
 
+@pytest.mark.parametrize(("has", "ids"), [("true", [11]), ("false", [21, 12])])
+def test_items_filter_by_sell_price(client: TestClient, has: str, ids: list[int]) -> None:
+    body = client.get("/api/items", params={"has_sell_price": has}).json()
+    assert [i["id"] for i in body["items"]] == ids
+
+
 def test_items_sell_price(client: TestClient) -> None:
     by_id = {i["id"]: i for i in client.get("/api/items").json()["items"]}
     assert by_id[11]["sell_price"] == 45.5

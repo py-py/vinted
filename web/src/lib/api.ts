@@ -28,6 +28,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export type ItemsQuery = {
   status?: SaleStatus[]
   q?: string
+  hasSellPrice?: boolean
   page?: number
   size?: number
 }
@@ -39,10 +40,11 @@ export type PurchasesQuery = {
 }
 
 export const api = {
-  items({ status = [], q, page, size }: ItemsQuery): Promise<ItemsPage> {
+  items({ status = [], q, hasSellPrice, page, size }: ItemsQuery): Promise<ItemsPage> {
     const params = new URLSearchParams()
     status.forEach((s) => params.append("status", s))
     if (q) params.set("q", q)
+    if (hasSellPrice != null) params.set("has_sell_price", String(hasSellPrice))
     if (page) params.set("page", String(page))
     if (size) params.set("size", String(size))
     return request(`/items?${params}`)

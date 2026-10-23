@@ -192,6 +192,9 @@ def list_items(
     store: StoreDep,
     status: Annotated[list[SaleStatus] | None, Query(description="Keep only these")] = None,
     q: Annotated[str | None, Query(description="Search in title and seller login")] = None,
+    has_sell_price: Annotated[
+        bool | None, Query(description="Keep only items with (true) or without (false) one")
+    ] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     size: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> Page[Item]:
@@ -200,6 +203,8 @@ def list_items(
         items = [i for i in items if i.status in status]
     if q:
         items = [i for i in items if _matches(q, i.title, i.seller_login)]
+    if has_sell_price is not None:
+        items = [i for i in items if (i.sell_price is not None) == has_sell_price]
     start = (page - 1) * size
     return Page(items=items[start : start + size], total=len(items), page=page, size=size)
 

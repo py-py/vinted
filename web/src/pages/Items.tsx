@@ -13,16 +13,25 @@ import { STATUS_ORDER, STATUSES } from "@/lib/status"
 
 const PAGE_SIZE = 40
 
+// URL value of the `sell` param → API filter
+const SELL_PRICE_FILTERS = {
+  with: { label: "With sell price", hasSellPrice: true },
+  without: { label: "No sell price", hasSellPrice: false },
+} as const
+type SellPriceFilter = keyof typeof SELL_PRICE_FILTERS
+
 export function ItemsPage() {
   const [params, update] = useUrlParams()
   const q = params.get("q") ?? ""
   const status = params.getAll("status") as SaleStatus[]
+  const sell = params.get("sell") as SellPriceFilter | null
+  const hasSellPrice = sell ? SELL_PRICE_FILTERS[sell]?.hasSellPrice : undefined
   const page = Number(params.get("page")) || 1
   const deferredQ = useDeferredValue(q)
 
   const { data, isPending, isError, error } = useQuery({
-    queryKey: ["items", { status, q: deferredQ, page }],
-    queryFn: () => api.items({ status, q: deferredQ, page, size: PAGE_SIZE }),
+    queryKey: ["items", { status, q: deferredQ, hasSellPrice, page }],
+    queryFn: () => api.items({ status, q: deferredQ, hasSellPrice, page, size: PAGE_SIZE }),
     placeholderData: keepPreviousData,
   })
   const pages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
@@ -56,6 +65,25 @@ export function ItemsPage() {
               className="rounded-full data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
             >
               {STATUSES[s].label}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          spacing={2}
+          className="flex-wrap"
+          value={sell ?? ""}
+          onValueChange={(value) => update({ sell: value })}
+        >
+          {Object.entries(SELL_PRICE_FILTERS).map(([key, { label }]) => (
+            <ToggleGroupItem
+              key={key}
+              value={key}
+              className="rounded-full data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            >
+              {label}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
