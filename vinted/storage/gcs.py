@@ -27,10 +27,21 @@ def extract_token(url: str) -> str:
     return m.group(1)
 
 
+def photo_path(item_id: int, token: str) -> str:
+    return f"items/{item_id}/images/{token}.jpeg"
+
+
 class PhotoStore:
     def __init__(self) -> None:
         self.client = storage.Client(project=os.environ["GOOGLE_CLOUD_PROJECT"])
         self.bucket = self.client.bucket(os.environ["VINTED_GCS_BUCKET"])
+
+    def download_photo(self, item_id: int, token: str) -> bytes | None:
+        """Read a stored photo; None if it was never backfilled."""
+        try:
+            return self.bucket.blob(photo_path(item_id, token)).download_as_bytes()
+        except gcp_exceptions.NotFound:
+            return None
 
     async def upload_photo(
         self,
@@ -42,9 +53,7 @@ class PhotoStore:
         Download a Vinted photo and store it under items/{item_id}/images/{token}.jpeg.
         Returns the gs:// URI on upload, or None if it already exists.
         """
-        token = extract_token(url)
-        path = f"items/{item_id}/images/{token}.jpeg"
-        blob = self.bucket.blob(path)
+        blob = self.bucket.blob(photo_path(item_id, extract_token(url)))
 
         # Cheap HEAD: avoids re-downloading photos we already have.
         if await asyncio.to_thread(blob.exists):

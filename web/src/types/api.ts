@@ -72,34 +72,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/": {
+    "/api/photos/{item_id}/{token}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Index */
-        get: operations["index__get"];
+        /** Get Photo */
+        get: operations["get_photo_api_photos__item_id___token__get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/items/{tx_id}/{item_id}/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Set Status */
-        post: operations["set_status_items__tx_id___item_id__status_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -146,6 +129,12 @@ export interface components {
              * @default []
              */
             photo_urls: string[];
+            /**
+             * Stored Photo Urls
+             * @description GCS copies served by /api/photos, used when Vinted has deleted the listing. Same order as photo_urls; empty string if the URL has no token.
+             * @default []
+             */
+            stored_photo_urls: string[];
             /** Paid Price */
             paid_price?: number | null;
             /**
@@ -412,11 +401,14 @@ export interface operations {
             };
         };
     };
-    index__get: {
+    get_photo_api_photos__item_id___token__get: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                item_id: number;
+                token: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -427,37 +419,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/html": string;
+                    "image/jpeg": unknown;
                 };
             };
-        };
-    };
-    set_status_items__tx_id___item_id__status_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Purchase (transaction) id */
-                tx_id: string;
-                /** @description Item id within the purchase */
-                item_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StatusUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
+            /** @description Not in GCS */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["StatusUpdateResult"];
-                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

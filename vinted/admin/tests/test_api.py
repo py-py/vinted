@@ -9,6 +9,8 @@ from fastapi.testclient import TestClient
 from vinted.account.orders.models import SaleStatus
 
 from .. import app
+from ..api import _stored_photo_url
+from ..deps import get_photo_store
 from ..deps import get_store
 
 AUTH = ("admin", "secret")
@@ -77,9 +79,9 @@ def test_api_requires_auth(store: MagicMock) -> None:
     assert TestClient(app).get("/api/items").status_code == 401
 
 
-######
-# PURCHASES
-######
+###############################################################################
+#  Purchases — Search and Date Filters
+###############################################################################
 
 
 def test_purchases_newest_first_with_items(client: TestClient) -> None:
@@ -100,9 +102,9 @@ def test_purchases_date_range(client: TestClient) -> None:
     assert [p["tx_id"] for p in body] == ["1"]
 
 
-######
-# ITEMS
-######
+###############################################################################
+#  Items — Status Filter, Search and Pagination
+###############################################################################
 
 
 def test_items_flat_list(client: TestClient) -> None:
@@ -146,9 +148,9 @@ def test_update_item_status(client: TestClient, store: MagicMock) -> None:
     store.set_item_status.assert_called_once_with("1", "12", SaleStatus.LISTED)
 
 
-######
-# STATS
-######
+###############################################################################
+#  Stats — Totals and Monthly Breakdown
+###############################################################################
 
 
 def test_stats(client: TestClient) -> None:
@@ -161,3 +163,46 @@ def test_stats(client: TestClient) -> None:
         {"month": "2026-09", "purchases": 1, "items": 2, "spent_pln": 120.0},
         {"month": "2026-10", "purchases": 1, "items": 1, "spent_pln": 50.0},
     ]
+
+
+###############################################################################
+#  Photos — GCS Fallback for Deleted Listings
+###############################################################################
+
+
+@pytest.fixture
+def photos() -> Iterator[MagicMock]:
+    photos = MagicMock()
+    app.dependency_overrides[get_photo_store] = lambda: photos
+    yield photos
+    app.dependency_overrides.pop(get_photo_store, None)
+
+
+def test_stored_photo_url() -> None:
+    url = "https://images1.vinted.net/t/abc_12/f800/1.jpeg?s=x"
+    assert _stored_photo_url(12, url) == "/api/photos/12/abc_12"
+    assert _stored_photo_url(12, "http://p/12.jpg") == ""
+
+
+def test_items_stored_photo_urls(client: TestClient) -> None:
+    item = next(i for i in client.get("/api/items").json()["items"] if i["id"] == 12)
+    assert item["stored_photo_urls"] == [""]
+
+
+def test_get_photo_from_gcs(client: TestClient, photos: MagicMock) -> None:
+    photos.download_photo.return_value = b"jpeg"
+    resp = client.get("/api/photos/12/abc_12")
+    assert resp.status_code == 200
+    assert resp.content == b"jpeg"
+    assert resp.headers["content-type"] == "image/jpeg"
+    photos.download_photo.assert_called_once_with(12, "abc_12")
+
+
+def test_get_photo_missing(client: TestClient, photos: MagicMock) -> None:
+    photos.download_photo.return_value = None
+    assert client.get("/api/photos/12/nope").status_code == 404
+
+
+def test_get_photo_rejects_bad_token(client: TestClient, photos: MagicMock) -> None:
+    assert client.get("/api/photos/12/a.b").status_code == 422
+    photos.download_photo.assert_not_called()

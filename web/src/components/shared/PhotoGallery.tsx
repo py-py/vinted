@@ -1,17 +1,19 @@
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useState } from "react"
 
+import { Photo } from "@/components/shared/Photo"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 type Props = {
   photos: string[]
+  fallbacks: string[]
   title: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function PhotoGallery({ photos, title, open, onOpenChange }: Props) {
+export function PhotoGallery({ photos, fallbacks, title, open, onOpenChange }: Props) {
   const [index, setIndex] = useState(0)
   const step = (delta: number) => setIndex((i) => (i + delta + photos.length) % photos.length)
 
@@ -32,11 +34,11 @@ export function PhotoGallery({ photos, title, open, onOpenChange }: Props) {
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
         <div className="relative flex items-center justify-center">
-          <img
+          <Photo
             src={photos[index]}
+            fallback={fallbacks[index]}
             alt={`${title} (${index + 1}/${photos.length})`}
             className="max-h-[80vh] w-auto rounded-md object-contain"
-            referrerPolicy="no-referrer"
           />
           {photos.length > 1 && (
             <>

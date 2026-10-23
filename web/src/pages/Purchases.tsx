@@ -3,6 +3,7 @@ import { useDeferredValue } from "react"
 
 import { PageHeader } from "@/components/shared/PageHeader"
 import { Pagination } from "@/components/shared/Pagination"
+import { Photo } from "@/components/shared/Photo"
 import { PurchaseSheet } from "@/components/shared/PurchaseSheet"
 import { SearchInput } from "@/components/shared/SearchInput"
 import { StatusBadge } from "@/components/shared/StatusBadge"
@@ -144,12 +145,12 @@ function PurchaseRow({ purchase: p, onSelect }: { purchase: Purchase; onSelect: 
         <div className="flex items-center gap-2">
           <div className="hidden -space-x-2 sm:flex">
             {p.items.slice(0, 4).map((i) => (
-              <img
+              <Photo
                 key={i.id}
                 src={i.photo_urls[0]}
+                fallback={i.stored_photo_urls[0]}
                 alt=""
                 className="size-8 rounded-md bg-muted object-cover ring-2 ring-background"
-                referrerPolicy="no-referrer"
               />
             ))}
           </div>

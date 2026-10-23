@@ -12,20 +12,25 @@ from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter
+from fastapi import HTTPException
 from fastapi import Path
 from fastapi import Query
+from fastapi import Response
 from pydantic import BaseModel
+from pydantic import Field
 
 from ..account.orders.models import SaleStatus
+from ..storage.gcs import extract_token
+from .deps import PhotoStoreDep
 from .deps import StoreDep
 from .purchases import load_purchases
 
 router = APIRouter(prefix="/api", tags=["api"])
 
 
-######
-# SCHEMAS
-######
+###############################################################################
+#  Schemas — API Request and Response Models
+###############################################################################
 
 
 class Item(BaseModel):
@@ -36,6 +41,14 @@ class Item(BaseModel):
     condition: str = ""
     url: str = ""
     photo_urls: list[str] = []
+    stored_photo_urls: list[str] = Field(
+        default=[],
+        description=(
+            "GCS copies served by /api/photos, used when Vinted "
+            "has deleted the listing. Same order as photo_urls; "
+            "empty string if the URL has no token."
+        ),
+    )
     paid_price: float | None = None
     paid_estimated: bool = False
     currency: str = ""
@@ -89,9 +102,17 @@ class Stats(BaseModel):
     by_month: list[MonthStats]
 
 
-######
-# HELPERS
-######
+###############################################################################
+#  Helpers — Firestore Docs to API Models
+###############################################################################
+
+
+def _stored_photo_url(item_id: int, url: str) -> str:
+    try:
+        token = extract_token(url)
+        return router.url_path_for("get_photo", item_id=item_id, token=token)
+    except ValueError:
+        return ""
 
 
 def _to_item(purchase: dict, item: dict) -> Item:
@@ -105,6 +126,7 @@ def _to_item(purchase: dict, item: dict) -> Item:
         condition=item.get("condition") or "",
         url=item.get("url") or "",
         photo_urls=photo_urls,
+        stored_photo_urls=[_stored_photo_url(item["id"], u) for u in photo_urls],
         paid_price=item.get("paid_price"),
         paid_estimated=item.get("paid_estimated", False),
         currency=item.get("currency") or "",
@@ -127,9 +149,9 @@ def _matches(query: str, *fields: str) -> bool:
     return any(query in f.casefold() for f in fields)
 
 
-######
-# ROUTES
-######
+###############################################################################
+#  Routes — Purchases, Items, Stats and Photos
+###############################################################################
 
 
 @router.get("/purchases")
@@ -202,4 +224,25 @@ def get_stats(store: StoreDep) -> Stats:
         spent_pln=sum(i.price_pln or 0.0 for i in items),
         by_status=Counter(i.status for i in items),
         by_month=[by_month[m] for m in sorted(by_month)],
+    )
+
+
+@router.get(
+    "/photos/{item_id}/{token}",
+    response_class=Response,
+    responses={200: {"content": {"image/jpeg": {}}}, 404: {"description": "Not in GCS"}},
+)
+def get_photo(
+    item_id: int,
+    token: Annotated[str, Path(pattern=r"^[\w-]+$")],
+    photos: PhotoStoreDep,
+) -> Response:
+    data = photos.download_photo(item_id, token)
+    if data is None:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    # Token is content-addressed, so the bytes never change.
+    return Response(
+        data,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "private, max-age=31536000, immutable"},
     )
