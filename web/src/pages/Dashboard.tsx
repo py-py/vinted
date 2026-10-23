@@ -4,6 +4,7 @@ import { Link } from "react-router"
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts"
 
 import { PageHeader } from "@/components/shared/PageHeader"
+import { Photo } from "@/components/shared/Photo"
 import { StatCard } from "@/components/shared/StatCard"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -188,11 +189,11 @@ function RecentPurchases({
                   to={`/purchases?tx=${p.tx_id}`}
                   className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2 hover:bg-muted/50"
                 >
-                  <img
+                  <Photo
                     src={p.items[0]?.photo_urls[0]}
+                    fallback={p.items[0]?.stored_photo_urls[0]}
                     alt=""
                     className="size-10 shrink-0 rounded-md bg-muted object-cover"
-                    referrerPolicy="no-referrer"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">

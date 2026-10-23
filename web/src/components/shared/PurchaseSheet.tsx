@@ -1,5 +1,6 @@
 import { ExternalLink, MessageCircle, User } from "lucide-react"
 
+import { Photo } from "@/components/shared/Photo"
 import { StatusSelect } from "@/components/shared/StatusSelect"
 import { Button } from "@/components/ui/button"
 import {
@@ -65,11 +66,11 @@ export function PurchaseSheet({ purchase, onOpenChange }: Props) {
             <ul className="divide-y px-4 pb-4">
               {purchase.items.map((item) => (
                 <li key={item.id} className="flex gap-3 py-3">
-                  <img
+                  <Photo
                     src={item.photo_urls[0]}
+                    fallback={item.stored_photo_urls[0]}
                     alt=""
                     className="size-20 shrink-0 rounded-md bg-muted object-cover"
-                    referrerPolicy="no-referrer"
                   />
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-start gap-1">

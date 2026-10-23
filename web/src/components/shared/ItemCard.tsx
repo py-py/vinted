@@ -1,6 +1,7 @@
 import { ExternalLink } from "lucide-react"
 import { useState } from "react"
 
+import { Photo } from "@/components/shared/Photo"
 import { PhotoGallery } from "@/components/shared/PhotoGallery"
 import { StatusSelect } from "@/components/shared/StatusSelect"
 import { Card } from "@/components/ui/card"
@@ -21,13 +22,13 @@ export function ItemCard({ item }: { item: Item }) {
             onClick={() => setGalleryOpen(true)}
             aria-label={`Open photos of ${item.title}`}
           >
-            <img
+            <Photo
               src={cover}
+              fallback={item.stored_photo_urls[0]}
               alt={item.title}
               className="size-full object-cover transition group-hover:scale-105"
               loading="lazy"
               decoding="async"
-              referrerPolicy="no-referrer"
             />
           </button>
         ) : (
@@ -74,6 +75,7 @@ export function ItemCard({ item }: { item: Item }) {
       {cover && (
         <PhotoGallery
           photos={item.photo_urls}
+          fallbacks={item.stored_photo_urls}
           title={item.title}
           open={galleryOpen}
           onOpenChange={setGalleryOpen}
