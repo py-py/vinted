@@ -81,6 +81,14 @@ class FirestoreStore:
     def save_sale(self, sale_id: str, sale: dict) -> None:
         self.sales.document(sale_id).set({**sale, "created_at": firestore.SERVER_TIMESTAMP})
 
+    def delete_sale(self, sale_id: str) -> bool:
+        """Delete a sale doc; False if it didn't exist."""
+        ref = self.sales.document(sale_id)
+        if not ref.get().exists:
+            return False
+        ref.delete()
+        return True
+
     def list_sales(self) -> list[tuple[str, dict]]:
         """(sale_id, doc) newest first."""
         query = self.sales.order_by("created_at", direction=firestore.Query.DESCENDING)

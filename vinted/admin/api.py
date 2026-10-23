@@ -33,6 +33,8 @@ router = APIRouter(prefix="/api", tags=["api"])
 # The web app resizes photos to 1600px on the longest side before upload (~0.3 MB each).
 MAX_SALE_PHOTOS = 20
 MAX_SALE_PHOTO_BYTES = 5 * 1024 * 1024
+# Firestore auto-ids (`store.new_sale_id()`): 20 alphanumeric characters.
+SALE_ID_PATTERN = r"^[A-Za-z0-9]{20}$"
 
 
 ###############################################################################
@@ -352,13 +354,25 @@ def create_sale(
     return _to_sale(sale_id, sale)
 
 
+@router.delete("/sales/{sale_id}", status_code=204)
+def delete_sale(
+    sale_id: Annotated[str, Path(pattern=SALE_ID_PATTERN)],
+    store: StoreDep,
+    photo_store: PhotoStoreDep,
+) -> None:
+    # Doc first: if photo cleanup fails, only unreferenced blobs are left behind.
+    if not store.delete_sale(sale_id):
+        raise HTTPException(status_code=404, detail="Sale not found")
+    photo_store.delete_sale_photos(sale_id)
+
+
 @router.get(
     "/sales/{sale_id}/photos/{photo_id}",
     response_class=Response,
     responses={200: {"content": {"image/jpeg": {}}}, 404: {"description": "Not in GCS"}},
 )
 def get_sale_photo(
-    sale_id: Annotated[str, Path(pattern=r"^\w+$")],
+    sale_id: Annotated[str, Path(pattern=SALE_ID_PATTERN)],
     photo_id: Annotated[str, Path(pattern=r"^[0-9a-f]{32}$")],
     photos: PhotoStoreDep,
 ) -> Response:
