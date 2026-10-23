@@ -1,6 +1,10 @@
 DEV_PORT ?= 8000
 
-.PHONY: build run shell cmd test admin-web web-dev web-build orders scrape-item analyze cookies cookie-header
+.PHONY: build run run-local admin-web-local shell cmd test admin-web web-dev web-build orders scrape-item analyze cookies cookie-header
+
+###############################################################################
+#  Docker — Image build, shell, ad-hoc commands and tests
+###############################################################################
 
 # Backend image (also bakes in the web build) + local web deps for the Vite dev server.
 build:
@@ -10,6 +14,16 @@ build:
 shell:
 	docker compose run --rm vinted bash
 
+cmd:
+	docker compose run --rm vinted $(CMD)
+
+test:
+	docker compose run --rm vinted pytest $(ARGS)
+
+###############################################################################
+#  Dev Servers — API + Vite together, in Docker or on the host
+###############################################################################
+
 # API in Docker on :$(DEV_PORT) + Vite on :5173; Ctrl+C stops both.
 run:
 	@trap 'kill 0' INT TERM EXIT; \
@@ -17,11 +31,16 @@ run:
 	$(MAKE) --no-print-directory web-dev & \
 	wait
 
-cmd:
-	docker compose run --rm vinted $(CMD)
+# Same as `run`, but the API runs on the host via uv (no Docker); Ctrl+C stops both.
+run-local:
+	@trap 'kill 0' INT TERM EXIT; \
+	$(MAKE) --no-print-directory admin-web-local & \
+	$(MAKE) --no-print-directory web-dev & \
+	wait
 
-test:
-	docker compose run --rm vinted pytest $(ARGS)
+###############################################################################
+#  Backend — FastAPI admin API (Docker / local uv)
+###############################################################################
 
 admin-web:
 	docker compose run --rm $(ADMIN_WEB_FLAGS) \
@@ -30,12 +49,23 @@ admin-web:
 		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
 		vinted fastapi dev --host 0.0.0.0 --port 8000
 
+admin-web-local:
+	uv run $(if $(wildcard .env),--env-file .env) fastapi dev --port $(DEV_PORT)
+
+###############################################################################
+#  Frontend — Vite dev server and production build
+###############################################################################
+
 web-dev:
 	API_URL=http://localhost:$(DEV_PORT) npm --prefix web run dev
 
 web-build:
 	npm --prefix web ci
 	npm --prefix web run build
+
+###############################################################################
+#  Jobs — Vinted orders sync, item scraping and analysis
+###############################################################################
 
 orders:
 	docker compose run --rm \
@@ -48,6 +78,10 @@ scrape-item:
 
 analyze:
 	docker compose run --rm vinted python -m vinted.analyzer $(ITEM)
+
+###############################################################################
+#  Cookies — Vinted auth cookies from a copied curl / to a header
+###############################################################################
 
 cookies:
 	pbpaste | python scripts/parse_curl.py
