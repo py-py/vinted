@@ -27,4 +27,10 @@ RUN uv sync --frozen
 # Outside /app so the docker-compose bind mount of the repo doesn't hide it.
 COPY --from=web /web/dist /srv/web
 
-CMD ["bash"]
+# Baked in for standalone runs; docker-compose bind-mounts the repo over these.
+COPY prompts/ ./prompts/
+COPY vinted/ ./vinted/
+
+EXPOSE 8000
+
+CMD ["fastapi", "run", "--host", "0.0.0.0", "--port", "8000"]
