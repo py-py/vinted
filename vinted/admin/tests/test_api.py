@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from datetime import UTC
+from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
@@ -206,3 +208,72 @@ def test_get_photo_missing(client: TestClient, photos: MagicMock) -> None:
 def test_get_photo_rejects_bad_token(client: TestClient, photos: MagicMock) -> None:
     assert client.get("/api/photos/12/a.b").status_code == 422
     photos.download_photo.assert_not_called()
+
+
+###############################################################################
+#  Sales — Create, List and Photos
+###############################################################################
+
+JPEG = b"\xff\xd8\xff\xe0jpeg"
+PHOTO_ID = "0" * 32
+
+
+def test_create_sale(client: TestClient, store: MagicMock, photos: MagicMock) -> None:
+    store.new_sale_id.return_value = "s1"
+    resp = client.post(
+        "/api/sales",
+        data={"title": " Nike Dunk ", "description": "Size 42", "price_pln": "150"},
+        files=[("photos", ("a.jpg", JPEG, "image/jpeg")), ("photos", ("b.jpg", JPEG))],
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["id"] == "s1"
+    assert body["title"] == "Nike Dunk"
+    assert body["price_pln"] == 150.0
+    assert len(body["photo_urls"]) == 2
+    assert body["photo_urls"][0].startswith("/api/sales/s1/photos/")
+    assert photos.upload_sale_photo.call_count == 2
+    saved = store.save_sale.call_args.args[1]
+    assert saved["description"] == "Size 42"
+    assert len(saved["photos"]) == 2
+
+
+def test_create_sale_requires_photo(client: TestClient, store: MagicMock) -> None:
+    assert client.post("/api/sales", data={"title": "x"}).status_code == 422
+    store.save_sale.assert_not_called()
+
+
+def test_create_sale_rejects_non_jpeg(
+    client: TestClient, store: MagicMock, photos: MagicMock
+) -> None:
+    resp = client.post(
+        "/api/sales", data={"title": "x"}, files={"photos": ("a.png", b"\x89PNG", "image/png")}
+    )
+    assert resp.status_code == 422
+    photos.upload_sale_photo.assert_not_called()
+    store.save_sale.assert_not_called()
+
+
+def test_list_sales(client: TestClient, store: MagicMock) -> None:
+    created = datetime(2026, 10, 23, 12, tzinfo=UTC)
+    store.list_sales.return_value = [
+        ("s1", {"title": "Samba", "photos": [PHOTO_ID], "created_at": created}),
+    ]
+    [sale] = client.get("/api/sales").json()
+    assert sale["title"] == "Samba"
+    assert sale["price_pln"] is None
+    assert sale["photo_urls"] == [f"/api/sales/s1/photos/{PHOTO_ID}"]
+    assert sale["created_at"] == "2026-10-23T12:00:00+00:00"
+
+
+def test_get_sale_photo(client: TestClient, photos: MagicMock) -> None:
+    photos.download_sale_photo.return_value = JPEG
+    resp = client.get(f"/api/sales/s1/photos/{PHOTO_ID}")
+    assert resp.status_code == 200
+    assert resp.content == JPEG
+    photos.download_sale_photo.assert_called_once_with("s1", PHOTO_ID)
+
+
+def test_get_sale_photo_rejects_bad_id(client: TestClient, photos: MagicMock) -> None:
+    assert client.get("/api/sales/s1/photos/nope").status_code == 422
+    photos.download_sale_photo.assert_not_called()
