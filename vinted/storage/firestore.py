@@ -14,6 +14,7 @@ from ..account.orders.models import Order
 from ..account.orders.models import SaleStatus
 
 PURCHASES_COLLECTION = "purchases"
+SALES_COLLECTION = "sales"
 
 
 def _non_empty(doc: dict) -> dict:
@@ -28,6 +29,7 @@ class FirestoreStore:
     Layout:
         purchases/{transaction_id}            -> order-level fields
         purchases/{transaction_id}/items/{id} -> per-item fields
+        sales/{auto_id}                       -> items created for selling in the admin
     """
 
     def __init__(self) -> None:
@@ -36,6 +38,7 @@ class FirestoreStore:
             database=os.environ["FIRESTORE_DATABASE"],
         )
         self.purchases = self.client.collection(PURCHASES_COLLECTION)
+        self.sales = self.client.collection(SALES_COLLECTION)
 
     def existing_transaction_ids(self) -> set[int]:
         return {int(doc.id) for doc in self.purchases.list_documents()}
@@ -59,6 +62,18 @@ class FirestoreStore:
         """
         item_ref = self.purchases.document(transaction_id).collection("items").document(item_id)
         item_ref.set({"_sale_status": status}, merge=True)
+
+    def new_sale_id(self) -> str:
+        """Reserve a Firestore auto id, so photos can be stored before the doc is written."""
+        return self.sales.document().id
+
+    def save_sale(self, sale_id: str, sale: dict) -> None:
+        self.sales.document(sale_id).set({**sale, "created_at": firestore.SERVER_TIMESTAMP})
+
+    def list_sales(self) -> list[tuple[str, dict]]:
+        """(sale_id, doc) newest first."""
+        query = self.sales.order_by("created_at", direction=firestore.Query.DESCENDING)
+        return [(snap.id, snap.to_dict() or {}) for snap in query.stream()]
 
     def save_order(self, order: Order) -> None:
         """Upsert an order and its items.
