@@ -32,6 +32,12 @@ export type ItemsQuery = {
   size?: number
 }
 
+export type PurchasesQuery = {
+  q?: string
+  dateFrom?: string
+  dateTo?: string
+}
+
 export const api = {
   items({ status = [], q, page, size }: ItemsQuery): Promise<ItemsPage> {
     const params = new URLSearchParams()
@@ -41,8 +47,12 @@ export const api = {
     if (size) params.set("size", String(size))
     return request(`/items?${params}`)
   },
-  purchases(): Promise<Purchase[]> {
-    return request("/purchases")
+  purchases({ q, dateFrom, dateTo }: PurchasesQuery = {}): Promise<Purchase[]> {
+    const params = new URLSearchParams()
+    if (q) params.set("q", q)
+    if (dateFrom) params.set("date_from", dateFrom)
+    if (dateTo) params.set("date_to", dateTo)
+    return request(`/purchases?${params}`)
   },
   stats(): Promise<Stats> {
     return request("/stats")

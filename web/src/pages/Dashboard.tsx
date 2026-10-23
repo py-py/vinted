@@ -183,25 +183,30 @@ function RecentPurchases({
         ) : (
           <ul className="divide-y">
             {purchases?.slice(0, 6).map((p) => (
-              <li key={p.tx_id} className="flex items-center gap-3 py-2">
-                <img
-                  src={p.items[0]?.photo_urls[0]}
-                  alt=""
-                  className="size-10 shrink-0 rounded-md bg-muted object-cover"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">
-                    {p.items.map((i) => i.title).join(", ") || "—"}
+              <li key={p.tx_id}>
+                <Link
+                  to={`/purchases?tx=${p.tx_id}`}
+                  className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2 hover:bg-muted/50"
+                >
+                  <img
+                    src={p.items[0]?.photo_urls[0]}
+                    alt=""
+                    className="size-10 shrink-0 rounded-md bg-muted object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">
+                      {p.items.map((i) => i.title).join(", ") || "—"}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {p.seller_login || "—"} · {p.order_date.slice(0, 10)} · {p.items.length}{" "}
+                      {p.items.length === 1 ? "item" : "items"}
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {p.seller_login || "—"} · {p.order_date.slice(0, 10)} · {p.items.length}{" "}
-                    {p.items.length === 1 ? "item" : "items"}
+                  <div className="shrink-0 text-sm font-medium tabular-nums">
+                    {formatMoney(p.total_price, p.currency)}
                   </div>
-                </div>
-                <div className="shrink-0 text-sm font-medium tabular-nums">
-                  {formatMoney(p.total_price, p.currency)}
-                </div>
+                </Link>
               </li>
             ))}
           </ul>

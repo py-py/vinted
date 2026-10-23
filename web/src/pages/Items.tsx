@@ -1,36 +1,24 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
-import { ChevronLeft, ChevronRight, Search } from "lucide-react"
 import { useDeferredValue } from "react"
-import { useSearchParams } from "react-router"
 
 import { ItemCard } from "@/components/shared/ItemCard"
 import { PageHeader } from "@/components/shared/PageHeader"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Pagination } from "@/components/shared/Pagination"
+import { SearchInput } from "@/components/shared/SearchInput"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { useUrlParams } from "@/hooks/use-url-params"
 import { api, type SaleStatus } from "@/lib/api"
 import { STATUS_ORDER, STATUSES } from "@/lib/status"
 
 const PAGE_SIZE = 40
 
 export function ItemsPage() {
-  // Filters live in the URL so a reload or shared link keeps them.
-  const [params, setParams] = useSearchParams()
+  const [params, update] = useUrlParams()
   const q = params.get("q") ?? ""
   const status = params.getAll("status") as SaleStatus[]
   const page = Number(params.get("page")) || 1
   const deferredQ = useDeferredValue(q)
-
-  const update = (patch: Record<string, string | string[]>) => {
-    const next = new URLSearchParams(params)
-    for (const [key, value] of Object.entries(patch)) {
-      next.delete(key)
-      ;[value].flat().filter(Boolean).forEach((v) => next.append(key, v))
-    }
-    if (!("page" in patch)) next.delete("page")
-    setParams(next, { replace: true })
-  }
 
   const { data, isPending, isError, error } = useQuery({
     queryKey: ["items", { status, q: deferredQ, page }],
@@ -47,16 +35,11 @@ export function ItemsPage() {
       />
 
       <div className="flex flex-col gap-3">
-        <div className="relative max-w-sm">
-          <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search title or seller…"
-            className="pl-8"
-            value={q}
-            onChange={(e) => update({ q: e.target.value })}
-          />
-        </div>
+        <SearchInput
+          placeholder="Search title or seller…"
+          value={q}
+          onChange={(value) => update({ q: value })}
+        />
         <ToggleGroup
           type="multiple"
           variant="outline"
@@ -96,31 +79,7 @@ export function ItemsPage() {
         </ItemGrid>
       )}
 
-      {pages > 1 && (
-        <div className="flex items-center justify-end gap-2 text-sm">
-          <span className="text-muted-foreground">
-            Page {page} of {pages}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={page <= 1}
-            onClick={() => update({ page: String(page - 1) })}
-            aria-label="Previous page"
-          >
-            <ChevronLeft />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={page >= pages}
-            onClick={() => update({ page: String(page + 1) })}
-            aria-label="Next page"
-          >
-            <ChevronRight />
-          </Button>
-        </div>
-      )}
+      <Pagination page={page} pages={pages} onPageChange={(p) => update({ page: String(p) })} />
     </div>
   )
 }
