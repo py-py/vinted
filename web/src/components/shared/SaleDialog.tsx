@@ -16,57 +16,55 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { api } from "@/lib/api"
+import { api, type Sale, type SaleInput } from "@/lib/api"
 import { MAX_PHOTO_SIDE, resizeImage } from "@/lib/image"
 import { cn } from "@/lib/utils"
 
 // Mirrors MAX_SALE_PHOTOS in vinted/admin/api.py (and Vinted's own limit).
 const MAX_PHOTOS = 20
 
-type Photo = { id: string; blob: Blob; url: string }
+// A photo already stored for the sale (`id`) or a new resized one (`blob`, object URL).
+type Photo = { key: string; url: string; id?: string; blob?: Blob }
 
 type Props = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  // Edit this sale; create a new one when omitted.
+  sale?: Sale
+  onClose: () => void
 }
 
-export function NewSaleDialog({ open, onOpenChange }: Props) {
+/** Mount only while open: state is initialised from `sale` once. */
+export function SaleDialog({ sale, onClose }: Props) {
   const queryClient = useQueryClient()
-  const [step, setStep] = useState<"photos" | "details">("photos")
-  const [photos, setPhotos] = useState<Photo[]>([])
+  const [step, setStep] = useState<"photos" | "details">(sale ? "details" : "photos")
+  const [photos, setPhotos] = useState<Photo[]>(
+    () => sale?.photo_ids.map((id, i) => ({ key: id, id, url: sale.photo_urls[i] })) ?? [],
+  )
   const [resizing, setResizing] = useState(0)
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
-  const [price, setPrice] = useState("")
-
-  const reset = () => {
-    photos.forEach((p) => URL.revokeObjectURL(p.url))
-    setStep("photos")
-    setPhotos([])
-    setTitle("")
-    setDescription("")
-    setPrice("")
-  }
+  const [title, setTitle] = useState(sale?.title ?? "")
+  const [description, setDescription] = useState(sale?.description ?? "")
+  const [price, setPrice] = useState(sale?.price_pln != null ? String(sale.price_pln) : "")
 
   const close = () => {
-    onOpenChange(false)
-    reset()
+    photos.forEach((p) => p.blob && URL.revokeObjectURL(p.url))
+    onClose()
   }
 
   const mutation = useMutation({
-    mutationFn: () =>
-      api.createSale({
+    mutationFn: () => {
+      const input: SaleInput = {
         title: title.trim(),
         description: description.trim(),
         pricePln: price ? Number(price) : undefined,
-        photos: photos.map((p) => p.blob),
-      }),
+        photos: photos.map((p) => p.id ?? p.blob!),
+      }
+      return sale ? api.updateSale(sale.id, input) : api.createSale(input)
+    },
     onSuccess: () => {
-      toast.success("Sale created")
+      toast.success(sale ? "Sale updated" : "Sale created")
       queryClient.invalidateQueries({ queryKey: ["sales"] })
       close()
     },
-    onError: () => toast.error("Failed to create sale"),
+    onError: () => toast.error(sale ? "Failed to update sale" : "Failed to create sale"),
   })
 
   const addFiles = async (files: File[]) => {
@@ -82,7 +80,8 @@ export function NewSaleDialog({ open, onOpenChange }: Props) {
     const added: Photo[] = []
     results.forEach((r, i) => {
       if (r.status === "fulfilled") {
-        added.push({ id: crypto.randomUUID(), blob: r.value, url: URL.createObjectURL(r.value) })
+        const url = URL.createObjectURL(r.value)
+        added.push({ key: crypto.randomUUID(), blob: r.value, url })
       } else {
         toast.error(`Can't read ${batch[i].name}`)
       }
@@ -90,11 +89,11 @@ export function NewSaleDialog({ open, onOpenChange }: Props) {
     setPhotos((prev) => [...prev, ...added])
   }
 
-  const remove = (id: string) =>
+  const remove = (key: string) =>
     setPhotos((prev) => {
-      const photo = prev.find((p) => p.id === id)
-      if (photo) URL.revokeObjectURL(photo.url)
-      return prev.filter((p) => p.id !== id)
+      const photo = prev.find((p) => p.key === key)
+      if (photo?.blob) URL.revokeObjectURL(photo.url)
+      return prev.filter((p) => p.key !== key)
     })
 
   const move = (index: number, delta: number) =>
@@ -109,13 +108,14 @@ export function NewSaleDialog({ open, onOpenChange }: Props) {
     addFiles([...e.dataTransfer.files])
   }
 
-  const canSave = title.trim() !== "" && photos.length > 0 && !mutation.isPending
+  const canSave =
+    title.trim() !== "" && photos.length > 0 && resizing === 0 && !mutation.isPending
 
   return (
-    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : close())}>
+    <Dialog open onOpenChange={(open) => !open && close()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>New sale</DialogTitle>
+          <DialogTitle>{sale ? "Edit sale" : "New sale"}</DialogTitle>
           <DialogDescription>
             {step === "photos"
               ? `Step 1 of 2 · Photos are resized to ${MAX_PHOTO_SIDE}px on the longest side`
@@ -153,7 +153,7 @@ export function NewSaleDialog({ open, onOpenChange }: Props) {
             {(photos.length > 0 || resizing > 0) && (
               <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                 {photos.map((p, i) => (
-                  <li key={p.id} className="group relative">
+                  <li key={p.key} className="relative">
                     <img
                       src={p.url}
                       alt={`Photo ${i + 1}`}
@@ -165,7 +165,7 @@ export function NewSaleDialog({ open, onOpenChange }: Props) {
                       size="icon-xs"
                       className="absolute top-1 right-1"
                       aria-label={`Remove photo ${i + 1}`}
-                      onClick={() => remove(p.id)}
+                      onClick={() => remove(p.key)}
                     >
                       <X />
                     </Button>
@@ -204,16 +204,21 @@ export function NewSaleDialog({ open, onOpenChange }: Props) {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex gap-2 overflow-x-auto">
+            <button
+              type="button"
+              className="flex w-full gap-2 overflow-x-auto rounded-md text-left"
+              title="Edit photos"
+              onClick={() => setStep("photos")}
+            >
               {photos.map((p) => (
                 <img
-                  key={p.id}
+                  key={p.key}
                   src={p.url}
                   alt=""
                   className="size-16 shrink-0 rounded-md bg-muted object-cover"
                 />
               ))}
-            </div>
+            </button>
             <div className="space-y-2">
               <Label htmlFor="sale-title">Title</Label>
               <Input
@@ -263,7 +268,7 @@ export function NewSaleDialog({ open, onOpenChange }: Props) {
           ) : (
             <>
               <Button variant="outline" onClick={() => setStep("photos")}>
-                Back
+                {sale ? "Photos" : "Back"}
               </Button>
               <Button disabled={!canSave} onClick={() => mutation.mutate()}>
                 {mutation.isPending && <Loader2 className="animate-spin" />}

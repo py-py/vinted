@@ -42,11 +42,20 @@ export type PurchasesQuery = {
   dateTo?: string
 }
 
-export type NewSale = {
+export type SaleInput = {
   title: string
   description: string
   pricePln?: number
-  photos: Blob[]
+  // In display order: an existing photo id (when editing) or a new resized JPEG.
+  photos: (string | Blob)[]
+}
+
+function saleForm({ title, description, pricePln }: SaleInput): FormData {
+  const body = new FormData()
+  body.set("title", title)
+  body.set("description", description)
+  if (pricePln != null) body.set("price_pln", String(pricePln))
+  return body
 }
 
 export const api = {
@@ -77,13 +86,24 @@ export const api = {
   sales(): Promise<Sale[]> {
     return request("/sales")
   },
-  createSale({ title, description, pricePln, photos }: NewSale): Promise<Sale> {
-    const body = new FormData()
-    body.set("title", title)
-    body.set("description", description)
-    if (pricePln != null) body.set("price_pln", String(pricePln))
-    photos.forEach((photo, i) => body.append("photos", photo, `photo-${i + 1}.jpg`))
+  createSale(input: SaleInput): Promise<Sale> {
+    const body = saleForm(input)
+    // A new sale has no existing photo ids, only Blobs.
+    input.photos.forEach((photo, i) => body.append("photos", photo as Blob, `photo-${i + 1}.jpg`))
     return request("/sales", { method: "POST", body })
+  },
+  updateSale(id: string, input: SaleInput): Promise<Sale> {
+    // `layout` is the final order; "new" takes the next file from `photos`.
+    const body = saleForm(input)
+    input.photos.forEach((photo, i) => {
+      if (typeof photo === "string") {
+        body.append("layout", photo)
+      } else {
+        body.append("layout", "new")
+        body.append("photos", photo, `photo-${i + 1}.jpg`)
+      }
+    })
+    return request(`/sales/${id}`, { method: "PUT", body })
   },
   deleteSale(id: string): Promise<void> {
     return request(`/sales/${id}`, { method: "DELETE" })

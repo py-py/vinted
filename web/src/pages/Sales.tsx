@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Loader2, Plus, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react"
+import { useDeferredValue, useState } from "react"
 import { toast } from "sonner"
 
-import { NewSaleDialog } from "@/components/shared/NewSaleDialog"
+import { CardGrid } from "@/components/shared/CardGrid"
 import { PageHeader } from "@/components/shared/PageHeader"
+import { PhotoGallery } from "@/components/shared/PhotoGallery"
+import { SaleDialog } from "@/components/shared/SaleDialog"
+import { SearchInput } from "@/components/shared/SearchInput"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -16,16 +19,25 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useUrlParams } from "@/hooks/use-url-params"
 import { api, type Sale } from "@/lib/api"
 import { formatMoney } from "@/lib/format"
 
 export function SalesPage() {
-  const [creating, setCreating] = useState(false)
+  const [params, update] = useUrlParams()
+  const q = params.get("q") ?? ""
+  const deferredQ = useDeferredValue(q).trim().toLowerCase()
+  // undefined: closed; null: new sale; Sale: editing it.
+  const [editing, setEditing] = useState<Sale | null>()
   const [deleting, setDeleting] = useState<Sale>()
   const { data, isPending, isError, error } = useQuery({
     queryKey: ["sales"],
     queryFn: api.sales,
   })
+  // Few sales, so search stays client-side.
+  const sales = data?.filter((s) =>
+    `${s.title}\n${s.description}`.toLowerCase().includes(deferredQ),
+  )
 
   return (
     <div className="space-y-6">
@@ -33,64 +45,113 @@ export function SalesPage() {
         title="Sales"
         description={data ? `${data.length} items for sale` : "Items you sell on Vinted"}
         actions={
-          <Button onClick={() => setCreating(true)}>
+          <Button onClick={() => setEditing(null)}>
             <Plus /> New sale
           </Button>
         }
       />
 
+      <SearchInput
+        placeholder="Search title or description…"
+        value={q}
+        onChange={(value) => update({ q: value })}
+      />
+
       {isError ? (
         <p className="text-sm text-destructive">Failed to load sales: {error.message}</p>
       ) : isPending ? (
-        <Skeleton className="h-96 w-full rounded-xl" />
-      ) : data.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No sales yet. Create the first one.</p>
-      ) : (
-        <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-          {data.map((sale) => (
-            <li key={sale.id}>
-              <SaleCard sale={sale} onDelete={() => setDeleting(sale)} />
-            </li>
+        <CardGrid>
+          {Array.from({ length: 10 }, (_, i) => (
+            <Skeleton key={i} className="aspect-[3/4] rounded-xl" />
           ))}
-        </ul>
+        </CardGrid>
+      ) : !sales?.length ? (
+        <p className="text-sm text-muted-foreground">
+          {q ? "No sales match the search." : "No sales yet. Create the first one."}
+        </p>
+      ) : (
+        <CardGrid>
+          {sales.map((sale) => (
+            <SaleCard
+              key={sale.id}
+              sale={sale}
+              onEdit={() => setEditing(sale)}
+              onDelete={() => setDeleting(sale)}
+            />
+          ))}
+        </CardGrid>
       )}
 
-      <NewSaleDialog open={creating} onOpenChange={setCreating} />
+      {editing !== undefined && (
+        <SaleDialog sale={editing ?? undefined} onClose={() => setEditing(undefined)} />
+      )}
       <DeleteSaleDialog sale={deleting} onOpenChange={(open) => !open && setDeleting(undefined)} />
     </div>
   )
 }
 
-function SaleCard({ sale, onDelete }: { sale: Sale; onDelete: () => void }) {
+type CardProps = {
+  sale: Sale
+  onEdit: () => void
+  onDelete: () => void
+}
+
+function SaleCard({ sale, onEdit, onDelete }: CardProps) {
+  const [galleryOpen, setGalleryOpen] = useState(false)
+  const [cover] = sale.photo_urls
+
   return (
-    <Card className="relative gap-0 overflow-hidden py-0">
-      <img
-        src={sale.photo_urls[0]}
-        alt=""
-        loading="lazy"
-        className="aspect-square w-full bg-muted object-cover"
-      />
-      <Button
-        variant="secondary"
-        size="icon-sm"
-        className="absolute top-2 right-2"
-        aria-label={`Delete ${sale.title}`}
-        onClick={onDelete}
-      >
-        <Trash2 />
-      </Button>
-      <div className="space-y-1 p-3">
-        <div className="line-clamp-2 text-sm font-medium">{sale.title}</div>
-        {sale.description && (
-          <p className="line-clamp-2 text-xs text-muted-foreground">{sale.description}</p>
+    <Card className="gap-0 overflow-hidden py-0">
+      <div className="group relative aspect-square overflow-hidden bg-muted">
+        {cover && (
+          <button
+            type="button"
+            // absolute: otherwise a portrait photo stretches the aspect-square box
+            className="absolute inset-0 cursor-zoom-in"
+            onClick={() => setGalleryOpen(true)}
+            aria-label={`Open photos of ${sale.title}`}
+          >
+            <img
+              src={cover}
+              alt={sale.title}
+              className="size-full object-cover transition group-hover:scale-105"
+              loading="lazy"
+              decoding="async"
+            />
+          </button>
         )}
-        <div className="flex items-baseline justify-between gap-2 pt-1">
-          <span className="text-sm font-semibold">{formatMoney(sale.price_pln)}</span>
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {sale.photo_urls.length} photos · {sale.created_at.slice(0, 10)}
-          </span>
+        <button
+          type="button"
+          title="Delete sale"
+          aria-label={`Delete ${sale.title}`}
+          onClick={onDelete}
+          className="absolute right-2 bottom-2 flex size-8 items-center justify-center rounded-full bg-background/90 shadow-sm ring-1 ring-border backdrop-blur hover:bg-background hover:text-destructive"
+        >
+          <Trash2 className="size-4" />
+        </button>
+      </div>
+      <div className="space-y-1 p-3">
+        <div className="line-clamp-2 min-h-10 text-sm font-medium">{sale.title}</div>
+        <div className="truncate text-xs text-muted-foreground">{sale.description || "—"}</div>
+        <div className="text-xs text-muted-foreground">
+          {sale.photo_urls.length} photos · {sale.created_at.slice(0, 10)}
+        </div>
+        <div className="text-sm font-semibold">{formatMoney(sale.price_pln)}</div>
+        <div className="pt-1">
+          <Button variant="outline" size="sm" className="w-full" onClick={onEdit}>
+            <Pencil /> Edit
+          </Button>
         </div>
       </div>
+      {cover && (
+        <PhotoGallery
+          photos={sale.photo_urls}
+          fallbacks={[]}
+          title={sale.title}
+          open={galleryOpen}
+          onOpenChange={setGalleryOpen}
+        />
+      )}
     </Card>
   )
 }

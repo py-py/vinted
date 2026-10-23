@@ -115,7 +115,8 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        /** Update Sale */
+        put: operations["update_sale_api_sales__sale_id__put"];
         post?: never;
         /** Delete Sale */
         delete: operations["delete_sale_api_sales__sale_id__delete"];
@@ -154,6 +155,28 @@ export interface components {
              * @description JPEGs, already resized
              */
             photos: string[];
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Price Pln */
+            price_pln?: number | null;
+        };
+        /** Body_update_sale_api_sales__sale_id__put */
+        Body_update_sale_api_sales__sale_id__put: {
+            /** Title */
+            title: string;
+            /**
+             * Layout
+             * @description Final photo order: an existing photo id keeps that photo, "new" takes the next file from `photos`. Ids left out are deleted.
+             */
+            layout: string[];
+            /**
+             * Photos
+             * @description New JPEGs, in layout order
+             */
+            photos?: string[] | null;
             /**
              * Description
              * @default
@@ -299,6 +322,12 @@ export interface components {
             description: string;
             /** Price Pln */
             price_pln?: number | null;
+            /**
+             * Photo Ids
+             * @description Same order as photo_urls
+             * @default []
+             */
+            photo_ids: string[];
             /**
              * Photo Urls
              * @default []
@@ -568,6 +597,41 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Sale"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_sale_api_sales__sale_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sale_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_update_sale_api_sales__sale_id__put"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
