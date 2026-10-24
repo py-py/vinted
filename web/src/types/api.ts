@@ -195,6 +195,8 @@ export interface components {
              * @default
              */
             order_date: string;
+            /** Seller Id */
+            seller_id?: number | null;
             /**
              * Seller Login
              * @default

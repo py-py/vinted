@@ -51,22 +51,23 @@ export function ItemRow({ item }: { item: Item }) {
         )}
       </TableCell>
       <TableCell className="max-w-64 min-w-40 whitespace-normal">
-        <div className="flex items-start gap-1">
-          <span className="line-clamp-2 font-medium">{item.title || "—"}</span>
+        <div className="line-clamp-2 font-medium">{item.title || "—"}</div>
+        <div className="text-xs text-muted-foreground">
+          {[item.size, item.condition].filter(Boolean).join(" · ") || "—"}
+        </div>
+        <div className="flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
+          {item.id}
           {item.url && (
             <a
               href={item.url}
               target="_blank"
               rel="noopener"
               title="Open on Vinted"
-              className="shrink-0 text-muted-foreground hover:text-foreground"
+              className="hover:text-foreground"
             >
               <ExternalLink className="size-3.5" />
             </a>
           )}
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {[item.size, item.condition].filter(Boolean).join(" · ") || "—"}
         </div>
       </TableCell>
       <TableCell className="hidden whitespace-nowrap md:table-cell">
@@ -74,6 +75,17 @@ export function ItemRow({ item }: { item: Item }) {
           <span className="mr-1.5 text-xs text-muted-foreground">[{item.seller_country}]</span>
         )}
         {item.seller_login || "—"}
+        {item.seller_id && (
+          <a
+            href={`https://www.vinted.pl/member/${item.seller_id}`}
+            target="_blank"
+            rel="noopener"
+            title="Open profile on Vinted"
+            className="ml-1 inline-block align-middle text-muted-foreground hover:text-foreground"
+          >
+            <ExternalLink className="size-3.5" />
+          </a>
+        )}
       </TableCell>
       <TableCell className="hidden whitespace-nowrap tabular-nums sm:table-cell">
         {item.order_date.slice(0, 10)}

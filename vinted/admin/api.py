@@ -58,6 +58,7 @@ class Item(BaseModel):
     sell_price: float | None = Field(default=None, description="Resale price, PLN")
     status: SaleStatus = SaleStatus.NONE
     order_date: str = ""
+    seller_id: int | None = None
     seller_login: str = ""
     seller_country: str = ""
 
@@ -179,6 +180,7 @@ def _to_item(purchase: dict, item: dict) -> Item:
         sell_price=item.get("_sell_price"),
         status=SaleStatus(raw_status) if raw_status in SaleStatus else SaleStatus.NONE,
         order_date=purchase.get("order_date") or "",
+        seller_id=purchase.get("seller_id"),
         seller_login=purchase.get("seller_login") or "",
         seller_country=purchase.get("seller_country") or "",
     )
