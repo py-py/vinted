@@ -107,7 +107,7 @@ export function ItemsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14" />
+                <TableHead className="w-24" />
                 <TableHead>Item</TableHead>
                 <TableHead className="hidden md:table-cell">Seller</TableHead>
                 <TableHead className="hidden sm:table-cell">Date</TableHead>

@@ -20,7 +20,7 @@ export function ItemRow({ item }: { item: Item }) {
 
   return (
     <TableRow>
-      <TableCell className="w-14">
+      <TableCell className="w-24">
         {cover ? (
           <button
             type="button"
@@ -32,13 +32,13 @@ export function ItemRow({ item }: { item: Item }) {
               src={cover}
               fallback={item.stored_photo_urls[0]}
               alt={item.title}
-              className="size-10 rounded-md bg-muted object-cover"
+              className="size-20 rounded-md bg-muted object-cover"
               loading="lazy"
               decoding="async"
             />
           </button>
         ) : (
-          <div className="size-10 rounded-md bg-muted" />
+          <div className="size-20 rounded-md bg-muted" />
         )}
         {cover && (
           <PhotoGallery
