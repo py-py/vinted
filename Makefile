@@ -1,6 +1,6 @@
 DEV_PORT ?= 8000
 
-.PHONY: build run run-local admin-web-local shell cmd test admin-web web-dev web-build orders scrape-item analyze cookies cookie-header
+.PHONY: build run run-local admin-web-local shell cmd test admin-web web-dev web-build orders sales scrape-item analyze cookies cookie-header
 
 ###############################################################################
 #  Docker — Image build, shell, ad-hoc commands and tests
@@ -64,7 +64,7 @@ web-build:
 	npm --prefix web run build
 
 ###############################################################################
-#  Jobs — Vinted orders sync, item scraping and analysis
+#  Jobs — Vinted orders/sales sync, item scraping and analysis
 ###############################################################################
 
 orders:
@@ -72,6 +72,12 @@ orders:
 		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
 		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
 		vinted python -m vinted.account.orders
+
+sales:
+	docker compose run --rm \
+		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
+		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
+		vinted python -m vinted.account.sales
 
 scrape-item:
 	docker compose run --rm vinted python -m vinted.scraper.item $(ITEM)

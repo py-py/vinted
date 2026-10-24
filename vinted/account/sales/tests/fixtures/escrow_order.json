@@ -1,0 +1,95 @@
+{
+  "escrow_order": {
+    "id": 22009759206,
+    "seller_id": 3131275209,
+    "buyer_id": 75448096,
+    "current_user_side": "seller",
+    "is_seller_business": false,
+    "is_suspended": false,
+    "conversation_id": "01a065ef-b27c-7592-8fe6-ce55a46cfbb0",
+    "created_at": "2026-09-03T12:40:41Z",
+    "title": "Bundle 4 items",
+    "items": [
+      {
+        "id": 9045748399,
+        "title": "Legginsy Nike Pro | czarne, szeroki pas z logo | bieganie, siłownia, joga, fitness | M",
+        "is_deleted": false,
+        "photo_url": "https://images1.vinted.net/t/05_0027c_6XzcAUPTiwFeZditMZJ8ntmj/150x210/744bbb2e.jpeg?s=d670cbb71e005284352ce4f289610c71ff7e45dc"
+      },
+      {
+        "id": 9276940986,
+        "title": "Koszulka bez rękawów | Nike Dri-FIT | bieganie, fitness, siłownia, joga | fiolet | M",
+        "is_deleted": false,
+        "photo_url": "https://images1.vinted.net/t/04_00347_5jGRR7jZjkRQXjHP7EA2jqTA/150x210/82a003b2.jpeg?s=5b887724f5c76f0b8e9fbbb5b75272c0f46b40d1"
+      },
+      {
+        "id": 9349739917,
+        "title": "Spodenki kompresyjne | Nike Pro | siłownia, bieganie, fitness | M",
+        "is_deleted": false,
+        "photo_url": "https://images1.vinted.net/t/02_002a7_ejSxzRrEThKeYrHFuvFnTxHN/150x210/dc6d4db3.jpeg?s=64f22db883a4a34983fa730b9c51ddf89eddc534"
+      },
+      {
+        "id": 9349784676,
+        "title": "Legginsy kompresyjne | Nike Pro | siłownia, bieganie, fitness | M",
+        "is_deleted": false,
+        "photo_url": "https://images1.vinted.net/t/06_01b61_i7Yw3N6yFLDCXyNzsaVpEBd4/150x210/24ec29a7.jpeg?s=394b0fea471e8f75041bd8055db1d5cca56958d8"
+      }
+    ],
+    "status": "completed_partially",
+    "transaction_status": 460,
+    "total_price": {
+      "amount": 123.82,
+      "currency_code": "PLN"
+    },
+    "shipment": {
+      "price_ex_vat": {
+        "amount": 12.67,
+        "currency_code": "PLN"
+      },
+      "vat_amount": {
+        "amount": 2.92,
+        "currency_code": "PLN"
+      }
+    },
+    "payment_data": {
+      "items_price": {
+        "price": {
+          "amount": "123.82",
+          "currency_code": "PLN"
+        }
+      },
+      "sales_tax_price": null,
+      "customs_tax_price": null,
+      "import_vat_price": null,
+      "service_fee_price": null,
+      "item_verification_fee_price": null,
+      "electronics_verification_fee_price": null,
+      "total_price_without_tax": {
+        "price": {
+          "amount": "133.19",
+          "currency_code": "PLN"
+        }
+      },
+      "shipment_price": {
+        "price": {
+          "amount": "15.59",
+          "currency_code": "PLN"
+        },
+        "discount": null,
+        "price_excluding_vat": {
+          "amount": "12.67",
+          "currency_code": "PLN"
+        },
+        "vat_price": {
+          "amount": "2.92",
+          "currency_code": "PLN"
+        }
+      },
+      "total_price": null,
+      "conversion_data": null
+    },
+    "purchase_id": "xwbEUi_F7lfT4T1b127GC",
+    "traits": []
+  },
+  "code": 0
+}

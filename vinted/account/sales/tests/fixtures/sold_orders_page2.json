@@ -1,0 +1,40 @@
+{
+  "my_orders": [
+    {
+      "conversation_id": "01a0ec9a-0ef1-7808-ab42-329bb1a65c41",
+      "date": "2026-09-29T09:59:00Z",
+      "escrow_order_id": 22710456047,
+      "photo_url": "https://images1.vinted.net/t/03_00751_Mx3jgd45USX29tN196CKGfrJ/150x210/3e51b436.jpeg?s=5f33baa4528b0497f1240f52e47204bfd34b523e",
+      "price": {
+        "amount": "70.00",
+        "currency_code": "PLN"
+      },
+      "status": "Order completed successfully. The buyer accepted the item.",
+      "title": "Buty | Adidas Basket Profi | zamsz, wysokie, retro | EUR 38",
+      "transaction_id": 22710456047,
+      "transaction_user_status": "completed"
+    },
+    {
+      "conversation_id": "01a0d85b-ff00-7009-8665-25c185701c64",
+      "date": "2026-09-25T15:36:47Z",
+      "escrow_order_id": 22597711712,
+      "photo_url": "https://images1.vinted.net/t/06_0079e_PcyTyXS9dMELp4wWAYaR9MFT/150x210/1cee0e21.jpeg?s=5970704e3dc9f414a5b7b580db5c7b411488b7d6",
+      "price": {
+        "amount": "15.00",
+        "currency_code": "PLN"
+      },
+      "status": "Order completed successfully. The buyer accepted the item.",
+      "title": "Sweter golf | Zara | beżowy prążkowany | S/M",
+      "transaction_id": 22597711712,
+      "transaction_user_status": "completed"
+    }
+  ],
+  "order_details_enabled": false,
+  "pagination": {
+    "current_page": 2,
+    "per_page": 2,
+    "time": 1792799229,
+    "total_entries": 174,
+    "total_pages": 87
+  }
+}

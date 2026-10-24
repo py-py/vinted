@@ -46,6 +46,25 @@ ITEMS = {
     ],
     "2": [{"id": 21, "title": "Samba", "paid_price": 50.0, "_sale_status": "legacy"}],
 }
+SALES = {
+    "5": {
+        "buyer_id": 50,
+        "buyer_login": "carol",
+        "buyer_country": "DE",
+        "date": "2026-10-10T10:00:00+02:00",
+        "items_price": 80.0,
+        "shipment_price": 12.0,
+        "currency": "PLN",
+    },
+    "6": {"buyer_login": "dave", "date": "2026-08-01T10:00:00+02:00", "currency": "PLN"},
+}
+SALE_ITEMS = {
+    "5": [
+        {"id": 51, "title": "Nike Dunk", "listed_price": 60.0, "sold_price": 60.0},
+        {"id": 52, "title": "Jordan 1", "photo_url": "http://p/52.jpg", "sold_price": 20.0},
+    ],
+    "6": [{"id": 61, "title": "Puma"}],
+}
 
 
 def _snap(doc_id: str, data: dict, parent_id: str | None = None) -> MagicMock:
@@ -66,8 +85,11 @@ def admin_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
 def store() -> Iterator[MagicMock]:
     store = MagicMock()
     store.purchases.stream.return_value = [_snap(k, v) for k, v in PURCHASES.items()]
+    store.sales.stream.return_value = [_snap(k, v) for k, v in SALES.items()]
     store.client.collection_group.return_value.stream.return_value = [
-        _snap(str(i["id"]), i, parent_id=tx) for tx, items in ITEMS.items() for i in items
+        _snap(str(i["id"]), i, parent_id=tx)
+        for tx, items in (ITEMS | SALE_ITEMS).items()
+        for i in items
     ]
     app.dependency_overrides[get_store] = lambda: store
     yield store
@@ -106,6 +128,34 @@ def test_purchases_date_range(client: TestClient) -> None:
     params = {"date_from": "2026-09-01", "date_to": "2026-09-30"}
     body = client.get("/api/purchases", params=params).json()
     assert [p["tx_id"] for p in body] == ["1"]
+
+
+###############################################################################
+#  Sales — Items Join, Search and Date Filters
+###############################################################################
+
+
+def test_sales_newest_first_with_items(client: TestClient) -> None:
+    body = client.get("/api/sales").json()
+    assert [s["tx_id"] for s in body] == ["5", "6"]
+    assert [i["id"] for i in body[0]["items"]] == [51, 52]
+    assert body[0]["items"][1]["photo_urls"] == ["http://p/52.jpg"]
+    assert body[0]["items_price"] == 80.0
+
+
+def test_sales_search_matches_buyer_and_title(client: TestClient) -> None:
+    assert [s["tx_id"] for s in client.get("/api/sales", params={"q": "dave"}).json()] == ["6"]
+    assert [s["tx_id"] for s in client.get("/api/sales", params={"q": "jordan"}).json()] == ["5"]
+
+
+def test_sales_date_range(client: TestClient) -> None:
+    params = {"date_from": "2026-10-01"}
+    assert [s["tx_id"] for s in client.get("/api/sales", params=params).json()] == ["5"]
+
+
+def test_purchases_exclude_sale_items(client: TestClient) -> None:
+    items = client.get("/api/items").json()["items"]
+    assert {i["id"] for i in items} == {11, 12, 21}
 
 
 ###############################################################################

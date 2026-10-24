@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sales */
+        get: operations["list_sales_api_sales_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/items": {
         parameters: {
             query?: never;
@@ -239,6 +256,94 @@ export interface components {
             /** Items */
             items: components["schemas"]["Item"][];
         };
+        /** Sale */
+        Sale: {
+            /** Tx Id */
+            tx_id: string;
+            /** Buyer Id */
+            buyer_id?: number | null;
+            /**
+             * Buyer Login
+             * @default
+             */
+            buyer_login: string;
+            /**
+             * Buyer Country
+             * @default
+             */
+            buyer_country: string;
+            /**
+             * Order Date
+             * @default
+             */
+            order_date: string;
+            /** Conversation Id */
+            conversation_id?: number | string | null;
+            /**
+             * Items Price
+             * @description Paid by buyer, w/o shipment
+             */
+            items_price?: number | null;
+            /** Shipment Price */
+            shipment_price?: number | null;
+            /**
+             * Currency
+             * @default
+             */
+            currency: string;
+            /** Items */
+            items: components["schemas"]["SaleItem"][];
+        };
+        /** SaleItem */
+        SaleItem: {
+            /** Id */
+            id: number;
+            /** Tx Id */
+            tx_id: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /**
+             * Size
+             * @default
+             */
+            size: string;
+            /**
+             * Condition
+             * @default
+             */
+            condition: string;
+            /**
+             * Url
+             * @default
+             */
+            url: string;
+            /**
+             * Photo Urls
+             * @default []
+             */
+            photo_urls: string[];
+            /**
+             * Stored Photo Urls
+             * @description See `Item.stored_photo_urls`
+             * @default []
+             */
+            stored_photo_urls: string[];
+            /** Listed Price */
+            listed_price?: number | null;
+            /**
+             * Sold Price
+             * @description Bundles: items_price split by listed_price share
+             */
+            sold_price?: number | null;
+            /**
+             * Currency
+             * @default
+             */
+            currency: string;
+        };
         /**
          * SaleStatus
          * @enum {string}
@@ -340,6 +445,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Purchase"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sales_api_sales_get: {
+        parameters: {
+            query?: {
+                /** @description Search in buyer login and item titles */
+                q?: string | null;
+                /** @description Sale date, inclusive */
+                date_from?: string | null;
+                /** @description Sale date, inclusive */
+                date_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Sale"][];
                 };
             };
             /** @description Validation Error */
