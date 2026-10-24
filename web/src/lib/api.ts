@@ -3,6 +3,7 @@ import type { components } from "@/types/api"
 type Schemas = components["schemas"]
 export type Item = Schemas["Item"]
 export type Purchase = Schemas["Purchase"]
+export type Sale = Schemas["Sale"]
 export type ItemsPage = Schemas["Page_Item_"]
 export type SaleStatus = Schemas["SaleStatus"]
 export type Stats = Schemas["Stats"]
@@ -39,6 +40,8 @@ export type PurchasesQuery = {
   dateTo?: string
 }
 
+export type SalesQuery = PurchasesQuery
+
 export const api = {
   items({ status = [], q, hasSellPrice, page, size }: ItemsQuery): Promise<ItemsPage> {
     const params = new URLSearchParams()
@@ -55,6 +58,13 @@ export const api = {
     if (dateFrom) params.set("date_from", dateFrom)
     if (dateTo) params.set("date_to", dateTo)
     return request(`/purchases?${params}`)
+  },
+  sales({ q, dateFrom, dateTo }: SalesQuery = {}): Promise<Sale[]> {
+    const params = new URLSearchParams()
+    if (q) params.set("q", q)
+    if (dateFrom) params.set("date_from", dateFrom)
+    if (dateTo) params.set("date_to", dateTo)
+    return request(`/sales?${params}`)
   },
   stats(): Promise<Stats> {
     return request("/stats")

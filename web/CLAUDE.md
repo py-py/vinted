@@ -22,10 +22,11 @@ Done = `npm run build` and `npm run lint` pass, and the page was checked in a br
 
 ## Layout
 
-- `src/pages/` — one file per route: `Dashboard` (`/`), `Items` (`/items`), `Purchases` (`/purchases`).
+- `src/pages/` — one file per route: `Dashboard` (`/`), `Items` (`/items`), `Purchases` (`/purchases`),
+  `Sales` (`/sales`, read-only).
 - `src/components/layout/` — `AdminLayout` (sidebar + header + `<Outlet/>`), `AppSidebar` (nav list).
 - `src/components/shared/` — app components reused across pages (`StatusSelect`, `ItemCard`,
-  `Pagination`, `SearchInput`, `PurchaseSheet`, …).
+  `Pagination`, `SearchInput`, `PurchaseSheet`, `SaleSheet`, …).
 - `src/components/ui/` — shadcn-generated; add via `npx shadcn@latest add <name>`, don't hand-edit
   unless necessary. Lint warnings there are expected.
 - `src/lib/api.ts` — the only place that calls `fetch`; type aliases over the generated schema.
@@ -45,7 +46,7 @@ Done = `npm run build` and `npm run lint` pass, and the page was checked in a br
   testing unless that's intended.
 - **Port 8000 may be taken** locally (ssh tunnel); start the API elsewhere and set `API_URL`.
 - **Filters live in the URL** (`useUrlParams` in `src/hooks/use-url-params.ts`): `q`, `status`,
-  `page`, `from`, `to`, `tx` (open purchase). Changing a filter resets `page`.
+  `page`, `from`, `to`, `tx` (open purchase / sale). Changing a filter resets `page`.
 - **Server-side filtering.** `/api/items` filters and paginates on the server; `/api/purchases`
   filters on the server and the page paginates client-side. The backend loads all of Firestore per
   request, so keep requests few (TanStack Query `staleTime` is 30s).

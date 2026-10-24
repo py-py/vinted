@@ -1,7 +1,8 @@
 """
-JSON API for the web admin (`web/`): purchases, items with sale status and sell price, stats.
+JSON API for the web admin (`web/`): purchases, items with sale status and sell price,
+sales, stats.
 
-Everything is derived from `load_purchases` (one full Firestore read per request);
+Everything is derived from `load_purchases` / `load_sales` (one full Firestore read per request);
 filtering and pagination happen in memory, which is fine at the current data size.
 """
 
@@ -24,6 +25,7 @@ from ..storage.gcs import extract_token
 from .deps import PhotoStoreDep
 from .deps import StoreDep
 from .purchases import load_purchases
+from .sales import load_sales
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -69,6 +71,35 @@ class Purchase(BaseModel):
     total_price: float | None = None
     currency: str = ""
     items: list[Item]
+
+
+class SaleItem(BaseModel):
+    id: int
+    tx_id: str
+    title: str = ""
+    size: str = ""
+    condition: str = ""
+    url: str = ""
+    photo_urls: list[str] = []
+    stored_photo_urls: list[str] = Field(default=[], description="See `Item.stored_photo_urls`")
+    listed_price: float | None = None
+    sold_price: float | None = Field(
+        default=None, description="Bundles: items_price split by listed_price share"
+    )
+    currency: str = ""
+
+
+class Sale(BaseModel):
+    tx_id: str
+    buyer_id: int | None = None
+    buyer_login: str = ""
+    buyer_country: str = ""
+    order_date: str = ""
+    conversation_id: int | str | None = None
+    items_price: float | None = Field(default=None, description="Paid by buyer, w/o shipment")
+    shipment_price: float | None = None
+    currency: str = ""
+    items: list[SaleItem]
 
 
 class StatusUpdate(BaseModel):
@@ -130,7 +161,7 @@ def _stored_photo_url(item_id: int, url: str) -> str:
 
 def _to_item(purchase: dict, item: dict) -> Item:
     raw_status = item.get("_sale_status")
-    photo_urls = item.get("photo_urls") or ([item["photo_url"]] if item.get("photo_url") else [])
+    photo_urls = _photo_urls(item)
     return Item(
         id=item["id"],
         tx_id=purchase["tx_id"],
@@ -158,13 +189,41 @@ def _to_purchase(purchase: dict) -> Purchase:
     )
 
 
+def _photo_urls(item: dict) -> list[str]:
+    return item.get("photo_urls") or ([item["photo_url"]] if item.get("photo_url") else [])
+
+
+def _to_sale_item(sale: dict, item: dict) -> SaleItem:
+    photo_urls = _photo_urls(item)
+    return SaleItem(
+        id=item["id"],
+        tx_id=sale["tx_id"],
+        title=item.get("title") or "",
+        size=item.get("size") or "",
+        condition=item.get("condition") or "",
+        url=item.get("url") or "",
+        photo_urls=photo_urls,
+        stored_photo_urls=[_stored_photo_url(item["id"], u) for u in photo_urls],
+        listed_price=item.get("listed_price"),
+        sold_price=item.get("sold_price"),
+        currency=item.get("currency") or "",
+    )
+
+
+def _to_sale(sale: dict) -> Sale:
+    return Sale(
+        **{k: v for k, v in sale.items() if k != "items"},
+        items=[_to_sale_item(sale, i) for i in sale["items"] if i.get("id") is not None],
+    )
+
+
 def _matches(query: str, *fields: str) -> bool:
     query = query.casefold()
     return any(query in f.casefold() for f in fields)
 
 
 ###############################################################################
-#  Routes — Purchases, Items, Stats and Photos
+#  Routes — Purchases, Sales, Items, Stats and Photos
 ###############################################################################
 
 
@@ -185,6 +244,23 @@ def list_purchases(
     if date_to:
         purchases = [p for p in purchases if p.order_date[:10] <= date_to.isoformat()]
     return purchases
+
+
+@router.get("/sales")
+def list_sales(
+    store: StoreDep,
+    q: Annotated[str | None, Query(description="Search in buyer login and item titles")] = None,
+    date_from: Annotated[date | None, Query(description="Sale date, inclusive")] = None,
+    date_to: Annotated[date | None, Query(description="Sale date, inclusive")] = None,
+) -> list[Sale]:
+    sales = [_to_sale(s) for s in load_sales(store)]
+    if q:
+        sales = [s for s in sales if _matches(q, s.buyer_login, *(i.title for i in s.items))]
+    if date_from:
+        sales = [s for s in sales if s.order_date[:10] >= date_from.isoformat()]
+    if date_to:
+        sales = [s for s in sales if s.order_date[:10] <= date_to.isoformat()]
+    return sales
 
 
 @router.get("/items")
