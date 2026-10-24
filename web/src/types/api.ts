@@ -200,6 +200,11 @@ export interface components {
              * @default
              */
             seller_login: string;
+            /**
+             * Seller Country
+             * @default
+             */
+            seller_country: string;
         };
         /** MonthStats */
         MonthStats: {

@@ -59,6 +59,7 @@ class Item(BaseModel):
     status: SaleStatus = SaleStatus.NONE
     order_date: str = ""
     seller_login: str = ""
+    seller_country: str = ""
 
 
 class Purchase(BaseModel):
@@ -179,6 +180,7 @@ def _to_item(purchase: dict, item: dict) -> Item:
         status=SaleStatus(raw_status) if raw_status in SaleStatus else SaleStatus.NONE,
         order_date=purchase.get("order_date") or "",
         seller_login=purchase.get("seller_login") or "",
+        seller_country=purchase.get("seller_country") or "",
     )
 
 
