@@ -25,12 +25,12 @@ import asyncio
 import httpx
 
 from vinted.account.cookies import load_cookies
-from vinted.account.orders.api import _amount
-from vinted.account.orders.api import _currency
-from vinted.account.orders.api import _request
-from vinted.account.orders.api import fetch_escrow_order
-from vinted.account.orders.api import fetch_escrow_order_items
-from vinted.account.orders.api import fetch_transaction
+from vinted.account.purchases.api import _amount
+from vinted.account.purchases.api import _currency
+from vinted.account.purchases.api import _request
+from vinted.account.purchases.api import fetch_escrow_order
+from vinted.account.purchases.api import fetch_escrow_order_items
+from vinted.account.purchases.api import fetch_transaction
 from vinted.constants import USER_AGENT
 
 from .models import Sale

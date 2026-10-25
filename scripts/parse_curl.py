@@ -31,7 +31,7 @@ from pathlib import Path
 # cookies.json lives at the repo root (this script is in scripts/).
 COOKIES_PATH = Path(__file__).resolve().parent.parent / "cookies.json"
 
-# The 3 keys the Vinted client actually needs (vinted/favourites.py, vinted/orders/).
+# The 3 keys the Vinted client actually needs (vinted/favourites.py, vinted/account/purchases/).
 REQUIRED = ["access_token_web", "datadome", "cf_clearance"]
 
 

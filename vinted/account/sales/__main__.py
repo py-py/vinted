@@ -5,7 +5,7 @@ import asyncio
 import json
 
 from ...storage import FirestoreStore
-from ..orders.photos import backfill_photos
+from ..purchases.photos import backfill_photos
 from .api import fetch_sales
 
 

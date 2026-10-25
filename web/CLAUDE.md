@@ -52,7 +52,7 @@ Done = `npm run build` and `npm run lint` pass, and the page was checked in a br
   filters on the server and the page paginates client-side. The backend loads all of Firestore per
   request, so keep requests few (TanStack Query `staleTime` is 30s).
 - **After a mutation** `StatusSelect` invalidates all queries, so Dashboard stats and lists refresh.
-- **Sale statuses** mirror `SaleStatus` in `vinted/account/orders/models.py`. Adding one means:
+- **Sale statuses** mirror `SaleStatus` in `vinted/account/purchases/models.py`. Adding one means:
   backend enum → `gen:api` → `STATUSES` + `STATUS_ORDER` in `src/lib/status.ts`.
 - **Vinted images** are hot-linked from the Vinted CDN; keep `referrerPolicy="no-referrer"` on `<img>`.
 - **Layout gotcha:** `SidebarInset` needs `min-w-0`, otherwise charts/tables push the page wider

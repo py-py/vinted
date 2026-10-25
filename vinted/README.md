@@ -1,6 +1,6 @@
 # How purchased items are fetched from Vinted
 
-Code: `vinted/account/orders/api.py` (`fetch_my_orders` → `build_order`).
+Code: `vinted/account/purchases/api.py` (`fetch_my_orders` → `build_order`).
 
 ```mermaid
 sequenceDiagram

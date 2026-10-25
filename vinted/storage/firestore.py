@@ -10,8 +10,8 @@ import os
 
 from google.cloud import firestore
 
-from ..account.orders.models import Order
-from ..account.orders.models import SaleStatus
+from ..account.purchases.models import Order
+from ..account.purchases.models import SaleStatus
 from ..account.sales.models import Sale
 
 PURCHASES_COLLECTION = "purchases"
