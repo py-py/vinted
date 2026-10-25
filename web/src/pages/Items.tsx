@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { useDeferredValue } from "react"
 
 import { ItemRow } from "@/components/shared/ItemRow"
+import { ItemSheet } from "@/components/shared/ItemSheet"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { Pagination } from "@/components/shared/Pagination"
 import { SearchInput } from "@/components/shared/SearchInput"
@@ -34,6 +35,7 @@ export function ItemsPage() {
   const sell = params.get("sell") as SellPriceFilter | null
   const hasSellPrice = sell ? SELL_PRICE_FILTERS[sell]?.hasSellPrice : undefined
   const page = Number(params.get("page")) || 1
+  const selectedKey = params.get("item")
   const deferredQ = useDeferredValue(q)
 
   const { data, isPending, isError, error } = useQuery({
@@ -42,6 +44,10 @@ export function ItemsPage() {
     placeholderData: keepPreviousData,
   })
   const pages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
+  const selected = data?.items.find((i) => `${i.tx_id}/${i.id}` === selectedKey)
+
+  // `item` only opens the sheet, so keep the current page when toggling it.
+  const select = (key: string) => update({ item: key, page: params.get("page") ?? "" })
 
   return (
     <div className="space-y-6">
@@ -119,7 +125,11 @@ export function ItemsPage() {
             </TableHeader>
             <TableBody>
               {data.items.map((item) => (
-                <ItemRow key={`${item.tx_id}/${item.id}`} item={item} />
+                <ItemRow
+                  key={`${item.tx_id}/${item.id}`}
+                  item={item}
+                  onSelect={() => select(`${item.tx_id}/${item.id}`)}
+                />
               ))}
             </TableBody>
           </Table>
@@ -127,6 +137,8 @@ export function ItemsPage() {
       )}
 
       <Pagination page={page} pages={pages} onPageChange={(p) => update({ page: String(p) })} />
+
+      <ItemSheet item={selected} onOpenChange={(open) => !open && select("")} />
     </div>
   )
 }

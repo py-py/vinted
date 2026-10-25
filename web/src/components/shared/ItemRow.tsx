@@ -1,8 +1,6 @@
 import { ExternalLink } from "lucide-react"
-import { useState } from "react"
 
 import { Photo } from "@/components/shared/Photo"
-import { PhotoGallery } from "@/components/shared/PhotoGallery"
 import { SellPriceInput } from "@/components/shared/SellPriceInput"
 import { StatusSelect } from "@/components/shared/StatusSelect"
 import { TableCell, TableRow } from "@/components/ui/table"
@@ -10,8 +8,7 @@ import type { Item } from "@/lib/api"
 import { formatMoney } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
-export function ItemRow({ item }: { item: Item }) {
-  const [galleryOpen, setGalleryOpen] = useState(false)
+export function ItemRow({ item, onSelect }: { item: Item; onSelect: () => void }) {
   const [cover] = item.photo_urls
   const benefit =
     item.status === "sold" && item.sell_price != null && item.price_pln != null
@@ -24,9 +21,9 @@ export function ItemRow({ item }: { item: Item }) {
         {cover ? (
           <button
             type="button"
-            className="block cursor-zoom-in"
-            onClick={() => setGalleryOpen(true)}
-            aria-label={`Open photos of ${item.title}`}
+            className="block cursor-pointer"
+            onClick={onSelect}
+            aria-label={`Open details of ${item.title}`}
           >
             <Photo
               src={cover}
@@ -39,15 +36,6 @@ export function ItemRow({ item }: { item: Item }) {
           </button>
         ) : (
           <div className="size-20 rounded-md bg-muted" />
-        )}
-        {cover && (
-          <PhotoGallery
-            photos={item.photo_urls}
-            fallbacks={item.stored_photo_urls}
-            title={item.title}
-            open={galleryOpen}
-            onOpenChange={setGalleryOpen}
-          />
         )}
       </TableCell>
       <TableCell className="max-w-64 min-w-40 whitespace-normal">
