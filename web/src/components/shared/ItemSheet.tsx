@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react"
+import { ChevronLeft, ChevronRight, ExternalLink, XIcon } from "lucide-react"
 import { useState, type ReactNode } from "react"
 
 import { Photo } from "@/components/shared/Photo"
@@ -34,19 +34,43 @@ export function ItemSheet({ item, onOpenChange }: Props) {
   )
 }
 
-function ItemDetails({ item }: { item: Item }) {
+type DetailsProps = {
+  item: Item
+  // Set when rendered as a pane inside another sheet: plain headings (the sheet already has
+  // its own title) and a button that closes just this pane.
+  onClose?: () => void
+}
+
+export function ItemDetails({ item, onClose }: DetailsProps) {
   const benefit =
     item.status === "sold" && item.sell_price != null && item.price_pln != null
       ? item.sell_price - item.price_pln
       : null
+  const subtitle = [item.size, item.condition].filter(Boolean).join(" · ") || "—"
 
   return (
     <>
-      <SheetHeader>
-        <SheetTitle className="pr-6">{item.title || "—"}</SheetTitle>
-        <SheetDescription>
-          {[item.size, item.condition].filter(Boolean).join(" · ") || "—"}
-        </SheetDescription>
+      <SheetHeader className="relative">
+        {onClose ? (
+          <>
+            <h2 className="pr-8 font-heading text-base font-medium">{item.title || "—"}</h2>
+            <p className="text-sm text-muted-foreground">{subtitle}</p>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="absolute top-3 right-3"
+              onClick={onClose}
+              aria-label="Close item"
+            >
+              <XIcon />
+            </Button>
+          </>
+        ) : (
+          <>
+            <SheetTitle className="pr-6">{item.title || "—"}</SheetTitle>
+            <SheetDescription>{subtitle}</SheetDescription>
+          </>
+        )}
       </SheetHeader>
       <div className="space-y-4 px-4 pb-4">
         <PhotoCarousel item={item} />

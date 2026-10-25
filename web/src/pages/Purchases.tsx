@@ -3,7 +3,6 @@ import { useDeferredValue } from "react"
 
 import { PageHeader } from "@/components/shared/PageHeader"
 import { Pagination } from "@/components/shared/Pagination"
-import { ItemSheet } from "@/components/shared/ItemSheet"
 import { Photo } from "@/components/shared/Photo"
 import { PurchaseSheet } from "@/components/shared/PurchaseSheet"
 import { SearchInput } from "@/components/shared/SearchInput"
@@ -122,9 +121,9 @@ export function PurchasesPage() {
       <PurchaseSheet
         purchase={selected}
         onOpenChange={(open) => !open && select("")}
-        onSelectItem={(item) => selectItem(String(item.id))}
+        item={selectedItem}
+        onSelectItem={(item) => selectItem(item ? String(item.id) : "")}
       />
-      <ItemSheet item={selectedItem} onOpenChange={(open) => !open && selectItem("")} />
     </div>
   )
 }
