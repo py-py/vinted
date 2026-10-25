@@ -56,6 +56,7 @@ class Item(BaseModel):
     currency: str = ""
     price_pln: float | None = None
     sell_price: float | None = Field(default=None, description="Resale price, PLN")
+    sale_item_id: int | None = Field(default=None, description="`SaleItem.id` it was resold as")
     status: SaleStatus = SaleStatus.NONE
     order_date: str = ""
     seller_id: int | None = None
@@ -124,6 +125,16 @@ class SellPriceUpdateResult(BaseModel):
     sell_price: float | None
 
 
+class SaleLinkUpdate(BaseModel):
+    sale_item_id: int | None = Field(gt=0, description="`SaleItem.id`; null clears the link")
+
+
+class SaleLinkUpdateResult(BaseModel):
+    tx_id: str
+    item_id: str
+    sale_item_id: int | None
+
+
 class Page[T](BaseModel):
     items: list[T]
     total: int
@@ -178,6 +189,7 @@ def _to_item(purchase: dict, item: dict) -> Item:
         currency=item.get("currency") or "",
         price_pln=item.get("price_pln"),
         sell_price=item.get("_sell_price"),
+        sale_item_id=item.get("_sale_item_id"),
         status=SaleStatus(raw_status) if raw_status in SaleStatus else SaleStatus.NONE,
         order_date=purchase.get("order_date") or "",
         seller_id=purchase.get("seller_id"),
@@ -309,6 +321,22 @@ def update_item_sell_price(
 ) -> SellPriceUpdateResult:
     store.set_item_sell_price(tx_id, item_id, update.sell_price)
     return SellPriceUpdateResult(tx_id=tx_id, item_id=item_id, sell_price=update.sell_price)
+
+
+@router.patch("/items/{tx_id}/{item_id}/sale")
+def update_item_sale(
+    tx_id: Annotated[str, Path(description="Purchase (transaction) id")],
+    item_id: Annotated[str, Path(description="Item id within the purchase")],
+    update: SaleLinkUpdate,
+    store: StoreDep,
+) -> SaleLinkUpdateResult:
+    """Link a purchased item to the sale item it was resold as; the id must exist in a sale."""
+    if update.sale_item_id is not None and not any(
+        i.get("id") == update.sale_item_id for s in load_sales(store) for i in s["items"]
+    ):
+        raise HTTPException(status_code=404, detail=f"Sale item {update.sale_item_id} not found")
+    store.set_item_sale_item_id(tx_id, item_id, update.sale_item_id)
+    return SaleLinkUpdateResult(tx_id=tx_id, item_id=item_id, sale_item_id=update.sale_item_id)
 
 
 @router.get("/stats")

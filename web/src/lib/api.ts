@@ -4,6 +4,7 @@ type Schemas = components["schemas"]
 export type Item = Schemas["Item"]
 export type Purchase = Schemas["Purchase"]
 export type Sale = Schemas["Sale"]
+export type SaleItem = Schemas["SaleItem"]
 export type ItemsPage = Schemas["Page_Item_"]
 export type SaleStatus = Schemas["SaleStatus"]
 export type Stats = Schemas["Stats"]
@@ -73,6 +74,12 @@ export const api = {
     return request(`/items/${txId}/${itemId}`, {
       method: "PATCH",
       body: JSON.stringify({ status }),
+    })
+  },
+  setSaleItem(txId: string, itemId: number, saleItemId: number | null) {
+    return request(`/items/${txId}/${itemId}/sale`, {
+      method: "PATCH",
+      body: JSON.stringify({ sale_item_id: saleItemId }),
     })
   },
   setSellPrice(txId: string, itemId: number, sellPrice: number | null) {

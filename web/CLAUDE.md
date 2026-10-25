@@ -27,6 +27,7 @@ Done = `npm run build` and `npm run lint` pass, and the page was checked in a br
 - `src/components/layout/` — `AdminLayout` (sidebar + header + `<Outlet/>`), `AppSidebar` (nav list).
 - `src/components/shared/` — app components reused across pages (`StatusSelect`, `ItemCard`,
   `Pagination`, `SearchInput`, `PurchaseSheet`, `SaleSheet`, …).
+  `DetailPane` holds the item details building blocks (carousel, fields, two-pane sheet).
 - `src/components/ui/` — shadcn-generated; add via `npx shadcn@latest add <name>`, don't hand-edit
   unless necessary. Lint warnings there are expected.
 - `src/lib/api.ts` — the only place that calls `fetch`; type aliases over the generated schema.
@@ -41,12 +42,12 @@ Done = `npm run build` and `npm run lint` pass, and the page was checked in a br
 - **Auth.** Everything (API and SPA) is behind HTTP Basic auth. In dev the Vite proxy reads
   `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `../.env` and adds the header itself, so the browser
   never prompts. In production the browser prompts once and sends credentials same-origin.
-- **Real data.** The dev API reads the production Firestore. GETs are safe; changing a sale
-  status (`PATCH /api/items/{tx}/{item}`) writes to it — don't click status dropdowns while
-  testing unless that's intended.
+- **Real data.** The dev API reads the production Firestore. GETs are safe; the item PATCHes
+  (status, sell price, sale item link) write to it — don't edit custom fields while testing
+  unless that's intended.
 - **Port 8000 may be taken** locally (ssh tunnel); start the API elsewhere and set `API_URL`.
 - **Filters live in the URL** (`useUrlParams` in `src/hooks/use-url-params.ts`): `q`, `status`,
-  `page`, `from`, `to`, `tx` (open purchase / sale), `item` (open item: `{tx}/{id}` on Items, `{id}` on Purchases next to `tx`). Changing a filter resets `page`.
+  `page`, `from`, `to`, `tx` (open purchase / sale), `item` (open item: `{tx}/{id}` on Items, `{id}` on Purchases / Sales next to `tx`; `/sales?item=` alone finds the sale). Changing a filter resets `page`.
 - **Server-side filtering.** `/api/items` filters and paginates on the server; `/api/purchases`
   filters on the server and the page paginates client-side. The backend loads all of Firestore per
   request, so keep requests few (TanStack Query `staleTime` is 30s).

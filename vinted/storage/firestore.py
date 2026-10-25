@@ -89,6 +89,18 @@ class FirestoreStore:
         value = firestore.DELETE_FIELD if sell_price is None else sell_price
         item_ref.set({"_sell_price": value}, merge=True)
 
+    def set_item_sale_item_id(
+        self, transaction_id: str, item_id: str, sale_item_id: int | None
+    ) -> None:
+        """Link (or unlink, with None) an item to the sale item it was resold as.
+
+        Stored under the custom field `_sale_item_id` on purchases/{tx}/items/{id};
+        the value is an item id under sales/{tx}/items.
+        """
+        item_ref = self.purchases.document(transaction_id).collection("items").document(item_id)
+        value = firestore.DELETE_FIELD if sale_item_id is None else sale_item_id
+        item_ref.set({"_sale_item_id": value}, merge=True)
+
     def save_order(self, order: Order) -> None:
         """Upsert an order and its items.
 
