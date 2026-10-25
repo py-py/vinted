@@ -1,12 +1,12 @@
 import { ExternalLink, MessageCircle, User } from "lucide-react"
 
+import { PaneSheetContent } from "@/components/shared/DetailPane"
 import { ItemDetails } from "@/components/shared/ItemSheet"
 import { Photo } from "@/components/shared/Photo"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
-  SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
@@ -26,25 +26,13 @@ type Props = {
 export function PurchaseSheet({ purchase, onOpenChange, item: openItem, onSelectItem }: Props) {
   return (
     <Sheet open={!!purchase} onOpenChange={onOpenChange}>
-      <SheetContent
-        showCloseButton={!openItem}
-        className={cn(
-          "overflow-y-auto",
-          openItem && "w-full flex-row gap-0 overflow-hidden data-[side=right]:sm:max-w-3xl",
-        )}
-        // Esc closes the item pane first, then the purchase.
-        onEscapeKeyDown={(e) => {
-          if (!openItem) return
-          e.preventDefault()
-          onSelectItem(undefined)
-        }}
+      <PaneSheetContent
+        pane={openItem && <ItemDetails item={openItem} onClose={() => onSelectItem(undefined)} />}
+        paneKey={openItem?.id}
+        onClosePane={() => onSelectItem(undefined)}
       >
         {purchase && (
-          <div
-            className={cn(
-              openItem && "hidden shrink-0 overflow-y-auto border-r sm:block sm:w-sm",
-            )}
-          >
+          <>
             <SheetHeader>
               <SheetTitle>
                 {purchase.seller_login || "—"}
@@ -140,17 +128,9 @@ export function PurchaseSheet({ purchase, onOpenChange, item: openItem, onSelect
                 </li>
               ))}
             </ul>
-          </div>
+          </>
         )}
-        {openItem && (
-          <div
-            key={openItem.id}
-            className="min-w-0 flex-1 overflow-y-auto duration-200 animate-in fade-in-0 slide-in-from-right-10"
-          >
-            <ItemDetails item={openItem} onClose={() => onSelectItem(undefined)} />
-          </div>
-        )}
-      </SheetContent>
+      </PaneSheetContent>
     </Sheet>
   )
 }

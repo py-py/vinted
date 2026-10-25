@@ -30,6 +30,7 @@ export function SalesPage() {
   const dateTo = params.get("to") ?? ""
   const page = Number(params.get("page")) || 1
   const selectedTx = params.get("tx")
+  const selectedItemId = params.get("item")
   const deferredQ = useDeferredValue(q)
 
   const { data, isPending, isError, error } = useQuery({
@@ -40,10 +41,12 @@ export function SalesPage() {
   const pages = data ? Math.max(1, Math.ceil(data.length / PAGE_SIZE)) : 1
   const rows = data?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) ?? []
   const selected = data?.find((s) => s.tx_id === selectedTx)
+  const selectedItem = selected?.items.find((i) => String(i.id) === selectedItemId)
   const hasFilters = Boolean(q || dateFrom || dateTo)
 
-  // `tx` only opens the sheet, so keep the current page when toggling it.
-  const select = (tx: string) => update({ tx, page: params.get("page") ?? "" })
+  // `tx` and `item` only open the sheet, so keep the current page when toggling them.
+  const select = (tx: string) => update({ tx, item: "", page: params.get("page") ?? "" })
+  const selectItem = (id: string) => update({ item: id, page: params.get("page") ?? "" })
 
   return (
     <div className="space-y-6">
@@ -112,7 +115,12 @@ export function SalesPage() {
 
       <Pagination page={page} pages={pages} onPageChange={(p) => update({ page: String(p) })} />
 
-      <SaleSheet sale={selected} onOpenChange={(open) => !open && select("")} />
+      <SaleSheet
+        sale={selected}
+        onOpenChange={(open) => !open && select("")}
+        item={selectedItem}
+        onSelectItem={(item) => selectItem(item ? String(item.id) : "")}
+      />
     </div>
   )
 }
