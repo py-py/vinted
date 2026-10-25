@@ -41,6 +41,7 @@ ITEMS = {
             "paid_price": 30.0,
             "_sale_status": "sold",
             "_sell_price": 45.5,
+            "_sale_item_id": 51,
         },
         {"id": 12, "title": "NB 9060", "paid_price": 90.0, "photo_url": "http://p/12.jpg"},
     ],
@@ -227,6 +228,32 @@ def test_items_sell_price(client: TestClient) -> None:
     by_id = {i["id"]: i for i in client.get("/api/items").json()["items"]}
     assert by_id[11]["sell_price"] == 45.5
     assert by_id[12]["sell_price"] is None
+
+
+def test_items_sale_link(client: TestClient) -> None:
+    by_id = {i["id"]: i for i in client.get("/api/items").json()["items"]}
+    assert by_id[11]["sale_item_id"] == 51
+    assert by_id[12]["sale_item_id"] is None
+
+
+@pytest.mark.parametrize("sale_item_id", [61, None])
+def test_update_item_sale(client: TestClient, store: MagicMock, sale_item_id: int | None) -> None:
+    response = client.patch("/api/items/1/12/sale", json={"sale_item_id": sale_item_id})
+    assert response.status_code == 200
+    assert response.json() == {"tx_id": "1", "item_id": "12", "sale_item_id": sale_item_id}
+    store.set_item_sale_item_id.assert_called_once_with("1", "12", sale_item_id)
+
+
+def test_update_item_sale_unknown_item(client: TestClient, store: MagicMock) -> None:
+    # 12 is a purchase item, not a sale item.
+    response = client.patch("/api/items/1/12/sale", json={"sale_item_id": 12})
+    assert response.status_code == 404
+    store.set_item_sale_item_id.assert_not_called()
+
+
+def test_update_item_sale_rejects_non_positive(client: TestClient) -> None:
+    response = client.patch("/api/items/1/12/sale", json={"sale_item_id": 0})
+    assert response.status_code == 422
 
 
 ###############################################################################

@@ -40,13 +40,17 @@ export function SalesPage() {
   })
   const pages = data ? Math.max(1, Math.ceil(data.length / PAGE_SIZE)) : 1
   const rows = data?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) ?? []
-  const selected = data?.find((s) => s.tx_id === selectedTx)
+  // `?item=` alone (link from a purchased item) opens the sale that contains that item.
+  const selected = selectedTx
+    ? data?.find((s) => s.tx_id === selectedTx)
+    : data?.find((s) => s.items.some((i) => String(i.id) === selectedItemId))
   const selectedItem = selected?.items.find((i) => String(i.id) === selectedItemId)
   const hasFilters = Boolean(q || dateFrom || dateTo)
 
   // `tx` and `item` only open the sheet, so keep the current page when toggling them.
   const select = (tx: string) => update({ tx, item: "", page: params.get("page") ?? "" })
-  const selectItem = (id: string) => update({ item: id, page: params.get("page") ?? "" })
+  const selectItem = (id: string) =>
+    update({ tx: selected?.tx_id ?? "", item: id, page: params.get("page") ?? "" })
 
   return (
     <div className="space-y-6">

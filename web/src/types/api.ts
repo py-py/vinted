@@ -89,6 +89,26 @@ export interface paths {
         patch: operations["update_item_sell_price_api_items__tx_id___item_id__sell_price_patch"];
         trace?: never;
     };
+    "/api/items/{tx_id}/{item_id}/sale": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Item Sale
+         * @description Link a purchased item to the sale item it was resold as; the id must exist in a sale.
+         */
+        patch: operations["update_item_sale_api_items__tx_id___item_id__sale_patch"];
+        trace?: never;
+    };
     "/api/stats": {
         parameters: {
             query?: never;
@@ -188,6 +208,11 @@ export interface components {
              * @description Resale price, PLN
              */
             sell_price?: number | null;
+            /**
+             * Sale Item Id
+             * @description `SaleItem.id` it was resold as
+             */
+            sale_item_id?: number | null;
             /** @default none */
             status: components["schemas"]["SaleStatus"];
             /**
@@ -350,6 +375,23 @@ export interface components {
              * @default
              */
             currency: string;
+        };
+        /** SaleLinkUpdate */
+        SaleLinkUpdate: {
+            /**
+             * Sale Item Id
+             * @description `SaleItem.id`; null clears the link
+             */
+            sale_item_id: number | null;
+        };
+        /** SaleLinkUpdateResult */
+        SaleLinkUpdateResult: {
+            /** Tx Id */
+            tx_id: string;
+            /** Item Id */
+            item_id: string;
+            /** Sale Item Id */
+            sale_item_id: number | null;
         };
         /**
          * SaleStatus
@@ -602,6 +644,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SellPriceUpdateResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_item_sale_api_items__tx_id___item_id__sale_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Purchase (transaction) id */
+                tx_id: string;
+                /** @description Item id within the purchase */
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaleLinkUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaleLinkUpdateResult"];
                 };
             };
             /** @description Validation Error */
