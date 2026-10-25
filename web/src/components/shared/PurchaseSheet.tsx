@@ -2,7 +2,7 @@ import { ExternalLink, MessageCircle, User } from "lucide-react"
 
 import { ItemDetails } from "@/components/shared/ItemSheet"
 import { Photo } from "@/components/shared/Photo"
-import { StatusSelect } from "@/components/shared/StatusSelect"
+import { StatusBadge } from "@/components/shared/StatusBadge"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -135,7 +135,7 @@ export function PurchaseSheet({ purchase, onOpenChange, item: openItem, onSelect
                         ? formatMoney(item.price_pln)
                         : formatMoney(item.paid_price, item.currency)}
                     </div>
-                    <StatusSelect item={item} />
+                    <StatusBadge status={item.status} />
                   </div>
                 </li>
               ))}
