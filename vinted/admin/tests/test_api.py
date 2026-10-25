@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
-from vinted.account.orders.models import SaleStatus
+from vinted.account.purchases.models import SaleStatus
 
 from .. import app
 from ..api import _stored_photo_url

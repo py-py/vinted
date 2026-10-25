@@ -1,5 +1,5 @@
 """
-Tests for vinted.account.orders.api against recorded Vinted API responses.
+Tests for vinted.account.purchases.api against recorded Vinted API responses.
 
 Fixtures in ./fixtures/ are raw JSON responses captured on 2026-10-15
 for transaction 22646003889 (a 3-item bundle from an EE seller, paid in PLN).
@@ -11,7 +11,7 @@ They reflect the API shape after ~2026-09:
     transactions/{tx} -> order.items[].
 
 Run:
-    make test  (or: pytest vinted/account/orders)
+    make test  (or: pytest vinted/account/purchases)
 """
 
 from __future__ import annotations
