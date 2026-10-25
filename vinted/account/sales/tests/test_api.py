@@ -20,9 +20,9 @@ from pathlib import Path
 import httpx
 import pytest
 
-from vinted.account.orders.api import ESCROW_ITEMS_URL
-from vinted.account.orders.api import ESCROW_ORDER_URL
-from vinted.account.orders.api import TRANSACTION_URL
+from vinted.account.purchases.api import ESCROW_ITEMS_URL
+from vinted.account.purchases.api import ESCROW_ORDER_URL
+from vinted.account.purchases.api import TRANSACTION_URL
 
 from ..api import SOLD_ORDERS_URL
 from ..api import allocate_sold_prices

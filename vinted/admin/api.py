@@ -20,7 +20,7 @@ from fastapi import Response
 from pydantic import BaseModel
 from pydantic import Field
 
-from ..account.orders.models import SaleStatus
+from ..account.purchases.models import SaleStatus
 from ..storage.gcs import extract_token
 from .deps import PhotoStoreDep
 from .deps import StoreDep

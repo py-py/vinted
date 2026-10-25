@@ -1,6 +1,6 @@
 DEV_PORT ?= 8000
 
-.PHONY: build run run-local admin-web-local shell cmd test admin-web web-dev web-build orders sales sync scrape-item analyze cookies cookie-header
+.PHONY: build run run-local admin-web-local shell cmd test admin-web web-dev web-build purchases sales sync scrape-item analyze cookies cookie-header
 
 ###############################################################################
 #  Docker — Image build, shell, ad-hoc commands and tests
@@ -64,14 +64,14 @@ web-build:
 	npm --prefix web run build
 
 ###############################################################################
-#  Jobs — Vinted orders/sales sync
+#  Jobs — Vinted purchases/sales sync
 ###############################################################################
 
-orders:
+purchases:
 	docker compose run --rm \
 		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
 		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
-		vinted python -m vinted.account.orders
+		vinted python -m vinted.account.purchases
 
 sales:
 	docker compose run --rm \
@@ -79,9 +79,9 @@ sales:
 		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
 		vinted python -m vinted.account.sales
 
-# Orders, then sales (sequential even under `make -j`).
+# Purchases, then sales (sequential even under `make -j`).
 sync:
-	$(MAKE) --no-print-directory orders
+	$(MAKE) --no-print-directory purchases
 	$(MAKE) --no-print-directory sales
 
 ###############################################################################

@@ -5,7 +5,7 @@ description: Extract Vinted auth cookies and write them to cookies.json. Use whe
 
 # vinted-refresh-cookies
 
-Refresh `cookies.json` (which `vinted/favourites.py` and `vinted/orders/` read for API auth) from a CURL command that the user copied out of the browser DevTools "Copy as cURL".
+Refresh `cookies.json` (which `vinted/favourites.py` and `vinted/account/purchases/` read for API auth) from a CURL command that the user copied out of the browser DevTools "Copy as cURL".
 
 The parsing/validation/JWT-decode logic lives in **one place** — `scripts/parse_curl.py`. This skill just feeds the curl text to that script; do **not** re-implement cookie parsing inline.
 
