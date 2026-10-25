@@ -10,15 +10,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import type { Purchase } from "@/lib/api"
+import type { Item, Purchase } from "@/lib/api"
 import { formatMoney } from "@/lib/format"
 
 type Props = {
   purchase: Purchase | undefined
   onOpenChange: (open: boolean) => void
+  onSelectItem: (item: Item) => void
 }
 
-export function PurchaseSheet({ purchase, onOpenChange }: Props) {
+export function PurchaseSheet({ purchase, onOpenChange, onSelectItem }: Props) {
   return (
     <Sheet open={!!purchase} onOpenChange={onOpenChange}>
       <SheetContent className="overflow-y-auto">
@@ -66,17 +67,28 @@ export function PurchaseSheet({ purchase, onOpenChange }: Props) {
             <ul className="divide-y px-4 pb-4">
               {purchase.items.map((item) => (
                 <li key={item.id} className="flex gap-3 py-3">
-                  <Photo
-                    src={item.photo_urls[0]}
-                    fallback={item.stored_photo_urls[0]}
-                    alt=""
-                    className="size-20 shrink-0 rounded-md bg-muted object-cover"
-                  />
+                  <button
+                    type="button"
+                    className="shrink-0 cursor-pointer"
+                    onClick={() => onSelectItem(item)}
+                    aria-label={`Open details of ${item.title}`}
+                  >
+                    <Photo
+                      src={item.photo_urls[0]}
+                      fallback={item.stored_photo_urls[0]}
+                      alt=""
+                      className="size-20 rounded-md bg-muted object-cover"
+                    />
+                  </button>
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-start gap-1">
-                      <span className="line-clamp-2 flex-1 text-sm font-medium">
+                      <button
+                        type="button"
+                        className="line-clamp-2 flex-1 cursor-pointer text-left text-sm font-medium hover:underline"
+                        onClick={() => onSelectItem(item)}
+                      >
                         {item.title || "—"}
-                      </span>
+                      </button>
                       {item.url && (
                         <a
                           href={item.url}
