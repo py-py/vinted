@@ -195,11 +195,18 @@ export interface components {
              * @default
              */
             order_date: string;
+            /** Seller Id */
+            seller_id?: number | null;
             /**
              * Seller Login
              * @default
              */
             seller_login: string;
+            /**
+             * Seller Country
+             * @default
+             */
+            seller_country: string;
         };
         /** MonthStats */
         MonthStats: {

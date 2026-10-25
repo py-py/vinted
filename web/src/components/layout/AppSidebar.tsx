@@ -15,8 +15,8 @@ import {
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/items", label: "Items", icon: Package },
   { to: "/purchases", label: "Purchases", icon: ShoppingBag },
+  { to: "/items", label: "Purchase Items", icon: Package },
   { to: "/sales", label: "Sales", icon: HandCoins },
 ]
 
