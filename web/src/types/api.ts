@@ -374,6 +374,11 @@ export interface components {
             /** Description */
             description?: string | null;
             /**
+             * Item Id
+             * @description ID of the item on vinted.pl once the listing is published
+             */
+            item_id?: number | null;
+            /**
              * Created At
              * Format: date-time
              */
@@ -429,6 +434,8 @@ export interface components {
             title?: string | null;
             /** Description */
             description?: string | null;
+            /** Item Id */
+            item_id?: number | null;
         };
         /** MonthStats */
         MonthStats: {

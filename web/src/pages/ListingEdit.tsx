@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ArrowLeft, Sparkles, Trash2 } from "lucide-react"
+import { ArrowLeft, ExternalLink, Sparkles, Trash2 } from "lucide-react"
 import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
 import { toast } from "sonner"
@@ -44,6 +44,12 @@ function isAccepted(file: File) {
   )
 }
 
+// Accepts the bare ID or a pasted item URL (https://www.vinted.pl/items/1234567890-nike-…).
+function parseItemId(value: string): number | null {
+  const match = value.match(/items\/(\d+)/) ?? value.trim().match(/^(\d+)$/)
+  return match ? Number(match[1]) : null
+}
+
 function uploadError(error: unknown) {
   if (error instanceof ApiError && error.status === 413) return "larger than 25 MB"
   if (error instanceof ApiError && error.status === 422) return "not a supported image"
@@ -78,6 +84,8 @@ export function ListingEditPage() {
   const [draft, setDraft] = useState<DraftPhoto[] | null>(null)
   // Same for title / description: null = unchanged.
   const [fields, setFields] = useState<ListingUpdate | null>(null)
+  // Raw text while the item ID field is being typed into (a partial URL isn't an ID yet).
+  const [itemIdText, setItemIdText] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const { data: listing, isPending, isError, error } = useQuery({
@@ -88,7 +96,10 @@ export function ListingEditPage() {
   const photos: DraftPhoto[] = draft ?? listing?.photos ?? []
   const title = fields?.title ?? listing?.title ?? ""
   const description = fields?.description ?? listing?.description ?? ""
-  const changeFields = (update: ListingUpdate) => setFields({ title, description, ...update })
+  // Not `??`: null in the draft means the ID was cleared.
+  const itemId = fields ? (fields.item_id ?? null) : (listing?.item_id ?? null)
+  const changeFields = (update: ListingUpdate) =>
+    setFields({ title, description, item_id: itemId, ...update })
   const dirty = draft != null || fields != null
   const changePhotos = (update: (photos: DraftPhoto[]) => DraftPhoto[]) => setDraft(update(photos))
 
@@ -141,7 +152,7 @@ export function ListingEditPage() {
   // Fills the title / description draft; the user reviews it and saves.
   const fillFromPhotos = useMutation({
     mutationFn: (id: string) => api.describeListing(id),
-    onSuccess: (text) => setFields(text),
+    onSuccess: (text) => changeFields(text),
     onError: () => toast.error("Couldn't describe the photos"),
   })
   const removeListing = useMutation({
@@ -335,6 +346,37 @@ export function ListingEditPage() {
                 label="description"
                 className="absolute top-1.5 right-1.5"
               />
+            </div>
+            <label htmlFor="listing-item-id" className="text-sm font-medium sm:pt-2">
+              Vinted item ID
+            </label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="listing-item-id"
+                inputMode="numeric"
+                value={itemIdText ?? itemId ?? ""}
+                onChange={(e) => {
+                  setItemIdText(e.target.value)
+                  changeFields({ item_id: parseItemId(e.target.value) })
+                }}
+                // Show what will be saved: a pasted URL becomes its ID.
+                onBlur={() => setItemIdText(null)}
+                placeholder="ID or link, once published on vinted.pl"
+                className="max-w-xs"
+              />
+              {itemId && (
+                <Button variant="ghost" size="icon-sm" asChild>
+                  <a
+                    href={`https://www.vinted.pl/items/${itemId}`}
+                    target="_blank"
+                    rel="noopener"
+                    aria-label="Open on Vinted"
+                    title="Open on Vinted"
+                  >
+                    <ExternalLink />
+                  </a>
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

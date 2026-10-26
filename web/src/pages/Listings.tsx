@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ImageOff, Loader2, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
+import { ExternalLink, ImageOff, Loader2, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { Link, useNavigate } from "react-router"
 import { toast } from "sonner"
@@ -63,6 +63,7 @@ export function ListingsPage() {
               <TableRow>
                 <TableHead className="w-24" />
                 <TableHead>Title</TableHead>
+                <TableHead>Vinted ID</TableHead>
                 <TableHead className="text-right">Photos</TableHead>
                 <TableHead className="hidden sm:table-cell">Created</TableHead>
                 <TableHead className="hidden md:table-cell">Updated</TableHead>
@@ -154,6 +155,23 @@ function ListingRow({ listing }: { listing: Listing }) {
             {title}
           </Link>
           <div className="font-mono text-xs text-muted-foreground">{listing.id.slice(0, 8)}</div>
+        </TableCell>
+        <TableCell className="whitespace-nowrap tabular-nums">
+          {listing.item_id ? (
+            <a
+              href={`https://www.vinted.pl/items/${listing.item_id}`}
+              target="_blank"
+              rel="noopener"
+              title="Open on Vinted"
+              className="inline-flex items-center gap-1 hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {listing.item_id}
+              <ExternalLink className="size-3.5 text-muted-foreground" />
+            </a>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
         </TableCell>
         <TableCell className="text-right tabular-nums">{listing.photos.length}</TableCell>
         <TableCell className="hidden whitespace-nowrap tabular-nums sm:table-cell">
