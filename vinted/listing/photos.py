@@ -20,6 +20,7 @@ register_heif_opener()
 # Plenty for Vinted, and keeps the photos sent to the LLM small.
 MAX_SIDE = 1200
 MAX_BYTES = 25 * 1024 * 1024
+MAX_PHOTOS_PER_LISTING = 15
 JPEG_QUALITY = 85
 # Decompression-bomb guard: ~100 MP covers any phone camera (a 200 MP sensor bins to 50 MP).
 Image.MAX_IMAGE_PIXELS = 100_000_000

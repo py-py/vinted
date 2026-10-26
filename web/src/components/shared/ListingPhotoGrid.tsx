@@ -33,6 +33,8 @@ type Props = {
   onEdit: (photo: ListingPhoto) => void
   onRemove: (photo: ListingPhoto) => void
   onAdd: () => void
+  // False once the listing is full: the add tile is disabled.
+  canAdd?: boolean
   // Image files dropped onto the add tile.
   onDropFiles: (files: File[]) => void
 }
@@ -46,6 +48,7 @@ export function ListingPhotoGrid({
   onEdit,
   onRemove,
   onAdd,
+  canAdd = true,
   onDropFiles,
 }: Props) {
   const [dragOver, setDragOver] = useState(false)
@@ -87,6 +90,8 @@ export function ListingPhotoGrid({
               <button
                 type="button"
                 onClick={onAdd}
+                disabled={!canAdd}
+                title={canAdd ? undefined : "Photo limit reached"}
                 onDragOver={(e) => {
                   e.preventDefault()
                   setDragOver(true)
@@ -99,7 +104,7 @@ export function ListingPhotoGrid({
                 }}
                 aria-label="Add photos"
                 className={cn(
-                  "flex size-full items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground hover:bg-muted",
+                  "flex size-full items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent",
                   dragOver && "border-primary bg-muted",
                 )}
               >

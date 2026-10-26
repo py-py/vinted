@@ -25,6 +25,7 @@ from pydantic import Field
 from ..listing.describe import ListingText
 from ..listing.describe import describe
 from ..listing.photos import MAX_BYTES
+from ..listing.photos import MAX_PHOTOS_PER_LISTING
 from ..listing.photos import InvalidPhoto
 from ..listing.photos import process
 from .deps import PhotoStoreDep
@@ -51,11 +52,14 @@ class ListingPhoto(BaseModel):
 
 class Listing(BaseModel):
     id: str
-    # Optional: meant to be filled by an LLM from the photos, then edited by hand.
-    title: str | None = None
-    description: str | None = None
     created_at: datetime
     updated_at: datetime
+    title: str | None = None
+    description: str | None = None
+    item_id: int | None = Field(
+        default=None,
+        description="ID of the item on vinted.pl once the listing is published",
+    )
     photos: list[ListingPhoto]
 
 
@@ -64,6 +68,7 @@ class ListingUpdate(BaseModel):
 
     title: str | None = None
     description: str | None = None
+    item_id: int | None = Field(default=None, gt=0)
 
 
 class PhotoOrderUpdate(BaseModel):
@@ -92,6 +97,7 @@ def _to_listing(doc: dict) -> Listing:
         id=doc["id"],
         title=doc.get("title"),
         description=doc.get("description"),
+        item_id=doc.get("item_id"),
         created_at=doc["created_at"],
         updated_at=doc.get("updated_at") or doc["created_at"],
         photos=[_to_photo(doc["id"], p) for p in doc.get("photos") or []],
@@ -150,9 +156,10 @@ def get_listing(listing_id: uuid.UUID, store: StoreDep) -> Listing:
 @router.patch("/{listing_id}")
 def update_listing(listing_id: uuid.UUID, update: ListingUpdate, store: StoreDep) -> Listing:
     _get_or_404(store, listing_id)
-    fields = {
-        k: (v or "").strip() or None for k, v in update.model_dump(exclude_unset=True).items()
-    }
+    fields = update.model_dump(exclude_unset=True)
+    for text in ("title", "description"):
+        if text in fields:
+            fields[text] = (fields[text] or "").strip() or None
     if fields:
         store.update_listing(str(listing_id), fields)
     return _to_listing(_get_or_404(store, listing_id))
@@ -204,6 +211,7 @@ def delete_listing(listing_id: uuid.UUID, store: StoreDep, photos: PhotoStoreDep
     "/{listing_id}/photos",
     status_code=201,
     responses={
+        409: {"description": f"Listing already has {MAX_PHOTOS_PER_LISTING} photos"},
         413: {"description": "File too large"},
         422: {"description": "Not a supported image"},
     },
@@ -215,9 +223,16 @@ def upload_listing_photo(
     photos: PhotoStoreDep,
 ) -> ListingPhoto:
     """Upload one photo (JPEG, PNG, WebP or HEIC); it's stored as a JPEG, 1200 px max."""
-    _get_or_404(store, listing_id)
+    full = HTTPException(
+        status_code=409, detail=f"A listing can have at most {MAX_PHOTOS_PER_LISTING} photos"
+    )
+    # Cheap early check; the transaction in add_listing_photo is what holds under parallel uploads.
+    if len(_get_or_404(store, listing_id).get("photos") or []) >= MAX_PHOTOS_PER_LISTING:
+        raise full
     photo = _store_photo(str(listing_id), file, photos)
-    store.add_listing_photo(str(listing_id), photo)
+    if not store.add_listing_photo(str(listing_id), photo, MAX_PHOTOS_PER_LISTING):
+        photos.delete_listing_photo(str(listing_id), photo["id"])
+        raise full
     return _to_photo(str(listing_id), photo)
 
 

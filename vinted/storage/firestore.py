@@ -136,17 +136,23 @@ class FirestoreStore:
             {**fields, "updated_at": firestore.SERVER_TIMESTAMP}
         )
 
-    def add_listing_photo(self, listing_id: str, photo: dict) -> None:
-        """Append a photo to the listing. Raises NotFound if the listing doesn't exist.
+    def add_listing_photo(self, listing_id: str, photo: dict, max_photos: int) -> bool:
+        """Append a photo unless the listing is full (`max_photos`); returns whether it was added.
 
-        ArrayUnion is atomic, so parallel uploads into one listing don't overwrite each other.
+        A transaction, so parallel uploads into one listing neither overwrite each other nor
+        together go past the limit.
         """
-        self.listings.document(listing_id).update(
-            {
-                "photos": firestore.ArrayUnion([photo]),
-                "updated_at": firestore.SERVER_TIMESTAMP,
-            }
-        )
+
+        @firestore.transactional
+        def run(tx: firestore.Transaction) -> bool:
+            ref = self.listings.document(listing_id)
+            photos = (ref.get(transaction=tx).to_dict() or {}).get("photos") or []
+            if len(photos) >= max_photos:
+                return False
+            tx.update(ref, {"photos": [*photos, photo], "updated_at": firestore.SERVER_TIMESTAMP})
+            return True
+
+        return run(self.client.transaction())
 
     def remove_listing_photo(self, listing_id: str, photo_id: str) -> dict | None:
         """Drop a photo from the listing; returns the removed photo, None if it wasn't there."""

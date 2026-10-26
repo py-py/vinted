@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from ...listing.describe import ListingText
+from ...listing.photos import MAX_PHOTOS_PER_LISTING
 from .. import app
 from .. import listings
 from ..deps import get_photo_store
@@ -110,6 +111,23 @@ def test_update_listing_returns_saved_fields(client: TestClient, store: MagicMoc
     body = client.patch(f"/api/listings/{LISTING_ID}", json={}).json()
     assert (body["title"], body["description"]) == ("Nike", "Size 27")
     store.update_listing.assert_not_called()
+
+
+def test_update_listing_sets_and_clears_item_id(client: TestClient, store: MagicMock) -> None:
+    client.patch(f"/api/listings/{LISTING_ID}", json={"item_id": 4567890123})
+    store.update_listing.assert_called_with(LISTING_ID, {"item_id": 4567890123})
+    client.patch(f"/api/listings/{LISTING_ID}", json={"item_id": None})
+    store.update_listing.assert_called_with(LISTING_ID, {"item_id": None})
+
+
+def test_update_listing_rejects_bad_item_id(client: TestClient, store: MagicMock) -> None:
+    assert client.patch(f"/api/listings/{LISTING_ID}", json={"item_id": 0}).status_code == 422
+    store.update_listing.assert_not_called()
+
+
+def test_listing_returns_item_id(client: TestClient, store: MagicMock) -> None:
+    store.get_listing.return_value = {**_listing(), "item_id": 4567890123}
+    assert client.get(f"/api/listings/{LISTING_ID}").json()["item_id"] == 4567890123
 
 
 def test_update_missing_listing_is_404(client: TestClient, store: MagicMock) -> None:
@@ -269,6 +287,34 @@ def test_upload_rejects_too_large(client: TestClient, monkeypatch: pytest.Monkey
         files={"file": ("a.jpg", _jpeg((20, 20)), "image/jpeg")},
     )
     assert resp.status_code == 413
+
+
+def test_upload_to_full_listing_is_409(
+    client: TestClient, store: MagicMock, photos: MagicMock
+) -> None:
+    store.get_listing.return_value = _listing(
+        [_photo(str(uuid.uuid4())) for _ in range(MAX_PHOTOS_PER_LISTING)]
+    )
+    resp = client.post(
+        f"/api/listings/{LISTING_ID}/photos",
+        files={"file": ("a.jpg", _jpeg(), "image/jpeg")},
+    )
+    assert resp.status_code == 409
+    photos.upload_listing_photo.assert_not_called()
+
+
+def test_upload_losing_the_race_for_the_last_slot_drops_the_file(
+    client: TestClient, store: MagicMock, photos: MagicMock
+) -> None:
+    store.add_listing_photo.return_value = False
+    resp = client.post(
+        f"/api/listings/{LISTING_ID}/photos",
+        files={"file": ("a.jpg", _jpeg(), "image/jpeg")},
+    )
+    assert resp.status_code == 409
+    lid, photo, limit = store.add_listing_photo.call_args.args
+    assert limit == MAX_PHOTOS_PER_LISTING
+    photos.delete_listing_photo.assert_called_once_with(LISTING_ID, photo["id"])
 
 
 def test_upload_to_missing_listing_is_404(

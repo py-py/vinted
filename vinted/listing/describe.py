@@ -16,10 +16,11 @@ from pydantic_ai import Agent
 from pydantic_ai import BinaryContent
 
 from ..constants import PROMPTS_DIR
+from .photos import MAX_PHOTOS_PER_LISTING
 
 DEFAULT_MODEL = "deepseek-flash"
-# Main photo plus a few detail shots is enough; more only adds cost.
-MAX_PHOTOS = 8
+# Every photo is sent: the size tag is often one of the last ones.
+MAX_PHOTOS = MAX_PHOTOS_PER_LISTING
 
 
 class ListingText(BaseModel):
@@ -35,7 +36,8 @@ agent = Agent(
     instructions=(PROMPTS_DIR / "listing.md").read_text(),
     # DeepSeek thinks by default, and thinking rejects the forced tool_choice that structured
     # output uses (400 "Thinking mode does not support this tool_choice"); also cheaper.
-    model_settings={"extra_body": {"thinking": {"type": "disabled"}}},
+    # Low temperature: the same photos should give the same size and model every time.
+    model_settings={"temperature": 0.2, "extra_body": {"thinking": {"type": "disabled"}}},
     defer_model_check=True,
 )
 
