@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table"
 import { api, type Listing } from "@/lib/api"
 import { formatDateTime } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 export function ListingsPage() {
   const { data, isPending, isError, error } = useQuery({
@@ -49,7 +50,7 @@ export function ListingsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-24" />
-                <TableHead>Listing</TableHead>
+                <TableHead>Title</TableHead>
                 <TableHead className="text-right">Photos</TableHead>
                 <TableHead className="hidden sm:table-cell">Created</TableHead>
                 <TableHead className="hidden md:table-cell">Updated</TableHead>
@@ -89,14 +90,18 @@ function ListingRow({ listing }: { listing: Listing }) {
           </div>
         )}
       </TableCell>
-      <TableCell>
+      <TableCell className="max-w-64 min-w-40 whitespace-normal">
         <Link
           to={href}
-          className="font-mono font-medium hover:underline"
+          className={cn(
+            "line-clamp-2 font-medium hover:underline",
+            !listing.title && "text-muted-foreground italic",
+          )}
           onClick={(e) => e.stopPropagation()}
         >
-          {listing.id.slice(0, 8)}
+          {listing.title || "Untitled"}
         </Link>
+        <div className="font-mono text-xs text-muted-foreground">{listing.id.slice(0, 8)}</div>
       </TableCell>
       <TableCell className="text-right tabular-nums">{listing.photos.length}</TableCell>
       <TableCell className="hidden whitespace-nowrap tabular-nums sm:table-cell">

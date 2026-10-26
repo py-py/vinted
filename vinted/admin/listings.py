@@ -1,5 +1,6 @@
 """
-Listings API: create a listing, upload/serve/replace/delete/reorder its photos.
+Listings API: create a listing, edit its title/description, upload/serve/replace/delete/reorder
+its photos.
 
 Photos are processed by `vinted.listing.photos.process` (EXIF stripped, 1600 px max),
 stored in GCS under listing/{listing_id}/{photo_id}.jpeg and tracked in Firestore
@@ -45,9 +46,19 @@ class ListingPhoto(BaseModel):
 
 class Listing(BaseModel):
     id: str
+    # Optional: meant to be filled by an LLM from the photos, then edited by hand.
+    title: str | None = None
+    description: str | None = None
     created_at: datetime
     updated_at: datetime
     photos: list[ListingPhoto]
+
+
+class ListingUpdate(BaseModel):
+    """Fields to change; omitted ones stay as they are, blank ones are cleared."""
+
+    title: str | None = None
+    description: str | None = None
 
 
 class PhotoOrderUpdate(BaseModel):
@@ -74,6 +85,8 @@ def _to_photo(listing_id: str, photo: dict) -> ListingPhoto:
 def _to_listing(doc: dict) -> Listing:
     return Listing(
         id=doc["id"],
+        title=doc.get("title"),
+        description=doc.get("description"),
         created_at=doc["created_at"],
         updated_at=doc.get("updated_at") or doc["created_at"],
         photos=[_to_photo(doc["id"], p) for p in doc.get("photos") or []],
@@ -126,6 +139,17 @@ def create_listing(store: StoreDep) -> Listing:
 
 @router.get("/{listing_id}")
 def get_listing(listing_id: uuid.UUID, store: StoreDep) -> Listing:
+    return _to_listing(_get_or_404(store, listing_id))
+
+
+@router.patch("/{listing_id}")
+def update_listing(listing_id: uuid.UUID, update: ListingUpdate, store: StoreDep) -> Listing:
+    _get_or_404(store, listing_id)
+    fields = {
+        k: (v or "").strip() or None for k, v in update.model_dump(exclude_unset=True).items()
+    }
+    if fields:
+        store.update_listing(str(listing_id), fields)
     return _to_listing(_get_or_404(store, listing_id))
 
 
