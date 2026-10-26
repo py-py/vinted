@@ -52,11 +52,14 @@ class ListingPhoto(BaseModel):
 
 class Listing(BaseModel):
     id: str
-    # Optional: meant to be filled by an LLM from the photos, then edited by hand.
-    title: str | None = None
-    description: str | None = None
     created_at: datetime
     updated_at: datetime
+    title: str | None = None
+    description: str | None = None
+    item_id: int | None = Field(
+        default=None,
+        description="ID of the item on vinted.pl once the listing is published",
+    )
     photos: list[ListingPhoto]
 
 
@@ -65,6 +68,7 @@ class ListingUpdate(BaseModel):
 
     title: str | None = None
     description: str | None = None
+    item_id: int | None = Field(default=None, gt=0)
 
 
 class PhotoOrderUpdate(BaseModel):
@@ -93,6 +97,7 @@ def _to_listing(doc: dict) -> Listing:
         id=doc["id"],
         title=doc.get("title"),
         description=doc.get("description"),
+        item_id=doc.get("item_id"),
         created_at=doc["created_at"],
         updated_at=doc.get("updated_at") or doc["created_at"],
         photos=[_to_photo(doc["id"], p) for p in doc.get("photos") or []],
@@ -151,9 +156,10 @@ def get_listing(listing_id: uuid.UUID, store: StoreDep) -> Listing:
 @router.patch("/{listing_id}")
 def update_listing(listing_id: uuid.UUID, update: ListingUpdate, store: StoreDep) -> Listing:
     _get_or_404(store, listing_id)
-    fields = {
-        k: (v or "").strip() or None for k, v in update.model_dump(exclude_unset=True).items()
-    }
+    fields = update.model_dump(exclude_unset=True)
+    for text in ("title", "description"):
+        if text in fields:
+            fields[text] = (fields[text] or "").strip() or None
     if fields:
         store.update_listing(str(listing_id), fields)
     return _to_listing(_get_or_404(store, listing_id))

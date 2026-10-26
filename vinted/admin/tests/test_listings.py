@@ -113,6 +113,23 @@ def test_update_listing_returns_saved_fields(client: TestClient, store: MagicMoc
     store.update_listing.assert_not_called()
 
 
+def test_update_listing_sets_and_clears_item_id(client: TestClient, store: MagicMock) -> None:
+    client.patch(f"/api/listings/{LISTING_ID}", json={"item_id": 4567890123})
+    store.update_listing.assert_called_with(LISTING_ID, {"item_id": 4567890123})
+    client.patch(f"/api/listings/{LISTING_ID}", json={"item_id": None})
+    store.update_listing.assert_called_with(LISTING_ID, {"item_id": None})
+
+
+def test_update_listing_rejects_bad_item_id(client: TestClient, store: MagicMock) -> None:
+    assert client.patch(f"/api/listings/{LISTING_ID}", json={"item_id": 0}).status_code == 422
+    store.update_listing.assert_not_called()
+
+
+def test_listing_returns_item_id(client: TestClient, store: MagicMock) -> None:
+    store.get_listing.return_value = {**_listing(), "item_id": 4567890123}
+    assert client.get(f"/api/listings/{LISTING_ID}").json()["item_id"] == 4567890123
+
+
 def test_update_missing_listing_is_404(client: TestClient, store: MagicMock) -> None:
     store.get_listing.return_value = None
     assert client.patch(f"/api/listings/{LISTING_ID}", json={"title": "x"}).status_code == 404
