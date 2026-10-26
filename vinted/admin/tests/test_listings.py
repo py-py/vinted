@@ -88,6 +88,34 @@ def test_create_listing(client: TestClient, store: MagicMock) -> None:
     assert resp.json()["photos"] == []
 
 
+def test_update_listing_strips_and_clears_blank(client: TestClient, store: MagicMock) -> None:
+    resp = client.patch(
+        f"/api/listings/{LISTING_ID}", json={"title": "  Nike Sunray  ", "description": " "}
+    )
+    assert resp.status_code == 200
+    store.update_listing.assert_called_once_with(
+        LISTING_ID, {"title": "Nike Sunray", "description": None}
+    )
+
+
+def test_update_listing_leaves_omitted_fields(client: TestClient, store: MagicMock) -> None:
+    client.patch(f"/api/listings/{LISTING_ID}", json={"title": "Nike"})
+    store.update_listing.assert_called_once_with(LISTING_ID, {"title": "Nike"})
+
+
+def test_update_listing_returns_saved_fields(client: TestClient, store: MagicMock) -> None:
+    store.get_listing.return_value = {**_listing(), "title": "Nike", "description": "Size 27"}
+    body = client.patch(f"/api/listings/{LISTING_ID}", json={}).json()
+    assert (body["title"], body["description"]) == ("Nike", "Size 27")
+    store.update_listing.assert_not_called()
+
+
+def test_update_missing_listing_is_404(client: TestClient, store: MagicMock) -> None:
+    store.get_listing.return_value = None
+    assert client.patch(f"/api/listings/{LISTING_ID}", json={"title": "x"}).status_code == 404
+    store.update_listing.assert_not_called()
+
+
 def test_list_listings(client: TestClient, store: MagicMock) -> None:
     store.list_listings.return_value = [_listing([_photo(PHOTO_A)])]
     body = client.get("/api/listings").json()

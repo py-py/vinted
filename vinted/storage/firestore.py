@@ -36,7 +36,8 @@ class FirestoreStore:
         purchases/{transaction_id}/items/{id} -> per-item fields
         sales/{transaction_id}                -> sale-level fields
         sales/{transaction_id}/items/{id}     -> per-item fields
-        listings/{listing_id}                 -> {id, created_at, updated_at, photos: [...]}
+        listings/{listing_id}                 -> {id, title, description, created_at,
+                                                  updated_at, photos: [...]}
 
     Listing `photos` is an array of {id, path, width, height, bytes, created_at};
     array order is the display order.
@@ -128,6 +129,12 @@ class FirestoreStore:
 
     def delete_listing(self, listing_id: str) -> None:
         self.listings.document(listing_id).delete()
+
+    def update_listing(self, listing_id: str, fields: dict) -> None:
+        """Set top-level listing fields (title, description). Raises NotFound if missing."""
+        self.listings.document(listing_id).update(
+            {**fields, "updated_at": firestore.SERVER_TIMESTAMP}
+        )
 
     def add_listing_photo(self, listing_id: str, photo: dict) -> None:
         """Append a photo to the listing. Raises NotFound if the listing doesn't exist.
