@@ -369,15 +369,6 @@ export interface components {
         Listing: {
             /** Id */
             id: string;
-            /** Title */
-            title?: string | null;
-            /** Description */
-            description?: string | null;
-            /**
-             * Item Id
-             * @description ID of the item on vinted.pl once the listing is published
-             */
-            item_id?: number | null;
             /**
              * Created At
              * Format: date-time
@@ -388,6 +379,15 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /**
+             * Item Id
+             * @description ID of the item on vinted.pl once the listing is published
+             */
+            item_id?: number | null;
             /** Photos */
             photos: components["schemas"]["ListingPhoto"][];
         };
