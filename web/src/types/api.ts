@@ -1208,6 +1208,13 @@ export interface operations {
                     "application/json": components["schemas"]["ListingPhoto"];
                 };
             };
+            /** @description Listing already has 15 photos */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description File too large */
             413: {
                 headers: {

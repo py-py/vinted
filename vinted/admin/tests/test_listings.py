@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from ...listing.describe import ListingText
+from ...listing.photos import MAX_PHOTOS_PER_LISTING
 from .. import app
 from .. import listings
 from ..deps import get_photo_store
@@ -269,6 +270,34 @@ def test_upload_rejects_too_large(client: TestClient, monkeypatch: pytest.Monkey
         files={"file": ("a.jpg", _jpeg((20, 20)), "image/jpeg")},
     )
     assert resp.status_code == 413
+
+
+def test_upload_to_full_listing_is_409(
+    client: TestClient, store: MagicMock, photos: MagicMock
+) -> None:
+    store.get_listing.return_value = _listing(
+        [_photo(str(uuid.uuid4())) for _ in range(MAX_PHOTOS_PER_LISTING)]
+    )
+    resp = client.post(
+        f"/api/listings/{LISTING_ID}/photos",
+        files={"file": ("a.jpg", _jpeg(), "image/jpeg")},
+    )
+    assert resp.status_code == 409
+    photos.upload_listing_photo.assert_not_called()
+
+
+def test_upload_losing_the_race_for_the_last_slot_drops_the_file(
+    client: TestClient, store: MagicMock, photos: MagicMock
+) -> None:
+    store.add_listing_photo.return_value = False
+    resp = client.post(
+        f"/api/listings/{LISTING_ID}/photos",
+        files={"file": ("a.jpg", _jpeg(), "image/jpeg")},
+    )
+    assert resp.status_code == 409
+    lid, photo, limit = store.add_listing_photo.call_args.args
+    assert limit == MAX_PHOTOS_PER_LISTING
+    photos.delete_listing_photo.assert_called_once_with(LISTING_ID, photo["id"])
 
 
 def test_upload_to_missing_listing_is_404(

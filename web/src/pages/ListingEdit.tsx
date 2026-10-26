@@ -35,6 +35,8 @@ const MAX_FILE_SIZE = 25 * 1024 * 1024
 // Extensions too: browsers often report HEIC with an empty MIME type.
 const ACCEPT = "image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
 const PARALLEL_UPLOADS = 4
+// Mirrors MAX_PHOTOS_PER_LISTING in `vinted/listing/photos.py`; the backend enforces it.
+const MAX_PHOTOS = 15
 
 function isAccepted(file: File) {
   return ACCEPT.split(",").some((t) =>
@@ -45,6 +47,7 @@ function isAccepted(file: File) {
 function uploadError(error: unknown) {
   if (error instanceof ApiError && error.status === 413) return "larger than 25 MB"
   if (error instanceof ApiError && error.status === 422) return "not a supported image"
+  if (error instanceof ApiError && error.status === 409) return `listing already has ${MAX_PHOTOS} photos`
   return "upload failed"
 }
 
@@ -163,6 +166,15 @@ export function ListingEditPage() {
       if (error) toast.error(`${f.name}: ${error}`)
       return !error
     })
+    // Stored photos count, not the draft: deletions only free a slot once saved.
+    const stored = listingId ? (listing?.photos.length ?? 0) : 0
+    const free = Math.max(0, MAX_PHOTOS - stored - pending)
+    if (accepted.length > free) {
+      toast.error(
+        `A listing can have at most ${MAX_PHOTOS} photos; ${accepted.length - free} not uploaded`,
+      )
+      accepted.splice(free)
+    }
     if (accepted.length === 0) return
 
     let id = listingId
@@ -255,6 +267,7 @@ export function ListingEditPage() {
                 }
                 pending={pending}
                 onAdd={() => fileInput.current?.click()}
+                canAdd={(listing?.photos.length ?? 0) + pending < MAX_PHOTOS}
                 onDropFiles={(files) => void upload(files)}
               />
             )}
@@ -273,7 +286,8 @@ export function ListingEditPage() {
           </CardContent>
         </Card>
         <p className="text-xs text-muted-foreground">
-          JPEG, PNG, WebP or HEIC, up to 25 MB each; stored at 1200 px max.
+          Up to {MAX_PHOTOS} photos: JPEG, PNG, WebP or HEIC, up to 25 MB each; stored at 1200
+          px max.
         </p>
       </section>
 
