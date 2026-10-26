@@ -18,8 +18,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { api, ApiError, type Listing, type ListingPhoto } from "@/lib/api"
+import { Textarea } from "@/components/ui/textarea"
+import { api, ApiError, type Listing, type ListingPhoto, type ListingUpdate } from "@/lib/api"
 import { formatDateTime } from "@/lib/format"
 
 // cropperjs is only needed once a photo is edited.
@@ -54,8 +56,9 @@ function revokeEdited(photos: DraftPhoto[]) {
 
 /**
  * Create (/listings/new) and edit (/listings/:listingId) page; both render the same form.
- * A new listing is created once photos are added, so leaving the page empty creates nothing.
- * Uploads are stored right away; reorder, delete and rotate/crop stay a local draft until Save.
+ * A new listing is created with the first upload or on Save, so leaving it empty creates nothing.
+ * Uploads are stored right away; title, description, reorder, delete and rotate/crop stay a
+ * local draft until Save.
  */
 export function ListingEditPage() {
   const { listingId } = useParams()
@@ -69,6 +72,8 @@ export function ListingEditPage() {
   const [editing, setEditing] = useState<DraftPhoto | null>(null)
   // null = no unsaved changes, the server's photos are shown.
   const [draft, setDraft] = useState<DraftPhoto[] | null>(null)
+  // Same for title / description: null = unchanged.
+  const [fields, setFields] = useState<ListingUpdate | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const { data: listing, isPending, isError, error } = useQuery({
@@ -77,39 +82,48 @@ export function ListingEditPage() {
     enabled: !!listingId,
   })
   const photos: DraftPhoto[] = draft ?? listing?.photos ?? []
+  const title = fields?.title ?? listing?.title ?? ""
+  const description = fields?.description ?? listing?.description ?? ""
+  const changeFields = (update: ListingUpdate) => setFields({ title, description, ...update })
+  const dirty = draft != null || fields != null
   const changePhotos = (update: (photos: DraftPhoto[]) => DraftPhoto[]) => setDraft(update(photos))
 
   // Closing the tab or reloading would lose the draft.
   useEffect(() => {
-    if (!draft) return
+    if (!dirty) return
     const warn = (e: BeforeUnloadEvent) => e.preventDefault()
     window.addEventListener("beforeunload", warn)
     return () => window.removeEventListener("beforeunload", warn)
-  }, [draft])
+  }, [dirty])
 
   // Prefix match: refreshes this listing and the list page.
   const refetch = () => queryClient.invalidateQueries({ queryKey: ["listings"] })
 
   const save = useMutation({
-    mutationFn: async (draft: DraftPhoto[]) => {
+    mutationFn: async ({ draft, fields }: { draft: DraftPhoto[] | null; fields: ListingUpdate | null }) => {
+      // Title / description typed before any photo: Save creates the listing.
+      const id = listingId ?? (await api.createListing()).id
+      if (fields) await api.updateListing(id, fields)
+      if (!draft) return
       const kept = new Set(draft.map((p) => p.id))
       // Edited photos come back with new ids, so replace first and reorder by the results.
       const saved = await Promise.all(
-        draft.map((p) => (p.edited ? api.replaceListingPhoto(listingId!, p.id, p.edited) : p)),
+        draft.map((p) => (p.edited ? api.replaceListingPhoto(id, p.id, p.edited) : p)),
       )
       await Promise.all(
         (listing?.photos ?? [])
           .filter((p) => !kept.has(p.id))
-          .map((p) => api.deleteListingPhoto(listingId!, p.id)),
+          .map((p) => api.deleteListingPhoto(id, p.id)),
       )
-      return api.reorderListingPhotos(
-        listingId!,
+      await api.reorderListingPhotos(
+        id,
         saved.map((p) => p.id),
       )
     },
-    onSuccess: (_saved, draft) => {
-      revokeEdited(draft)
+    onSuccess: (_, { draft }) => {
+      if (draft) revokeEdited(draft)
       setDraft(null)
+      setFields(null)
       void refetch()
       toast.success("Listing saved")
       navigate("/listings")
@@ -256,14 +270,44 @@ export function ListingEditPage() {
         </p>
       </section>
 
+      <section className="space-y-3">
+        <h2 className="text-lg font-medium">About your item</h2>
+        <Card>
+          <CardContent className="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
+            <label htmlFor="listing-title" className="text-sm font-medium sm:pt-2">
+              Title
+            </label>
+            <Input
+              id="listing-title"
+              value={title}
+              onChange={(e) => changeFields({ title: e.target.value })}
+              placeholder="e.g. Nike Sunray Protect sandals, size 27"
+            />
+            <label htmlFor="listing-description" className="text-sm font-medium sm:pt-2">
+              Description
+            </label>
+            <Textarea
+              id="listing-description"
+              value={description}
+              onChange={(e) => changeFields({ description: e.target.value })}
+              placeholder="Tell buyers more about it"
+              className="min-h-32"
+            />
+          </CardContent>
+        </Card>
+        <p className="text-xs text-muted-foreground">
+          Both optional; to be filled from the photos by an LLM.
+        </p>
+      </section>
+
       <div className="flex flex-wrap items-center justify-end gap-3">
-        {draft && <span className="mr-auto text-sm text-muted-foreground">Unsaved changes</span>}
+        {dirty && <span className="mr-auto text-sm text-muted-foreground">Unsaved changes</span>}
         <Button variant="outline" onClick={cancel} disabled={save.isPending}>
           Cancel
         </Button>
         <Button
-          onClick={() => (draft ? save.mutate(draft) : navigate("/listings"))}
-          disabled={!listingId || photos.length === 0 || pending > 0 || save.isPending}
+          onClick={() => (dirty ? save.mutate({ draft, fields }) : navigate("/listings"))}
+          disabled={(!listingId && !dirty) || pending > 0 || save.isPending}
         >
           {save.isPending ? "Saving…" : "Save"}
         </Button>

@@ -176,7 +176,8 @@ export interface paths {
         delete: operations["delete_listing_api_listings__listing_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update Listing */
+        patch: operations["update_listing_api_listings__listing_id__patch"];
         trace?: never;
     };
     "/api/listings/{listing_id}/photos": {
@@ -328,6 +329,10 @@ export interface components {
         Listing: {
             /** Id */
             id: string;
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -361,6 +366,16 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * ListingUpdate
+         * @description Fields to change; omitted ones stay as they are, blank ones are cleared.
+         */
+        ListingUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
         };
         /** MonthStats */
         MonthStats: {
@@ -979,6 +994,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_listing_api_listings__listing_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListingUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Listing"];
+                };
             };
             /** @description Validation Error */
             422: {

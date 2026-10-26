@@ -10,6 +10,7 @@ export type SaleStatus = Schemas["SaleStatus"]
 export type Stats = Schemas["Stats"]
 export type Listing = Schemas["Listing"]
 export type ListingPhoto = Schemas["ListingPhoto"]
+export type ListingUpdate = Schemas["ListingUpdate"]
 
 export class ApiError extends Error {
   status: number
@@ -103,6 +104,9 @@ export const api = {
   },
   createListing(): Promise<Listing> {
     return request("/listings", { method: "POST" })
+  },
+  updateListing(listingId: string, fields: ListingUpdate): Promise<Listing> {
+    return request(`/listings/${listingId}`, { method: "PATCH", body: JSON.stringify(fields) })
   },
   deleteListing(listingId: string): Promise<void> {
     return request(`/listings/${listingId}`, { method: "DELETE" })
