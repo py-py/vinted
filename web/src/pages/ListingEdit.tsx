@@ -4,6 +4,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
 import { toast } from "sonner"
 
+import { CopyButton } from "@/components/shared/CopyButton"
 import { ListingPhotoGrid } from "@/components/shared/ListingPhotoGrid"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { PhotoGallery } from "@/components/shared/PhotoGallery"
@@ -299,22 +300,33 @@ export function ListingEditPage() {
             <label htmlFor="listing-title" className="text-sm font-medium sm:pt-2">
               Title
             </label>
-            <Input
-              id="listing-title"
-              value={title}
-              onChange={(e) => changeFields({ title: e.target.value })}
-              placeholder="e.g. Nike Sunray Protect sandals, size 27"
-            />
+            <div className="relative">
+              <Input
+                id="listing-title"
+                value={title}
+                onChange={(e) => changeFields({ title: e.target.value })}
+                placeholder="e.g. Nike Sunray Protect sandals, size 27"
+                className="pr-9"
+              />
+              <CopyButton value={title} label="title" className="absolute top-1.5 right-1.5" />
+            </div>
             <label htmlFor="listing-description" className="text-sm font-medium sm:pt-2">
               Description
             </label>
-            <Textarea
-              id="listing-description"
-              value={description}
-              onChange={(e) => changeFields({ description: e.target.value })}
-              placeholder="Tell buyers more about it"
-              className="min-h-32"
-            />
+            <div className="relative">
+              <Textarea
+                id="listing-description"
+                value={description}
+                onChange={(e) => changeFields({ description: e.target.value })}
+                placeholder="Tell buyers more about it"
+                className="min-h-32 pr-9"
+              />
+              <CopyButton
+                value={description}
+                label="description"
+                className="absolute top-1.5 right-1.5"
+              />
+            </div>
           </CardContent>
         </Card>
         <p className="text-xs text-muted-foreground">
