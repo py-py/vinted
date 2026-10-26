@@ -9,12 +9,21 @@ type Props = {
   photos: string[]
   fallbacks: string[]
   title: string
+  // Photo shown first when the gallery is mounted already open.
+  initialIndex?: number
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function PhotoGallery({ photos, fallbacks, title, open, onOpenChange }: Props) {
-  const [index, setIndex] = useState(0)
+export function PhotoGallery({
+  photos,
+  fallbacks,
+  title,
+  initialIndex = 0,
+  open,
+  onOpenChange,
+}: Props) {
+  const [index, setIndex] = useState(initialIndex)
   const step = (delta: number) => setIndex((i) => (i + delta + photos.length) % photos.length)
 
   return (
