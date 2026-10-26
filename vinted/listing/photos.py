@@ -1,5 +1,5 @@
 """
-Listing photo processing: any supported upload -> EXIF-free JPEG, at most 1600 px on the
+Listing photo processing: any supported upload -> EXIF-free JPEG, at most 1200 px on the
 longer side.
 
 EXIF orientation is applied to the pixels first, then all metadata is dropped, so GPS
@@ -17,7 +17,8 @@ from pillow_heif import register_heif_opener
 
 register_heif_opener()
 
-MAX_SIDE = 1600
+# Plenty for Vinted, and keeps the photos sent to the LLM small.
+MAX_SIDE = 1200
 MAX_BYTES = 25 * 1024 * 1024
 JPEG_QUALITY = 85
 # Decompression-bomb guard: ~100 MP covers any phone camera (a 200 MP sensor bins to 50 MP).
@@ -25,7 +26,8 @@ Image.MAX_IMAGE_PIXELS = 100_000_000
 
 # Checked on the decoded file, not the upload's Content-Type: browsers often send HEIC as
 # application/octet-stream.
-ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP", "HEIF"}
+# MPO: iPhone JPEGs with extra embedded frames (depth, HDR gain map); Pillow reads the main one.
+ALLOWED_FORMATS = {"JPEG", "MPO", "PNG", "WEBP", "HEIF"}
 
 
 class InvalidPhoto(ValueError):

@@ -180,6 +180,46 @@ export interface paths {
         patch: operations["update_listing_api_listings__listing_id__patch"];
         trace?: never;
     };
+    "/api/listings/{listing_id}/describe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Describe Listing
+         * @description Suggest a title and description from the listing's photos; nothing is saved.
+         */
+        post: operations["describe_listing_api_listings__listing_id__describe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/listings/{listing_id}/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Listing
+         * @description Describe the photos and save the result as the title and description (overwrites).
+         */
+        post: operations["analyze_listing_api_listings__listing_id__analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/listings/{listing_id}/photos": {
         parameters: {
             query?: never;
@@ -191,7 +231,7 @@ export interface paths {
         put?: never;
         /**
          * Upload Listing Photo
-         * @description Upload one photo (JPEG, PNG, WebP or HEIC); it's stored as a JPEG, 1600 px max.
+         * @description Upload one photo (JPEG, PNG, WebP or HEIC); it's stored as a JPEG, 1200 px max.
          */
         post: operations["upload_listing_photo_api_listings__listing_id__photos_post"];
         delete?: never;
@@ -366,6 +406,19 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** ListingText */
+        ListingText: {
+            /**
+             * Title
+             * @description Short Vinted listing title
+             */
+            title: string;
+            /**
+             * Description
+             * @description Listing description for buyers
+             */
+            description: string;
         };
         /**
          * ListingUpdate
@@ -1038,6 +1091,96 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    describe_listing_api_listings__listing_id__describe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingText"];
+                };
+            };
+            /** @description Listing has no photos yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description The LLM call failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    analyze_listing_api_listings__listing_id__analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Listing"];
+                };
+            };
+            /** @description Listing has no photos yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description The LLM call failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

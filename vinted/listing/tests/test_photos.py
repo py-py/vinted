@@ -34,13 +34,13 @@ def _open(data: bytes) -> Image.Image:
 
 def test_shrinks_longer_side_keeping_aspect_ratio() -> None:
     data, w, h = process(_encode(Image.new("RGB", (4000, 3000)), "JPEG"))
-    assert (w, h) == (MAX_SIDE, 1200)
+    assert (w, h) == (MAX_SIDE, 900)
     assert _open(data).size == (w, h)
 
 
 def test_shrinks_portrait() -> None:
     _, w, h = process(_encode(Image.new("RGB", (1000, 3200)), "PNG"))
-    assert (w, h) == (500, MAX_SIDE)
+    assert (w, h) == (375, MAX_SIDE)
 
 
 def test_does_not_upscale() -> None:
@@ -80,12 +80,22 @@ def test_strips_exif_including_gps() -> None:
 ###############################################################################
 
 
+def test_accepts_mpo_from_iphone() -> None:
+    main = Image.new("RGB", (4032, 3024), (200, 0, 0))
+    depth = Image.new("RGB", (576, 432), (0, 0, 0))
+    data = _encode(main, "MPO", save_all=True, append_images=[depth])
+    assert Image.open(io.BytesIO(data)).format == "MPO"
+    jpeg, w, h = process(data)
+    assert (w, h) == (MAX_SIDE, 900)
+    assert _open(jpeg).getpixel((10, 10))[0] > 150  # the main frame, not the depth map
+
+
 def test_accepts_heic() -> None:
     heif = pillow_heif.from_pillow(Image.new("RGB", (2400, 1600), (0, 128, 255)))
     buf = io.BytesIO()
     heif.save(buf, quality=50)
     data, w, h = process(buf.getvalue())
-    assert (w, h) == (MAX_SIDE, 1067)
+    assert (w, h) == (MAX_SIDE, 800)
     assert _open(data).size == (w, h)
 
 

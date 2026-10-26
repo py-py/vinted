@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ArrowLeft, Trash2 } from "lucide-react"
+import { ArrowLeft, Sparkles, Trash2 } from "lucide-react"
 import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
 import { toast } from "sonner"
 
+import { CopyButton } from "@/components/shared/CopyButton"
 import { ListingPhotoGrid } from "@/components/shared/ListingPhotoGrid"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { PhotoGallery } from "@/components/shared/PhotoGallery"
@@ -133,6 +134,12 @@ export function ListingEditPage() {
       toast.error("Failed to save listing")
       void refetch()
     },
+  })
+  // Fills the title / description draft; the user reviews it and saves.
+  const fillFromPhotos = useMutation({
+    mutationFn: (id: string) => api.describeListing(id),
+    onSuccess: (text) => setFields(text),
+    onError: () => toast.error("Couldn't describe the photos"),
   })
   const removeListing = useMutation({
     mutationFn: () => api.deleteListing(listingId!),
@@ -266,37 +273,59 @@ export function ListingEditPage() {
           </CardContent>
         </Card>
         <p className="text-xs text-muted-foreground">
-          JPEG, PNG, WebP or HEIC, up to 25 MB each; stored at 1600 px max.
+          JPEG, PNG, WebP or HEIC, up to 25 MB each; stored at 1200 px max.
         </p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">About your item</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-lg font-medium">About your item</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fillFromPhotos.mutate(listingId!)}
+            disabled={!listingId || photos.length === 0 || pending > 0 || fillFromPhotos.isPending}
+          >
+            <Sparkles />
+            {fillFromPhotos.isPending ? "Writing…" : "Fill from photos"}
+          </Button>
+        </div>
         <Card>
           <CardContent className="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
             <label htmlFor="listing-title" className="text-sm font-medium sm:pt-2">
               Title
             </label>
-            <Input
-              id="listing-title"
-              value={title}
-              onChange={(e) => changeFields({ title: e.target.value })}
-              placeholder="e.g. Nike Sunray Protect sandals, size 27"
-            />
+            <div className="relative">
+              <Input
+                id="listing-title"
+                value={title}
+                onChange={(e) => changeFields({ title: e.target.value })}
+                placeholder="e.g. Nike Sunray Protect sandals, size 27"
+                className="pr-9"
+              />
+              <CopyButton value={title} label="title" className="absolute top-1.5 right-1.5" />
+            </div>
             <label htmlFor="listing-description" className="text-sm font-medium sm:pt-2">
               Description
             </label>
-            <Textarea
-              id="listing-description"
-              value={description}
-              onChange={(e) => changeFields({ description: e.target.value })}
-              placeholder="Tell buyers more about it"
-              className="min-h-32"
-            />
+            <div className="relative">
+              <Textarea
+                id="listing-description"
+                value={description}
+                onChange={(e) => changeFields({ description: e.target.value })}
+                placeholder="Tell buyers more about it"
+                className="min-h-32 pr-9"
+              />
+              <CopyButton
+                value={description}
+                label="description"
+                className="absolute top-1.5 right-1.5"
+              />
+            </div>
           </CardContent>
         </Card>
         <p className="text-xs text-muted-foreground">
-          Both optional; to be filled from the photos by an LLM.
+          Both optional. "Fill from photos" asks DeepSeek for a draft from the saved photos.
         </p>
       </section>
 

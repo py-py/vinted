@@ -11,6 +11,7 @@ export type Stats = Schemas["Stats"]
 export type Listing = Schemas["Listing"]
 export type ListingPhoto = Schemas["ListingPhoto"]
 export type ListingUpdate = Schemas["ListingUpdate"]
+export type ListingText = Schemas["ListingText"]
 
 export class ApiError extends Error {
   status: number
@@ -107,6 +108,14 @@ export const api = {
   },
   updateListing(listingId: string, fields: ListingUpdate): Promise<Listing> {
     return request(`/listings/${listingId}`, { method: "PATCH", body: JSON.stringify(fields) })
+  },
+  // Title / description suggested from the saved photos by an LLM; nothing is stored.
+  describeListing(listingId: string): Promise<ListingText> {
+    return request(`/listings/${listingId}/describe`, { method: "POST" })
+  },
+  // Same LLM call, but the result is saved as the title / description (overwrites them).
+  analyzeListing(listingId: string): Promise<Listing> {
+    return request(`/listings/${listingId}/analyze`, { method: "POST" })
   },
   deleteListing(listingId: string): Promise<void> {
     return request(`/listings/${listingId}`, { method: "DELETE" })

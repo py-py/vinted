@@ -13,6 +13,7 @@ dependencies = [
     "pillow==13.0.0",
     "pillow-heif==1.8.1",
     "pydantic==2.12.5",
+    "pydantic-ai-slim[openai]==2.61.0",
     "python-dotenv==1.2.1",
 ]
 

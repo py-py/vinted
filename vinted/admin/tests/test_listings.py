@@ -12,7 +12,9 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
+from ...listing.describe import ListingText
 from .. import app
+from .. import listings
 from ..deps import get_photo_store
 from ..deps import get_store
 
@@ -27,8 +29,8 @@ def _photo(photo_id: str) -> dict:
     return {
         "id": photo_id,
         "path": f"listing/{LISTING_ID}/{photo_id}.jpeg",
-        "width": 1600,
-        "height": 1200,
+        "width": 1200,
+        "height": 900,
         "bytes": 1234,
         "created_at": NOW,
     }
@@ -116,6 +118,73 @@ def test_update_missing_listing_is_404(client: TestClient, store: MagicMock) -> 
     store.update_listing.assert_not_called()
 
 
+###############################################################################
+#  Describe — Title and Description Suggested From the Photos
+###############################################################################
+
+
+def test_describe_sends_stored_photos_in_order(
+    client: TestClient, photos: MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    photos.download_listing_photo.side_effect = lambda _, pid: {PHOTO_A: b"a"}.get(pid)
+    calls = []
+
+    def fake_describe(data: list[bytes]) -> ListingText:
+        calls.append(data)
+        return ListingText(title="Nike", description="Size 27")
+
+    monkeypatch.setattr(listings, "describe", fake_describe)
+    resp = client.post(f"/api/listings/{LISTING_ID}/describe")
+    assert resp.status_code == 200
+    assert resp.json() == {"title": "Nike", "description": "Size 27"}
+    # PHOTO_B is missing from GCS and is skipped.
+    assert calls == [[b"a"]]
+
+
+def test_describe_without_photos_is_409(client: TestClient, store: MagicMock) -> None:
+    store.get_listing.return_value = _listing()
+    assert client.post(f"/api/listings/{LISTING_ID}/describe").status_code == 409
+
+
+def test_describe_llm_failure_is_502(
+    client: TestClient, photos: MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    photos.download_listing_photo.return_value = b"a"
+
+    def broken(_: list[bytes]) -> ListingText:
+        raise RuntimeError("DeepSeek is down")
+
+    monkeypatch.setattr(listings, "describe", broken)
+    assert client.post(f"/api/listings/{LISTING_ID}/describe").status_code == 502
+
+
+def test_analyze_saves_title_and_description(
+    client: TestClient, store: MagicMock, photos: MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    photos.download_listing_photo.return_value = b"a"
+    monkeypatch.setattr(
+        listings, "describe", lambda _: ListingText(title="Nike", description="Size 27")
+    )
+    resp = client.post(f"/api/listings/{LISTING_ID}/analyze")
+    assert resp.status_code == 200
+    store.update_listing.assert_called_once_with(
+        LISTING_ID, {"title": "Nike", "description": "Size 27"}
+    )
+
+
+def test_analyze_failure_saves_nothing(
+    client: TestClient, store: MagicMock, photos: MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    photos.download_listing_photo.return_value = b"a"
+
+    def broken(_: list[bytes]) -> ListingText:
+        raise RuntimeError("DeepSeek is down")
+
+    monkeypatch.setattr(listings, "describe", broken)
+    assert client.post(f"/api/listings/{LISTING_ID}/analyze").status_code == 502
+    store.update_listing.assert_not_called()
+
+
 def test_list_listings(client: TestClient, store: MagicMock) -> None:
     store.list_listings.return_value = [_listing([_photo(PHOTO_A)])]
     body = client.get("/api/listings").json()
@@ -160,12 +229,12 @@ def test_upload_resizes_and_stores(
     )
     assert resp.status_code == 201
     body = resp.json()
-    assert (body["width"], body["height"]) == (1600, 1200)
+    assert (body["width"], body["height"]) == (1200, 900)
     assert body["url"] == f"/api/listings/{LISTING_ID}/photos/{body['id']}"
 
     lid, pid, data = photos.upload_listing_photo.call_args.args
     assert (lid, pid) == (LISTING_ID, body["id"])
-    assert Image.open(io.BytesIO(data)).size == (1600, 1200)
+    assert Image.open(io.BytesIO(data)).size == (1200, 900)
     assert body["bytes"] == len(data)
 
     stored = store.add_listing_photo.call_args.args[1]
@@ -225,12 +294,12 @@ def test_replace_photo_keeps_position_with_new_id(
     store.replace_listing_photo.return_value = _photo(PHOTO_A)
     resp = client.put(
         f"/api/listings/{LISTING_ID}/photos/{PHOTO_A}",
-        files={"file": ("a.jpg", _jpeg((1200, 1600)), "image/jpeg")},
+        files={"file": ("a.jpg", _jpeg((1800, 2400)), "image/jpeg")},
     )
     assert resp.status_code == 200
     body = resp.json()
     assert body["id"] != PHOTO_A
-    assert (body["width"], body["height"]) == (1200, 1600)
+    assert (body["width"], body["height"]) == (900, 1200)
 
     lid, old_id, stored = store.replace_listing_photo.call_args.args
     assert (lid, old_id, stored["id"]) == (LISTING_ID, PHOTO_A, body["id"])
