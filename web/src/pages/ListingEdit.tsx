@@ -165,8 +165,6 @@ export function ListingEditPage() {
     })
     if (accepted.length === 0) return
 
-    // A new listing with nothing typed yet gets its title / description from the first photos.
-    const autoFill = !listingId && !title && !description
     let id = listingId
     if (!id) {
       try {
@@ -182,7 +180,6 @@ export function ListingEditPage() {
 
     setPending((n) => n + accepted.length)
     const queue = [...accepted]
-    let uploaded = 0
     const worker = async () => {
       for (let file = queue.shift(); file; file = queue.shift()) {
         try {
@@ -192,7 +189,6 @@ export function ListingEditPage() {
             old ? { ...old, photos: [...old.photos, photo] } : old,
           )
           setDraft((old) => old && [...old, photo])
-          uploaded++
         } catch (e) {
           toast.error(`${file.name}: ${uploadError(e)}`)
         } finally {
@@ -202,7 +198,6 @@ export function ListingEditPage() {
     }
     await Promise.all(Array.from({ length: Math.min(PARALLEL_UPLOADS, accepted.length) }, worker))
     void queryClient.invalidateQueries({ queryKey: ["listings"], exact: true })
-    if (autoFill && uploaded > 0) fillFromPhotos.mutate(id)
   }
 
   function cancel() {
