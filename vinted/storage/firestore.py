@@ -7,6 +7,9 @@ Project/database are read from env: GOOGLE_CLOUD_PROJECT, FIRESTORE_DATABASE.
 from __future__ import annotations
 
 import os
+import uuid
+from datetime import UTC
+from datetime import datetime
 
 from google.cloud import firestore
 
@@ -16,6 +19,7 @@ from ..account.sales.models import Sale
 
 PURCHASES_COLLECTION = "purchases"
 SALES_COLLECTION = "sales"
+LISTINGS_COLLECTION = "listings"
 
 
 def _non_empty(doc: dict) -> dict:
@@ -32,6 +36,10 @@ class FirestoreStore:
         purchases/{transaction_id}/items/{id} -> per-item fields
         sales/{transaction_id}                -> sale-level fields
         sales/{transaction_id}/items/{id}     -> per-item fields
+        listings/{listing_id}                 -> {id, created_at, updated_at, photos: [...]}
+
+    Listing `photos` is an array of {id, path, width, height, bytes, created_at};
+    array order is the display order.
     """
 
     def __init__(self) -> None:
@@ -41,6 +49,7 @@ class FirestoreStore:
         )
         self.purchases = self.client.collection(PURCHASES_COLLECTION)
         self.sales = self.client.collection(SALES_COLLECTION)
+        self.listings = self.client.collection(LISTINGS_COLLECTION)
 
     def existing_transaction_ids(self) -> set[int]:
         return {int(doc.id) for doc in self.purchases.list_documents()}
@@ -100,6 +109,94 @@ class FirestoreStore:
         item_ref = self.purchases.document(transaction_id).collection("items").document(item_id)
         value = firestore.DELETE_FIELD if sale_item_id is None else sale_item_id
         item_ref.set({"_sale_item_id": value}, merge=True)
+
+    def create_listing(self) -> dict:
+        """Create an empty listing with a fresh uuid4 id and return its doc."""
+        now = datetime.now(UTC)
+        doc = {"id": str(uuid.uuid4()), "created_at": now, "updated_at": now, "photos": []}
+        self.listings.document(doc["id"]).create(doc)
+        return doc
+
+    def list_listings(self) -> list[dict]:
+        """All listings, newest first."""
+        docs = [snap.to_dict() or {} for snap in self.listings.stream()]
+        return sorted(docs, key=lambda d: d["created_at"], reverse=True)
+
+    def get_listing(self, listing_id: str) -> dict | None:
+        snap = self.listings.document(listing_id).get()
+        return snap.to_dict() if snap.exists else None
+
+    def delete_listing(self, listing_id: str) -> None:
+        self.listings.document(listing_id).delete()
+
+    def add_listing_photo(self, listing_id: str, photo: dict) -> None:
+        """Append a photo to the listing. Raises NotFound if the listing doesn't exist.
+
+        ArrayUnion is atomic, so parallel uploads into one listing don't overwrite each other.
+        """
+        self.listings.document(listing_id).update(
+            {
+                "photos": firestore.ArrayUnion([photo]),
+                "updated_at": firestore.SERVER_TIMESTAMP,
+            }
+        )
+
+    def remove_listing_photo(self, listing_id: str, photo_id: str) -> dict | None:
+        """Drop a photo from the listing; returns the removed photo, None if it wasn't there."""
+
+        @firestore.transactional
+        def run(tx: firestore.Transaction) -> dict | None:
+            ref = self.listings.document(listing_id)
+            photos = (ref.get(transaction=tx).to_dict() or {}).get("photos") or []
+            removed = next((p for p in photos if p["id"] == photo_id), None)
+            if removed is not None:
+                tx.update(
+                    ref,
+                    {
+                        "photos": [p for p in photos if p["id"] != photo_id],
+                        "updated_at": firestore.SERVER_TIMESTAMP,
+                    },
+                )
+            return removed
+
+        return run(self.client.transaction())
+
+    def replace_listing_photo(self, listing_id: str, photo_id: str, photo: dict) -> dict | None:
+        """Swap a photo for `photo` at the same position; returns the old one, None if missing."""
+
+        @firestore.transactional
+        def run(tx: firestore.Transaction) -> dict | None:
+            ref = self.listings.document(listing_id)
+            photos = (ref.get(transaction=tx).to_dict() or {}).get("photos") or []
+            index = next((i for i, p in enumerate(photos) if p["id"] == photo_id), None)
+            if index is None:
+                return None
+            old = photos[index]
+            photos[index] = photo
+            tx.update(ref, {"photos": photos, "updated_at": firestore.SERVER_TIMESTAMP})
+            return old
+
+        return run(self.client.transaction())
+
+    def reorder_listing_photos(self, listing_id: str, photo_ids: list[str]) -> list[dict]:
+        """Put the listing's photos in `photo_ids` order; returns the reordered photos.
+
+        `photo_ids` must name every current photo exactly once, otherwise ValueError —
+        a stale client must not drop photos uploaded after it last loaded the listing.
+        """
+
+        @firestore.transactional
+        def run(tx: firestore.Transaction) -> list[dict]:
+            ref = self.listings.document(listing_id)
+            photos = (ref.get(transaction=tx).to_dict() or {}).get("photos") or []
+            by_id = {p["id"]: p for p in photos}
+            if len(photo_ids) != len(by_id) or set(photo_ids) != set(by_id):
+                raise ValueError("photo_ids must list every photo of the listing exactly once")
+            reordered = [by_id[i] for i in photo_ids]
+            tx.update(ref, {"photos": reordered, "updated_at": firestore.SERVER_TIMESTAMP})
+            return reordered
+
+        return run(self.client.transaction())
 
     def save_order(self, order: Order) -> None:
         """Upsert an order and its items.
