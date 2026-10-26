@@ -143,10 +143,101 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/listings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Listings */
+        get: operations["list_listings_api_listings_get"];
+        put?: never;
+        /** Create Listing */
+        post: operations["create_listing_api_listings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/listings/{listing_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Listing */
+        get: operations["get_listing_api_listings__listing_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Listing */
+        delete: operations["delete_listing_api_listings__listing_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/listings/{listing_id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Listing Photo
+         * @description Upload one photo (JPEG, PNG, WebP or HEIC); it's stored as a JPEG, 1600 px max.
+         */
+        post: operations["upload_listing_photo_api_listings__listing_id__photos_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Reorder Listing Photos */
+        patch: operations["reorder_listing_photos_api_listings__listing_id__photos_patch"];
+        trace?: never;
+    };
+    "/api/listings/{listing_id}/photos/{photo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Listing Photo */
+        get: operations["get_listing_photo_api_listings__listing_id__photos__photo_id__get"];
+        /**
+         * Replace Listing Photo
+         * @description Replace a photo with its edited version (rotated / cropped), keeping its position.
+         *
+         *     The new photo gets a fresh id, so the immutable cache of the old URL never goes stale.
+         */
+        put: operations["replace_listing_photo_api_listings__listing_id__photos__photo_id__put"];
+        post?: never;
+        /** Delete Listing Photo */
+        delete: operations["delete_listing_photo_api_listings__listing_id__photos__photo_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Body_replace_listing_photo_api_listings__listing_id__photos__photo_id__put */
+        Body_replace_listing_photo_api_listings__listing_id__photos__photo_id__put: {
+            /** File */
+            file: string;
+        };
+        /** Body_upload_listing_photo_api_listings__listing_id__photos_post */
+        Body_upload_listing_photo_api_listings__listing_id__photos_post: {
+            /** File */
+            file: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -233,6 +324,44 @@ export interface components {
              */
             seller_country: string;
         };
+        /** Listing */
+        Listing: {
+            /** Id */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Photos */
+            photos: components["schemas"]["ListingPhoto"][];
+        };
+        /** ListingPhoto */
+        ListingPhoto: {
+            /** Id */
+            id: string;
+            /**
+             * Url
+             * @description Served by GET /api/listings/{id}/photos/{photo_id}
+             */
+            url: string;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /** Bytes */
+            bytes: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** MonthStats */
         MonthStats: {
             /** Month */
@@ -254,6 +383,14 @@ export interface components {
             page: number;
             /** Size */
             size: number;
+        };
+        /** PhotoOrderUpdate */
+        PhotoOrderUpdate: {
+            /**
+             * Photo Ids
+             * @description Every photo id of the listing, in new order
+             */
+            photo_ids: string[];
         };
         /** Purchase */
         Purchase: {
@@ -738,6 +875,298 @@ export interface operations {
             };
             /** @description Not in GCS */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_listings_api_listings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Listing"][];
+                };
+            };
+        };
+    };
+    create_listing_api_listings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Listing"];
+                };
+            };
+        };
+    };
+    get_listing_api_listings__listing_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Listing"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_listing_api_listings__listing_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_listing_photo_api_listings__listing_id__photos_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_listing_photo_api_listings__listing_id__photos_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingPhoto"];
+                };
+            };
+            /** @description File too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not a supported image */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reorder_listing_photos_api_listings__listing_id__photos_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhotoOrderUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingPhoto"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_listing_photo_api_listings__listing_id__photos__photo_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                listing_id: string;
+                photo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": unknown;
+                };
+            };
+            /** @description Not in GCS */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_listing_photo_api_listings__listing_id__photos__photo_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                listing_id: string;
+                photo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_replace_listing_photo_api_listings__listing_id__photos__photo_id__put"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingPhoto"];
+                };
+            };
+            /** @description Listing or photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description File too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not a supported image */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    delete_listing_photo_api_listings__listing_id__photos__photo_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                listing_id: string;
+                photo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

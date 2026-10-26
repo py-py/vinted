@@ -1,4 +1,4 @@
-import { HandCoins, LayoutDashboard, Package, ShoppingBag } from "lucide-react"
+import { Camera, HandCoins, LayoutDashboard, Package, ShoppingBag } from "lucide-react"
 import { NavLink } from "react-router"
 
 import {
@@ -18,6 +18,7 @@ const NAV = [
   { to: "/purchases", label: "Purchases", icon: ShoppingBag },
   { to: "/items", label: "Purchase Items", icon: Package },
   { to: "/sales", label: "Sales", icon: HandCoins },
+  { to: "/listings", label: "Listings", icon: Camera },
 ]
 
 export function AppSidebar() {
@@ -37,7 +38,8 @@ export function AppSidebar() {
             <SidebarMenu>
               {NAV.map(({ to, label, icon: Icon }) => (
                 <SidebarMenuItem key={to}>
-                  <NavLink to={to} end>
+                  {/* Prefix match, so /listings/:id keeps "Listings" active. */}
+                  <NavLink to={to} end={to === "/"}>
                     {({ isActive }) => (
                       <SidebarMenuButton isActive={isActive} tooltip={label}>
                         <Icon />

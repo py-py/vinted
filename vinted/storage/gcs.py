@@ -1,7 +1,9 @@
 """
-GCS client for storing Vinted purchase photos.
+GCS client for storing Vinted purchase photos and listing photos.
 
-Layout: items/{item_id}/images/{token}.jpeg
+Layout:
+    items/{item_id}/images/{token}.jpeg      -> Vinted CDN copies
+    listing/{listing_id}/{photo_id}.jpeg     -> uploaded via the admin (vinted.listing)
 Project/bucket are read from env: GOOGLE_CLOUD_PROJECT, VINTED_GCS_BUCKET.
 """
 
@@ -29,6 +31,10 @@ def extract_token(url: str) -> str:
 
 def photo_path(item_id: int, token: str) -> str:
     return f"items/{item_id}/images/{token}.jpeg"
+
+
+def listing_photo_path(listing_id: str, photo_id: str) -> str:
+    return f"listing/{listing_id}/{photo_id}.jpeg"
 
 
 class PhotoStore:
@@ -75,3 +81,26 @@ class PhotoStore:
             return None
 
         return f"gs://{self.bucket.name}/{blob.name}"
+
+    def upload_listing_photo(self, listing_id: str, photo_id: str, data: bytes) -> str:
+        """Store a processed listing photo; returns its object path. Ids are fresh uuid4s."""
+        blob = self.bucket.blob(listing_photo_path(listing_id, photo_id))
+        blob.upload_from_string(data, content_type="image/jpeg", if_generation_match=0)
+        return blob.name
+
+    def download_listing_photo(self, listing_id: str, photo_id: str) -> bytes | None:
+        try:
+            return self.bucket.blob(listing_photo_path(listing_id, photo_id)).download_as_bytes()
+        except gcp_exceptions.NotFound:
+            return None
+
+    def delete_listing_photo(self, listing_id: str, photo_id: str) -> None:
+        try:
+            self.bucket.blob(listing_photo_path(listing_id, photo_id)).delete()
+        except gcp_exceptions.NotFound:
+            pass
+
+    def delete_listing_photos(self, listing_id: str) -> None:
+        """Remove every photo of a listing (the whole listing/{listing_id}/ prefix)."""
+        for blob in self.client.list_blobs(self.bucket, prefix=f"listing/{listing_id}/"):
+            blob.delete()

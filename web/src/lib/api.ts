@@ -8,6 +8,8 @@ export type SaleItem = Schemas["SaleItem"]
 export type ItemsPage = Schemas["Page_Item_"]
 export type SaleStatus = Schemas["SaleStatus"]
 export type Stats = Schemas["Stats"]
+export type Listing = Schemas["Listing"]
+export type ListingPhoto = Schemas["ListingPhoto"]
 
 export class ApiError extends Error {
   status: number
@@ -21,9 +23,14 @@ export class ApiError extends Error {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    // FormData sets its own multipart Content-Type (with the boundary).
+    headers:
+      init?.body instanceof FormData
+        ? init.headers
+        : { "Content-Type": "application/json", ...init?.headers },
   })
   if (!res.ok) throw new ApiError(res.status, `${res.status} ${res.statusText}`)
+  if (res.status === 204) return undefined as T
   return res.json() as Promise<T>
 }
 
@@ -86,6 +93,39 @@ export const api = {
     return request(`/items/${txId}/${itemId}/sell-price`, {
       method: "PATCH",
       body: JSON.stringify({ sell_price: sellPrice }),
+    })
+  },
+  listings(): Promise<Listing[]> {
+    return request("/listings")
+  },
+  listing(listingId: string): Promise<Listing> {
+    return request(`/listings/${listingId}`)
+  },
+  createListing(): Promise<Listing> {
+    return request("/listings", { method: "POST" })
+  },
+  deleteListing(listingId: string): Promise<void> {
+    return request(`/listings/${listingId}`, { method: "DELETE" })
+  },
+  // One file per request: a batch is uploaded in parallel, under Cloud Run's request size limit.
+  uploadListingPhoto(listingId: string, file: File): Promise<ListingPhoto> {
+    const body = new FormData()
+    body.append("file", file)
+    return request(`/listings/${listingId}/photos`, { method: "POST", body })
+  },
+  // Swaps the photo for its edited version (rotated / cropped); the result has a new id.
+  replaceListingPhoto(listingId: string, photoId: string, file: Blob): Promise<ListingPhoto> {
+    const body = new FormData()
+    body.append("file", file, "photo.jpg")
+    return request(`/listings/${listingId}/photos/${photoId}`, { method: "PUT", body })
+  },
+  deleteListingPhoto(listingId: string, photoId: string): Promise<void> {
+    return request(`/listings/${listingId}/photos/${photoId}`, { method: "DELETE" })
+  },
+  reorderListingPhotos(listingId: string, photoIds: string[]): Promise<ListingPhoto[]> {
+    return request(`/listings/${listingId}/photos`, {
+      method: "PATCH",
+      body: JSON.stringify({ photo_ids: photoIds }),
     })
   },
 }
