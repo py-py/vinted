@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query"
-import { ImageOff, Plus } from "lucide-react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { ImageOff, Loader2, Plus, Sparkles } from "lucide-react"
 import { Link, useNavigate } from "react-router"
+import { toast } from "sonner"
 
 import { PageHeader } from "@/components/shared/PageHeader"
 import { Button } from "@/components/ui/button"
@@ -54,6 +55,7 @@ export function ListingsPage() {
                 <TableHead className="text-right">Photos</TableHead>
                 <TableHead className="hidden sm:table-cell">Created</TableHead>
                 <TableHead className="hidden md:table-cell">Updated</TableHead>
+                <TableHead className="text-right">Analysis</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -70,7 +72,19 @@ export function ListingsPage() {
 
 function ListingRow({ listing }: { listing: Listing }) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [main] = listing.photos
+  const analyze = useMutation({
+    mutationFn: () => api.analyzeListing(listing.id),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<Listing[]>(["listings"], (old) =>
+        old?.map((l) => (l.id === updated.id ? updated : l)),
+      )
+      queryClient.setQueryData(["listings", updated.id], updated)
+      toast.success(`Saved: ${updated.title}`)
+    },
+    onError: () => toast.error("Analysis failed"),
+  })
   const href = `/listings/${listing.id}`
 
   return (
@@ -109,6 +123,21 @@ function ListingRow({ listing }: { listing: Listing }) {
       </TableCell>
       <TableCell className="hidden whitespace-nowrap tabular-nums md:table-cell">
         {formatDateTime(listing.updated_at)}
+      </TableCell>
+      <TableCell className="text-right">
+        <Button
+          variant="outline"
+          size="sm"
+          title="Send the photos to DeepSeek and save the title and description"
+          disabled={listing.photos.length === 0 || analyze.isPending}
+          onClick={(e) => {
+            e.stopPropagation()
+            analyze.mutate()
+          }}
+        >
+          {analyze.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}
+          <span className="hidden sm:inline">Run analysis</span>
+        </Button>
       </TableCell>
     </TableRow>
   )

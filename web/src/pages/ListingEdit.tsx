@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ArrowLeft, Trash2 } from "lucide-react"
+import { ArrowLeft, Sparkles, Trash2 } from "lucide-react"
 import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
 import { toast } from "sonner"
@@ -134,6 +134,12 @@ export function ListingEditPage() {
       void refetch()
     },
   })
+  // Fills the title / description draft; the user reviews it and saves.
+  const fillFromPhotos = useMutation({
+    mutationFn: (id: string) => api.describeListing(id),
+    onSuccess: (text) => setFields(text),
+    onError: () => toast.error("Couldn't describe the photos"),
+  })
   const removeListing = useMutation({
     mutationFn: () => api.deleteListing(listingId!),
     onSuccess: () => {
@@ -158,6 +164,8 @@ export function ListingEditPage() {
     })
     if (accepted.length === 0) return
 
+    // A new listing with nothing typed yet gets its title / description from the first photos.
+    const autoFill = !listingId && !title && !description
     let id = listingId
     if (!id) {
       try {
@@ -173,6 +181,7 @@ export function ListingEditPage() {
 
     setPending((n) => n + accepted.length)
     const queue = [...accepted]
+    let uploaded = 0
     const worker = async () => {
       for (let file = queue.shift(); file; file = queue.shift()) {
         try {
@@ -182,6 +191,7 @@ export function ListingEditPage() {
             old ? { ...old, photos: [...old.photos, photo] } : old,
           )
           setDraft((old) => old && [...old, photo])
+          uploaded++
         } catch (e) {
           toast.error(`${file.name}: ${uploadError(e)}`)
         } finally {
@@ -191,6 +201,7 @@ export function ListingEditPage() {
     }
     await Promise.all(Array.from({ length: Math.min(PARALLEL_UPLOADS, accepted.length) }, worker))
     void queryClient.invalidateQueries({ queryKey: ["listings"], exact: true })
+    if (autoFill && uploaded > 0) fillFromPhotos.mutate(id)
   }
 
   function cancel() {
@@ -271,7 +282,18 @@ export function ListingEditPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">About your item</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-lg font-medium">About your item</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fillFromPhotos.mutate(listingId!)}
+            disabled={!listingId || photos.length === 0 || pending > 0 || fillFromPhotos.isPending}
+          >
+            <Sparkles />
+            {fillFromPhotos.isPending ? "Writing…" : "Fill from photos"}
+          </Button>
+        </div>
         <Card>
           <CardContent className="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
             <label htmlFor="listing-title" className="text-sm font-medium sm:pt-2">
@@ -296,7 +318,7 @@ export function ListingEditPage() {
           </CardContent>
         </Card>
         <p className="text-xs text-muted-foreground">
-          Both optional; to be filled from the photos by an LLM.
+          Both optional. "Fill from photos" asks DeepSeek for a draft from the saved photos.
         </p>
       </section>
 
