@@ -26,7 +26,8 @@ Image.MAX_IMAGE_PIXELS = 100_000_000
 
 # Checked on the decoded file, not the upload's Content-Type: browsers often send HEIC as
 # application/octet-stream.
-ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP", "HEIF"}
+# MPO: iPhone JPEGs with extra embedded frames (depth, HDR gain map); Pillow reads the main one.
+ALLOWED_FORMATS = {"JPEG", "MPO", "PNG", "WEBP", "HEIF"}
 
 
 class InvalidPhoto(ValueError):

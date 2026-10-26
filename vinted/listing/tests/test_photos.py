@@ -80,6 +80,16 @@ def test_strips_exif_including_gps() -> None:
 ###############################################################################
 
 
+def test_accepts_mpo_from_iphone() -> None:
+    main = Image.new("RGB", (4032, 3024), (200, 0, 0))
+    depth = Image.new("RGB", (576, 432), (0, 0, 0))
+    data = _encode(main, "MPO", save_all=True, append_images=[depth])
+    assert Image.open(io.BytesIO(data)).format == "MPO"
+    jpeg, w, h = process(data)
+    assert (w, h) == (MAX_SIDE, 900)
+    assert _open(jpeg).getpixel((10, 10))[0] > 150  # the main frame, not the depth map
+
+
 def test_accepts_heic() -> None:
     heif = pillow_heif.from_pillow(Image.new("RGB", (2400, 1600), (0, 128, 255)))
     buf = io.BytesIO()
