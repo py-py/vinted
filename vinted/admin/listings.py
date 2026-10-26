@@ -1,6 +1,6 @@
 """
-Listings API: create a listing, edit its title/description, upload/serve/replace/delete/reorder
-its photos.
+Listings API: create a listing, edit its title/description (or have them suggested from the
+photos by an LLM), upload/serve/replace/delete/reorder its photos.
 
 Photos are processed by `vinted.listing.photos.process` (EXIF stripped, 1200 px max),
 stored in GCS under listing/{listing_id}/{photo_id}.jpeg and tracked in Firestore
@@ -10,6 +10,7 @@ so the browser can upload a batch in parallel without hitting Cloud Run's reques
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import UTC
 from datetime import datetime
@@ -21,11 +22,15 @@ from fastapi import UploadFile
 from pydantic import BaseModel
 from pydantic import Field
 
+from ..listing.describe import ListingText
+from ..listing.describe import describe
 from ..listing.photos import MAX_BYTES
 from ..listing.photos import InvalidPhoto
 from ..listing.photos import process
 from .deps import PhotoStoreDep
 from .deps import StoreDep
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/listings", tags=["listings"])
 
@@ -150,6 +155,41 @@ def update_listing(listing_id: uuid.UUID, update: ListingUpdate, store: StoreDep
     }
     if fields:
         store.update_listing(str(listing_id), fields)
+    return _to_listing(_get_or_404(store, listing_id))
+
+
+_DESCRIBE_ERRORS: dict[int | str, dict] = {
+    409: {"description": "Listing has no photos yet"},
+    502: {"description": "The LLM call failed"},
+}
+
+
+def _describe(listing_id: uuid.UUID, doc: dict, photos: PhotoStoreDep) -> ListingText:
+    """Run the listing's stored photos (in display order) through the LLM."""
+    data = [
+        photos.download_listing_photo(str(listing_id), p["id"]) for p in doc.get("photos") or []
+    ]
+    data = [d for d in data if d is not None]
+    if not data:
+        raise HTTPException(status_code=409, detail="Listing has no photos yet")
+    try:
+        return describe(data)
+    except Exception as e:
+        logger.exception("Describing listing %s failed", listing_id)
+        raise HTTPException(status_code=502, detail="Failed to describe the photos") from e
+
+
+@router.post("/{listing_id}/describe", responses=_DESCRIBE_ERRORS)
+def describe_listing(listing_id: uuid.UUID, store: StoreDep, photos: PhotoStoreDep) -> ListingText:
+    """Suggest a title and description from the listing's photos; nothing is saved."""
+    return _describe(listing_id, _get_or_404(store, listing_id), photos)
+
+
+@router.post("/{listing_id}/analyze", responses=_DESCRIBE_ERRORS)
+def analyze_listing(listing_id: uuid.UUID, store: StoreDep, photos: PhotoStoreDep) -> Listing:
+    """Describe the photos and save the result as the title and description (overwrites)."""
+    text = _describe(listing_id, _get_or_404(store, listing_id), photos)
+    store.update_listing(str(listing_id), text.model_dump())
     return _to_listing(_get_or_404(store, listing_id))
 
 

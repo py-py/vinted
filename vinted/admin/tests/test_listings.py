@@ -12,7 +12,9 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
+from ...listing.describe import ListingText
 from .. import app
+from .. import listings
 from ..deps import get_photo_store
 from ..deps import get_store
 
@@ -113,6 +115,73 @@ def test_update_listing_returns_saved_fields(client: TestClient, store: MagicMoc
 def test_update_missing_listing_is_404(client: TestClient, store: MagicMock) -> None:
     store.get_listing.return_value = None
     assert client.patch(f"/api/listings/{LISTING_ID}", json={"title": "x"}).status_code == 404
+    store.update_listing.assert_not_called()
+
+
+###############################################################################
+#  Describe — Title and Description Suggested From the Photos
+###############################################################################
+
+
+def test_describe_sends_stored_photos_in_order(
+    client: TestClient, photos: MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    photos.download_listing_photo.side_effect = lambda _, pid: {PHOTO_A: b"a"}.get(pid)
+    calls = []
+
+    def fake_describe(data: list[bytes]) -> ListingText:
+        calls.append(data)
+        return ListingText(title="Nike", description="Size 27")
+
+    monkeypatch.setattr(listings, "describe", fake_describe)
+    resp = client.post(f"/api/listings/{LISTING_ID}/describe")
+    assert resp.status_code == 200
+    assert resp.json() == {"title": "Nike", "description": "Size 27"}
+    # PHOTO_B is missing from GCS and is skipped.
+    assert calls == [[b"a"]]
+
+
+def test_describe_without_photos_is_409(client: TestClient, store: MagicMock) -> None:
+    store.get_listing.return_value = _listing()
+    assert client.post(f"/api/listings/{LISTING_ID}/describe").status_code == 409
+
+
+def test_describe_llm_failure_is_502(
+    client: TestClient, photos: MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    photos.download_listing_photo.return_value = b"a"
+
+    def broken(_: list[bytes]) -> ListingText:
+        raise RuntimeError("DeepSeek is down")
+
+    monkeypatch.setattr(listings, "describe", broken)
+    assert client.post(f"/api/listings/{LISTING_ID}/describe").status_code == 502
+
+
+def test_analyze_saves_title_and_description(
+    client: TestClient, store: MagicMock, photos: MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    photos.download_listing_photo.return_value = b"a"
+    monkeypatch.setattr(
+        listings, "describe", lambda _: ListingText(title="Nike", description="Size 27")
+    )
+    resp = client.post(f"/api/listings/{LISTING_ID}/analyze")
+    assert resp.status_code == 200
+    store.update_listing.assert_called_once_with(
+        LISTING_ID, {"title": "Nike", "description": "Size 27"}
+    )
+
+
+def test_analyze_failure_saves_nothing(
+    client: TestClient, store: MagicMock, photos: MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    photos.download_listing_photo.return_value = b"a"
+
+    def broken(_: list[bytes]) -> ListingText:
+        raise RuntimeError("DeepSeek is down")
+
+    monkeypatch.setattr(listings, "describe", broken)
+    assert client.post(f"/api/listings/{LISTING_ID}/analyze").status_code == 502
     store.update_listing.assert_not_called()
 
 
