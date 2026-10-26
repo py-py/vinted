@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 
-// The backend re-encodes and downsizes to 1600 px anyway; keep the upload lossless-ish.
+// The backend re-encodes and downsizes to 1200 px anyway; keep the upload lossless-ish.
 const JPEG_QUALITY = 0.92
 
 type Props = {

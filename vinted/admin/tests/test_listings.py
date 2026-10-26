@@ -27,8 +27,8 @@ def _photo(photo_id: str) -> dict:
     return {
         "id": photo_id,
         "path": f"listing/{LISTING_ID}/{photo_id}.jpeg",
-        "width": 1600,
-        "height": 1200,
+        "width": 1200,
+        "height": 900,
         "bytes": 1234,
         "created_at": NOW,
     }
@@ -160,12 +160,12 @@ def test_upload_resizes_and_stores(
     )
     assert resp.status_code == 201
     body = resp.json()
-    assert (body["width"], body["height"]) == (1600, 1200)
+    assert (body["width"], body["height"]) == (1200, 900)
     assert body["url"] == f"/api/listings/{LISTING_ID}/photos/{body['id']}"
 
     lid, pid, data = photos.upload_listing_photo.call_args.args
     assert (lid, pid) == (LISTING_ID, body["id"])
-    assert Image.open(io.BytesIO(data)).size == (1600, 1200)
+    assert Image.open(io.BytesIO(data)).size == (1200, 900)
     assert body["bytes"] == len(data)
 
     stored = store.add_listing_photo.call_args.args[1]
@@ -225,12 +225,12 @@ def test_replace_photo_keeps_position_with_new_id(
     store.replace_listing_photo.return_value = _photo(PHOTO_A)
     resp = client.put(
         f"/api/listings/{LISTING_ID}/photos/{PHOTO_A}",
-        files={"file": ("a.jpg", _jpeg((1200, 1600)), "image/jpeg")},
+        files={"file": ("a.jpg", _jpeg((1800, 2400)), "image/jpeg")},
     )
     assert resp.status_code == 200
     body = resp.json()
     assert body["id"] != PHOTO_A
-    assert (body["width"], body["height"]) == (1200, 1600)
+    assert (body["width"], body["height"]) == (900, 1200)
 
     lid, old_id, stored = store.replace_listing_photo.call_args.args
     assert (lid, old_id, stored["id"]) == (LISTING_ID, PHOTO_A, body["id"])

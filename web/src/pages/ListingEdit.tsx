@@ -266,7 +266,7 @@ export function ListingEditPage() {
           </CardContent>
         </Card>
         <p className="text-xs text-muted-foreground">
-          JPEG, PNG, WebP or HEIC, up to 25 MB each; stored at 1600 px max.
+          JPEG, PNG, WebP or HEIC, up to 25 MB each; stored at 1200 px max.
         </p>
       </section>
 

@@ -2,7 +2,7 @@
 Listings API: create a listing, edit its title/description, upload/serve/replace/delete/reorder
 its photos.
 
-Photos are processed by `vinted.listing.photos.process` (EXIF stripped, 1600 px max),
+Photos are processed by `vinted.listing.photos.process` (EXIF stripped, 1200 px max),
 stored in GCS under listing/{listing_id}/{photo_id}.jpeg and tracked in Firestore
 `listings/{listing_id}.photos` (array order = display order). One file per upload request,
 so the browser can upload a batch in parallel without hitting Cloud Run's request size limit.
@@ -174,7 +174,7 @@ def upload_listing_photo(
     store: StoreDep,
     photos: PhotoStoreDep,
 ) -> ListingPhoto:
-    """Upload one photo (JPEG, PNG, WebP or HEIC); it's stored as a JPEG, 1600 px max."""
+    """Upload one photo (JPEG, PNG, WebP or HEIC); it's stored as a JPEG, 1200 px max."""
     _get_or_404(store, listing_id)
     photo = _store_photo(str(listing_id), file, photos)
     store.add_listing_photo(str(listing_id), photo)

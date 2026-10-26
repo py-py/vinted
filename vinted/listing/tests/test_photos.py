@@ -34,13 +34,13 @@ def _open(data: bytes) -> Image.Image:
 
 def test_shrinks_longer_side_keeping_aspect_ratio() -> None:
     data, w, h = process(_encode(Image.new("RGB", (4000, 3000)), "JPEG"))
-    assert (w, h) == (MAX_SIDE, 1200)
+    assert (w, h) == (MAX_SIDE, 900)
     assert _open(data).size == (w, h)
 
 
 def test_shrinks_portrait() -> None:
     _, w, h = process(_encode(Image.new("RGB", (1000, 3200)), "PNG"))
-    assert (w, h) == (500, MAX_SIDE)
+    assert (w, h) == (375, MAX_SIDE)
 
 
 def test_does_not_upscale() -> None:
@@ -85,7 +85,7 @@ def test_accepts_heic() -> None:
     buf = io.BytesIO()
     heif.save(buf, quality=50)
     data, w, h = process(buf.getvalue())
-    assert (w, h) == (MAX_SIDE, 1067)
+    assert (w, h) == (MAX_SIDE, 800)
     assert _open(data).size == (w, h)
 
 

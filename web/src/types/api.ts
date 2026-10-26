@@ -191,7 +191,7 @@ export interface paths {
         put?: never;
         /**
          * Upload Listing Photo
-         * @description Upload one photo (JPEG, PNG, WebP or HEIC); it's stored as a JPEG, 1600 px max.
+         * @description Upload one photo (JPEG, PNG, WebP or HEIC); it's stored as a JPEG, 1200 px max.
          */
         post: operations["upload_listing_photo_api_listings__listing_id__photos_post"];
         delete?: never;
