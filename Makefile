@@ -1,23 +1,32 @@
 DEV_PORT ?= 8000
 
-.PHONY: build run run-local admin-web-local shell cmd test admin-web web-dev web-build purchases sales sync scrape-item analyze cookies cookie-header
+.DEFAULT_GOAL := help
+
+.PHONY: help build run run-local admin-web-local shell cmd test admin-web web-dev web-build purchases sales sync scrape-item analyze cookies cookie-header
+
+###############################################################################
+#  Help — List available targets
+###############################################################################
+
+help: ## Show this help
+	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 ###############################################################################
 #  Docker — Image build, shell, ad-hoc commands and tests
 ###############################################################################
 
 # Backend image (also bakes in the web build) + local web deps for the Vite dev server.
-build:
+build: ## Build Docker image + install web deps
 	docker compose build
 	npm --prefix web install
 
-shell:
+shell: ## Bash shell in the container
 	docker compose run --rm vinted bash
 
-cmd:
+cmd: ## Run CMD="..." in the container
 	docker compose run --rm vinted $(CMD)
 
-test:
+test: ## Run pytest (ARGS="...")
 	docker compose run --rm vinted pytest $(ARGS)
 
 ###############################################################################
@@ -25,14 +34,14 @@ test:
 ###############################################################################
 
 # API in Docker on :$(DEV_PORT) + Vite on :5173; Ctrl+C stops both.
-run:
+run: ## API in Docker + Vite dev server
 	@trap 'kill 0' INT TERM EXIT; \
 	$(MAKE) --no-print-directory admin-web ADMIN_WEB_FLAGS=-T & \
 	$(MAKE) --no-print-directory web-dev & \
 	wait
 
 # Same as `run`, but the API runs on the host via uv (no Docker); Ctrl+C stops both.
-run-local:
+run-local: ## API on host via uv + Vite dev server
 	@trap 'kill 0' INT TERM EXIT; \
 	$(MAKE) --no-print-directory admin-web-local & \
 	$(MAKE) --no-print-directory web-dev & \
@@ -42,24 +51,24 @@ run-local:
 #  Backend — FastAPI admin API (Docker / local uv)
 ###############################################################################
 
-admin-web:
+admin-web: ## FastAPI admin API in Docker
 	docker compose run --rm $(ADMIN_WEB_FLAGS) \
 		--publish $(DEV_PORT):8000 \
 		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
 		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
 		vinted fastapi dev --host 0.0.0.0 --port 8000
 
-admin-web-local:
+admin-web-local: ## FastAPI admin API on host via uv
 	uv run $(if $(wildcard .env),--env-file .env) fastapi dev --port $(DEV_PORT)
 
 ###############################################################################
 #  Frontend — Vite dev server and production build
 ###############################################################################
 
-web-dev:
+web-dev: ## Vite dev server
 	API_URL=http://localhost:$(DEV_PORT) npm --prefix web run dev
 
-web-build:
+web-build: ## Production web build
 	npm --prefix web ci
 	npm --prefix web run build
 
@@ -67,20 +76,20 @@ web-build:
 #  Jobs — Vinted purchases/sales sync
 ###############################################################################
 
-purchases:
+purchases: ## Sync Vinted purchases
 	docker compose run --rm \
 		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
 		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
 		vinted python -m vinted.account.purchases
 
-sales:
+sales: ## Sync Vinted sales
 	docker compose run --rm \
 		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
 		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
 		vinted python -m vinted.account.sales
 
 # Purchases, then sales (sequential even under `make -j`).
-sync:
+sync: ## Purchases, then sales
 	$(MAKE) --no-print-directory purchases
 	$(MAKE) --no-print-directory sales
 
@@ -88,18 +97,18 @@ sync:
 #  AI — Item scraping and LLM analysis (ITEM=<item id>)
 ###############################################################################
 
-scrape-item:
+scrape-item: ## Scrape an item (ITEM=<id>)
 	docker compose run --rm vinted python -m vinted.scraper.item $(ITEM)
 
-analyze:
+analyze: ## LLM analysis of an item (ITEM=<id>)
 	docker compose run --rm vinted python -m vinted.analyzer $(ITEM)
 
 ###############################################################################
 #  Cookies — Vinted auth cookies from a copied curl / to a header
 ###############################################################################
 
-cookies:
+cookies: ## Parse copied curl into cookies.json
 	pbpaste | python scripts/parse_curl.py
 
-cookie-header:
+cookie-header: ## Copy cookie header to clipboard
 	python scripts/cookie_header.py | pbcopy
