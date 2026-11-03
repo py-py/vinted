@@ -1,46 +1,22 @@
 """
 Fetch Vinted favourites via JSON API.
 
-Cookies are stored in a local JSON file.
+Cookies are stored in a local JSON file; the user_id is read from the
+access token unless passed as an argument.
 """
 
 from __future__ import annotations
 
 import asyncio
-import json
-import os
 import sys
-from pathlib import Path
 
 import httpx
-from constants import USER_AGENT
-from dotenv import load_dotenv
 
-load_dotenv()
-VINTED_USER_ID = os.environ["VINTED_USER_ID"]
+from vinted.account.cookies import load_cookies
+from vinted.account.cookies import user_id_from_token
+from vinted.constants import USER_AGENT
 
 FAVOURITES_URL = "https://www.vinted.pl/api/v2/users/{user_id}/items/favourites"
-
-COOKIES_PATH = Path(__file__).parent.parent / "cookies.json"
-
-# Minimum cookies required for authenticated API access
-REQUIRED_COOKIE_KEYS = [
-    "access_token_web",
-    "datadome",
-    "cf_clearance",
-]
-
-
-def load_cookies(path: Path = COOKIES_PATH) -> dict[str, str]:
-    if not path.exists():
-        raise FileNotFoundError(
-            f"Cookies file not found: {path}\nCreate it with keys: {REQUIRED_COOKIE_KEYS}"
-        )
-    cookies = json.loads(path.read_text())
-    missing = [k for k in REQUIRED_COOKIE_KEYS if k not in cookies]
-    if missing:
-        raise ValueError(f"Missing required cookies: {missing}")
-    return cookies
 
 
 async def fetch_favourites(
@@ -105,7 +81,7 @@ def parse_favourite_item(item: dict) -> dict:
 
 
 async def main() -> None:
-    user_id = sys.argv[1] if len(sys.argv) > 1 else VINTED_USER_ID
+    user_id = sys.argv[1] if len(sys.argv) > 1 else user_id_from_token()
     items = await fetch_favourites(user_id=user_id)
     print(f"Total favourites: {len(items)}\n")
     header = f"{'ID':>12s} | {'Brand':20s} | {'Size':8s} | {'Price':15s} | Title"
