@@ -20,7 +20,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { api, ApiError, type Listing, type ListingPhoto, type ListingUpdate } from "@/lib/api"
@@ -305,31 +304,36 @@ export function ListingEditPage() {
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-lg font-medium">About your item</h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fillFromPhotos.mutate(listingId!)}
-            disabled={!listingId || photos.length === 0 || pending > 0 || fillFromPhotos.isPending}
-          >
-            <Sparkles />
-            {fillFromPhotos.isPending ? "Writing…" : "Fill from photos"}
-          </Button>
+        <h2 className="text-lg font-medium">About your item</h2>
+        <div className="space-y-3 rounded-xl border border-dashed bg-muted/50 p-4">
+          <label htmlFor="listing-notes" className="flex items-center gap-2 text-sm font-medium">
+            <Sparkles className="size-4 text-muted-foreground" />
+            Write with AI
+          </label>
+          <Textarea
+            id="listing-notes"
+            value={notes}
+            onChange={(e) => changeFields({ notes: e.target.value })}
+            placeholder="What the photos can't show, e.g. new with tags, never worn"
+            className="min-h-16 bg-background"
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              AI LLM drafts the title and description from the saved photos and these notes.
+            </p>
+            <Button
+              size="sm"
+              className="ml-auto"
+              onClick={() => fillFromPhotos.mutate(listingId!)}
+              disabled={!listingId || photos.length === 0 || pending > 0 || fillFromPhotos.isPending}
+            >
+              <Sparkles />
+              {fillFromPhotos.isPending ? "Writing…" : "Fill from photos"}
+            </Button>
+          </div>
         </div>
         <Card>
           <CardContent className="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
-            <label htmlFor="listing-notes" className="text-sm font-medium sm:pt-2">
-              Notes for AI
-            </label>
-            <Textarea
-              id="listing-notes"
-              value={notes}
-              onChange={(e) => changeFields({ notes: e.target.value })}
-              placeholder="What the photos can't show, e.g. new with tags, never worn"
-              className="min-h-16"
-            />
-            <Separator className="sm:col-span-2" />
             <label htmlFor="listing-title" className="text-sm font-medium sm:pt-2">
               Title
             </label>
@@ -393,10 +397,6 @@ export function ListingEditPage() {
             </div>
           </CardContent>
         </Card>
-        <p className="text-xs text-muted-foreground">
-          All optional. "Fill from photos" asks DeepSeek for a draft from the saved photos and
-          your notes.
-        </p>
       </section>
 
       <div className="flex flex-wrap items-center justify-end gap-3">
