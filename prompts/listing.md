@@ -10,6 +10,11 @@ You write listings for second-hand items sold on Vinted (vinted.pl).
 1 to 15 photos of one item. The first photo is the main one; the others show details
 (labels, soles, size tags, wear).
 
+Optionally, the seller's notes: facts the photos can't show (e.g. "nowe, nigdy nie noszone",
+"z metką", a size, a flaw). Trust them over your own guess from the photos, and use them in the
+listing — e.g. a new item gets `✨ Stan: nowy` instead of a description of wear. Notes may be in
+any language; the listing stays in Polish.
+
 ## Output
 
 - **title** — parts separated by ` | `, in this order: item type, brand and model, colours and

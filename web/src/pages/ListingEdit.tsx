@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { api, ApiError, type Listing, type ListingPhoto, type ListingUpdate } from "@/lib/api"
@@ -96,10 +97,11 @@ export function ListingEditPage() {
   const photos: DraftPhoto[] = draft ?? listing?.photos ?? []
   const title = fields?.title ?? listing?.title ?? ""
   const description = fields?.description ?? listing?.description ?? ""
+  const notes = fields?.notes ?? listing?.notes ?? ""
   // Not `??`: null in the draft means the ID was cleared.
   const itemId = fields ? (fields.item_id ?? null) : (listing?.item_id ?? null)
   const changeFields = (update: ListingUpdate) =>
-    setFields({ title, description, item_id: itemId, ...update })
+    setFields({ title, description, notes, item_id: itemId, ...update })
   const dirty = draft != null || fields != null
   const changePhotos = (update: (photos: DraftPhoto[]) => DraftPhoto[]) => setDraft(update(photos))
 
@@ -151,7 +153,7 @@ export function ListingEditPage() {
   })
   // Fills the title / description draft; the user reviews it and saves.
   const fillFromPhotos = useMutation({
-    mutationFn: (id: string) => api.describeListing(id),
+    mutationFn: (id: string) => api.describeListing(id, notes),
     onSuccess: (text) => changeFields(text),
     onError: () => toast.error("Couldn't describe the photos"),
   })
@@ -317,6 +319,17 @@ export function ListingEditPage() {
         </div>
         <Card>
           <CardContent className="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
+            <label htmlFor="listing-notes" className="text-sm font-medium sm:pt-2">
+              Notes for AI
+            </label>
+            <Textarea
+              id="listing-notes"
+              value={notes}
+              onChange={(e) => changeFields({ notes: e.target.value })}
+              placeholder="What the photos can't show, e.g. new with tags, never worn"
+              className="min-h-16"
+            />
+            <Separator className="sm:col-span-2" />
             <label htmlFor="listing-title" className="text-sm font-medium sm:pt-2">
               Title
             </label>
@@ -381,7 +394,8 @@ export function ListingEditPage() {
           </CardContent>
         </Card>
         <p className="text-xs text-muted-foreground">
-          Both optional. "Fill from photos" asks DeepSeek for a draft from the saved photos.
+          All optional. "Fill from photos" asks DeepSeek for a draft from the saved photos and
+          your notes.
         </p>
       </section>
 

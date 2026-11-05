@@ -42,8 +42,13 @@ agent = Agent(
 )
 
 
-def describe(photos: list[bytes]) -> ListingText:
-    """Suggest a title and description from listing photos (JPEGs, main photo first)."""
+def describe(photos: list[bytes], notes: str | None = None) -> ListingText:
+    """Suggest a title and description from listing photos (JPEGs, main photo first).
+
+    `notes`: facts from the seller the photos can't show (e.g. "new, never worn").
+    """
     images = [BinaryContent(data, media_type="image/jpeg") for data in photos[:MAX_PHOTOS]]
     prompt = "Write the listing for the item in these photos. The first photo is the main one."
+    if notes and notes.strip():
+        prompt += f"\n\nSeller's notes about the item (trust them):\n{notes.strip()}"
     return agent.run_sync([prompt, *images]).output

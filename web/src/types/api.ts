@@ -279,6 +279,14 @@ export interface components {
             /** File */
             file: string;
         };
+        /** DescribeRequest */
+        DescribeRequest: {
+            /**
+             * Notes
+             * @description Facts the photos can't show; defaults to the listing's saved notes
+             */
+            notes?: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -388,6 +396,11 @@ export interface components {
              * @description ID of the item on vinted.pl once the listing is published
              */
             item_id?: number | null;
+            /**
+             * Notes
+             * @description Seller's notes for the LLM, e.g. 'new, never worn'
+             */
+            notes?: string | null;
             /** Photos */
             photos: components["schemas"]["ListingPhoto"][];
         };
@@ -436,6 +449,8 @@ export interface components {
             description?: string | null;
             /** Item Id */
             item_id?: number | null;
+            /** Notes */
+            notes?: string | null;
         };
         /** MonthStats */
         MonthStats: {
@@ -1110,7 +1125,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DescribeRequest"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
