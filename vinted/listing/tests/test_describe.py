@@ -31,3 +31,11 @@ def test_describe_sends_main_photo_first_and_caps_count() -> None:
     assert len(images) == MAX_PHOTOS
     assert images[0].data == b"jpeg-0"
     assert {i.media_type for i in images} == {"image/jpeg"}
+
+
+def test_describe_adds_notes_to_prompt() -> None:
+    with agent.override(model=TestModel(custom_output_args=OUTPUT)):
+        with capture_run_messages() as messages:
+            describe([b"jpeg"], notes="  new, never worn ")
+    parts = [p for m in messages for p in getattr(m, "parts", []) if isinstance(p, UserPromptPart)]
+    assert "new, never worn" in parts[0].content[0]

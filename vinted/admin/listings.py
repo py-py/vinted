@@ -60,6 +60,10 @@ class Listing(BaseModel):
         default=None,
         description="ID of the item on vinted.pl once the listing is published",
     )
+    notes: str | None = Field(
+        default=None,
+        description="Seller's notes for the LLM, e.g. 'new, never worn'",
+    )
     photos: list[ListingPhoto]
 
 
@@ -69,6 +73,14 @@ class ListingUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     item_id: int | None = Field(default=None, gt=0)
+    notes: str | None = None
+
+
+class DescribeRequest(BaseModel):
+    notes: str | None = Field(
+        default=None,
+        description="Facts the photos can't show; defaults to the listing's saved notes",
+    )
 
 
 class PhotoOrderUpdate(BaseModel):
@@ -98,6 +110,7 @@ def _to_listing(doc: dict) -> Listing:
         title=doc.get("title"),
         description=doc.get("description"),
         item_id=doc.get("item_id"),
+        notes=doc.get("notes"),
         created_at=doc["created_at"],
         updated_at=doc.get("updated_at") or doc["created_at"],
         photos=[_to_photo(doc["id"], p) for p in doc.get("photos") or []],
@@ -157,7 +170,7 @@ def get_listing(listing_id: uuid.UUID, store: StoreDep) -> Listing:
 def update_listing(listing_id: uuid.UUID, update: ListingUpdate, store: StoreDep) -> Listing:
     _get_or_404(store, listing_id)
     fields = update.model_dump(exclude_unset=True)
-    for text in ("title", "description"):
+    for text in ("title", "description", "notes"):
         if text in fields:
             fields[text] = (fields[text] or "").strip() or None
     if fields:
@@ -171,8 +184,10 @@ _DESCRIBE_ERRORS: dict[int | str, dict] = {
 }
 
 
-def _describe(listing_id: uuid.UUID, doc: dict, photos: PhotoStoreDep) -> ListingText:
-    """Run the listing's stored photos (in display order) through the LLM."""
+def _describe(
+    listing_id: uuid.UUID, doc: dict, photos: PhotoStoreDep, notes: str | None
+) -> ListingText:
+    """Run the listing's stored photos (in display order) and the notes through the LLM."""
     data = [
         photos.download_listing_photo(str(listing_id), p["id"]) for p in doc.get("photos") or []
     ]
@@ -180,22 +195,30 @@ def _describe(listing_id: uuid.UUID, doc: dict, photos: PhotoStoreDep) -> Listin
     if not data:
         raise HTTPException(status_code=409, detail="Listing has no photos yet")
     try:
-        return describe(data)
+        return describe(data, notes)
     except Exception as e:
         logger.exception("Describing listing %s failed", listing_id)
         raise HTTPException(status_code=502, detail="Failed to describe the photos") from e
 
 
 @router.post("/{listing_id}/describe", responses=_DESCRIBE_ERRORS)
-def describe_listing(listing_id: uuid.UUID, store: StoreDep, photos: PhotoStoreDep) -> ListingText:
+def describe_listing(
+    listing_id: uuid.UUID,
+    store: StoreDep,
+    photos: PhotoStoreDep,
+    body: DescribeRequest | None = None,
+) -> ListingText:
     """Suggest a title and description from the listing's photos; nothing is saved."""
-    return _describe(listing_id, _get_or_404(store, listing_id), photos)
+    doc = _get_or_404(store, listing_id)
+    notes = body.notes if body and "notes" in body.model_fields_set else doc.get("notes")
+    return _describe(listing_id, doc, photos, notes)
 
 
 @router.post("/{listing_id}/analyze", responses=_DESCRIBE_ERRORS)
 def analyze_listing(listing_id: uuid.UUID, store: StoreDep, photos: PhotoStoreDep) -> Listing:
     """Describe the photos and save the result as the title and description (overwrites)."""
-    text = _describe(listing_id, _get_or_404(store, listing_id), photos)
+    doc = _get_or_404(store, listing_id)
+    text = _describe(listing_id, doc, photos, doc.get("notes"))
     store.update_listing(str(listing_id), text.model_dump())
     return _to_listing(_get_or_404(store, listing_id))
 

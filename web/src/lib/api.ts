@@ -110,8 +110,12 @@ export const api = {
     return request(`/listings/${listingId}`, { method: "PATCH", body: JSON.stringify(fields) })
   },
   // Title / description suggested from the saved photos by an LLM; nothing is stored.
-  describeListing(listingId: string): Promise<ListingText> {
-    return request(`/listings/${listingId}/describe`, { method: "POST" })
+  // `notes`: the seller's facts for the LLM (the unsaved draft too, so it needn't be saved first).
+  describeListing(listingId: string, notes: string): Promise<ListingText> {
+    return request(`/listings/${listingId}/describe`, {
+      method: "POST",
+      body: JSON.stringify({ notes }),
+    })
   },
   // Same LLM call, but the result is saved as the title / description (overwrites them).
   analyzeListing(listingId: string): Promise<Listing> {

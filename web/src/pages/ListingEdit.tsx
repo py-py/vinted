@@ -96,10 +96,11 @@ export function ListingEditPage() {
   const photos: DraftPhoto[] = draft ?? listing?.photos ?? []
   const title = fields?.title ?? listing?.title ?? ""
   const description = fields?.description ?? listing?.description ?? ""
+  const notes = fields?.notes ?? listing?.notes ?? ""
   // Not `??`: null in the draft means the ID was cleared.
   const itemId = fields ? (fields.item_id ?? null) : (listing?.item_id ?? null)
   const changeFields = (update: ListingUpdate) =>
-    setFields({ title, description, item_id: itemId, ...update })
+    setFields({ title, description, notes, item_id: itemId, ...update })
   const dirty = draft != null || fields != null
   const changePhotos = (update: (photos: DraftPhoto[]) => DraftPhoto[]) => setDraft(update(photos))
 
@@ -151,7 +152,7 @@ export function ListingEditPage() {
   })
   // Fills the title / description draft; the user reviews it and saves.
   const fillFromPhotos = useMutation({
-    mutationFn: (id: string) => api.describeListing(id),
+    mutationFn: (id: string) => api.describeListing(id, notes),
     onSuccess: (text) => changeFields(text),
     onError: () => toast.error("Couldn't describe the photos"),
   })
@@ -303,17 +304,33 @@ export function ListingEditPage() {
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-lg font-medium">About your item</h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fillFromPhotos.mutate(listingId!)}
-            disabled={!listingId || photos.length === 0 || pending > 0 || fillFromPhotos.isPending}
-          >
-            <Sparkles />
-            {fillFromPhotos.isPending ? "Writing…" : "Fill from photos"}
-          </Button>
+        <h2 className="text-lg font-medium">About your item</h2>
+        <div className="space-y-3 rounded-xl border border-dashed bg-muted/50 p-4">
+          <label htmlFor="listing-notes" className="flex items-center gap-2 text-sm font-medium">
+            <Sparkles className="size-4 text-muted-foreground" />
+            Write with AI
+          </label>
+          <Textarea
+            id="listing-notes"
+            value={notes}
+            onChange={(e) => changeFields({ notes: e.target.value })}
+            placeholder="What the photos can't show, e.g. new with tags, never worn"
+            className="min-h-16 bg-background"
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              AI LLM drafts the title and description from the saved photos and these notes.
+            </p>
+            <Button
+              size="sm"
+              className="ml-auto"
+              onClick={() => fillFromPhotos.mutate(listingId!)}
+              disabled={!listingId || photos.length === 0 || pending > 0 || fillFromPhotos.isPending}
+            >
+              <Sparkles />
+              {fillFromPhotos.isPending ? "Writing…" : "Fill from photos"}
+            </Button>
+          </div>
         </div>
         <Card>
           <CardContent className="grid gap-4 sm:grid-cols-[10rem_1fr] sm:items-start">
@@ -380,9 +397,6 @@ export function ListingEditPage() {
             </div>
           </CardContent>
         </Card>
-        <p className="text-xs text-muted-foreground">
-          Both optional. "Fill from photos" asks DeepSeek for a draft from the saved photos.
-        </p>
       </section>
 
       <div className="flex flex-wrap items-center justify-end gap-3">

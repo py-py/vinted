@@ -147,7 +147,7 @@ def test_describe_sends_stored_photos_in_order(
     photos.download_listing_photo.side_effect = lambda _, pid: {PHOTO_A: b"a"}.get(pid)
     calls = []
 
-    def fake_describe(data: list[bytes]) -> ListingText:
+    def fake_describe(data: list[bytes], notes: str | None) -> ListingText:
         calls.append(data)
         return ListingText(title="Nike", description="Size 27")
 
@@ -157,6 +157,25 @@ def test_describe_sends_stored_photos_in_order(
     assert resp.json() == {"title": "Nike", "description": "Size 27"}
     # PHOTO_B is missing from GCS and is skipped.
     assert calls == [[b"a"]]
+
+
+def test_describe_passes_notes_from_body_or_saved(
+    client: TestClient, store: MagicMock, photos: MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store.get_listing.return_value = {**_listing([_photo(PHOTO_A)]), "notes": "saved"}
+    photos.download_listing_photo.return_value = b"a"
+    notes = []
+
+    def fake_describe(_: list[bytes], n: str | None) -> ListingText:
+        notes.append(n)
+        return ListingText(title="Nike", description="Size 27")
+
+    monkeypatch.setattr(listings, "describe", fake_describe)
+    url = f"/api/listings/{LISTING_ID}/describe"
+    client.post(url, json={"notes": "new, never worn"})
+    client.post(url)
+    client.post(url, json={"notes": None})
+    assert notes == ["new, never worn", "saved", None]
 
 
 def test_describe_without_photos_is_409(client: TestClient, store: MagicMock) -> None:
@@ -169,7 +188,7 @@ def test_describe_llm_failure_is_502(
 ) -> None:
     photos.download_listing_photo.return_value = b"a"
 
-    def broken(_: list[bytes]) -> ListingText:
+    def broken(*_: object) -> ListingText:
         raise RuntimeError("DeepSeek is down")
 
     monkeypatch.setattr(listings, "describe", broken)
@@ -181,7 +200,7 @@ def test_analyze_saves_title_and_description(
 ) -> None:
     photos.download_listing_photo.return_value = b"a"
     monkeypatch.setattr(
-        listings, "describe", lambda _: ListingText(title="Nike", description="Size 27")
+        listings, "describe", lambda *_: ListingText(title="Nike", description="Size 27")
     )
     resp = client.post(f"/api/listings/{LISTING_ID}/analyze")
     assert resp.status_code == 200
@@ -195,7 +214,7 @@ def test_analyze_failure_saves_nothing(
 ) -> None:
     photos.download_listing_photo.return_value = b"a"
 
-    def broken(_: list[bytes]) -> ListingText:
+    def broken(*_: object) -> ListingText:
         raise RuntimeError("DeepSeek is down")
 
     monkeypatch.setattr(listings, "describe", broken)
