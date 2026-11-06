@@ -189,7 +189,7 @@ def test_describe_llm_failure_is_502(
     photos.download_listing_photo.return_value = b"a"
 
     def broken(*_: object) -> ListingText:
-        raise RuntimeError("DeepSeek is down")
+        raise RuntimeError("Gemini is down")
 
     monkeypatch.setattr(listings, "describe", broken)
     assert client.post(f"/api/listings/{LISTING_ID}/describe").status_code == 502
@@ -215,7 +215,7 @@ def test_analyze_failure_saves_nothing(
     photos.download_listing_photo.return_value = b"a"
 
     def broken(*_: object) -> ListingText:
-        raise RuntimeError("DeepSeek is down")
+        raise RuntimeError("Gemini is down")
 
     monkeypatch.setattr(listings, "describe", broken)
     assert client.post(f"/api/listings/{LISTING_ID}/analyze").status_code == 502
