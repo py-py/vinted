@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from functools import cache
 
 from pydantic import BaseModel
 from pydantic import Field
@@ -59,16 +60,17 @@ def resolve(name: str) -> tuple[str, ModelSettings]:
     return f"{name}:{model}", {**BASE_SETTINGS, **provider.settings}
 
 
-LISTING_PROVIDER = os.environ["LISTING_PROVIDER"]
-MODEL, MODEL_SETTINGS = resolve(LISTING_PROVIDER)
-
-agent = Agent(
-    MODEL,
-    output_type=ListingText,
-    instructions=(PROMPTS_DIR / "listing.md").read_text(),
-    model_settings=MODEL_SETTINGS,
-    defer_model_check=True,
-)
+@cache
+def get_agent() -> Agent[None, ListingText]:
+    """The listing agent, built on first use so importing the app needs no LLM settings."""
+    model, settings = resolve(os.environ["LISTING_PROVIDER"])
+    return Agent(
+        model,
+        output_type=ListingText,
+        instructions=(PROMPTS_DIR / "listing.md").read_text(),
+        model_settings=settings,
+        defer_model_check=True,
+    )
 
 
 def describe(photos: list[bytes], notes: str | None = None) -> ListingText:
@@ -80,4 +82,4 @@ def describe(photos: list[bytes], notes: str | None = None) -> ListingText:
     prompt = "Write the listing for the item in these photos. The first photo is the main one."
     if notes and notes.strip():
         prompt += f"\n\nSeller's notes about the item (trust them):\n{notes.strip()}"
-    return agent.run_sync([prompt, *images]).output
+    return get_agent().run_sync([prompt, *images]).output
