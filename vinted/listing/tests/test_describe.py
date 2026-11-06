@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from pydantic_ai import BinaryContent
 from pydantic_ai import capture_run_messages
 from pydantic_ai.messages import UserPromptPart
@@ -9,6 +10,7 @@ from ..describe import MAX_PHOTOS
 from ..describe import ListingText
 from ..describe import agent
 from ..describe import describe
+from ..describe import resolve
 
 OUTPUT = {"title": "Sandały Nike Sunray Protect, r. 27", "description": "Czarne, lekko noszone."}
 
@@ -39,3 +41,18 @@ def test_describe_adds_notes_to_prompt() -> None:
             describe([b"jpeg"], notes="  new, never worn ")
     parts = [p for m in messages for p in getattr(m, "parts", []) if isinstance(p, UserPromptPart)]
     assert "new, never worn" in parts[0].content[0]
+
+
+def test_resolve_reads_provider_model_and_quirks(monkeypatch):
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-2.5-flash")
+    monkeypatch.setenv("DEEPSEEK_MODEL", "deepseek-pro")
+    assert resolve("google") == ("google:gemini-2.5-flash", {"temperature": 0.2})
+    assert resolve("deepseek") == (
+        "deepseek:deepseek-pro",
+        {"temperature": 0.2, "extra_body": {"thinking": {"type": "disabled"}}},
+    )
+
+
+def test_resolve_rejects_unknown_provider():
+    with pytest.raises(ValueError, match="LISTING_PROVIDER"):
+        resolve("openai")
