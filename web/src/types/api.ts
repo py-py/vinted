@@ -292,6 +292,17 @@ export interface components {
          * @enum {string}
          */
         Account: "py-py" | "julia.wal802";
+        /** AccountSales */
+        AccountSales: {
+            account: components["schemas"]["Account"];
+            /** Sold Pln */
+            sold_pln: number;
+            /**
+             * Sold Items
+             * @description Items with a sell price set
+             */
+            sold_items: number;
+        };
         /** AccountUpdate */
         AccountUpdate: {
             account: components["schemas"]["Account"];
@@ -712,6 +723,11 @@ export interface components {
              * @description Items with a sell price set
              */
             sold_items: number;
+            /**
+             * Sold By Account
+             * @description Sales split, in `Account` order
+             */
+            sold_by_account: components["schemas"]["AccountSales"][];
             /** By Status */
             by_status: {
                 [key: string]: number;

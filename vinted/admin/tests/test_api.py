@@ -304,6 +304,10 @@ def test_stats(client: TestClient) -> None:
     assert body["spent_pln"] == 170.0
     assert body["sold_pln"] == 45.5
     assert body["sold_items"] == 1
+    assert body["sold_by_account"] == [
+        {"account": "py-py", "sold_pln": 0.0, "sold_items": 0},
+        {"account": "julia.wal802", "sold_pln": 45.5, "sold_items": 1},
+    ]
     assert body["by_status"] == {"sold": 1, "none": 2}
     assert body["by_month"] == [
         {"month": "2026-09", "purchases": 1, "items": 2, "spent_pln": 120.0},

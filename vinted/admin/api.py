@@ -169,12 +169,19 @@ class MonthStats(BaseModel):
     spent_pln: float
 
 
+class AccountSales(BaseModel):
+    account: Account
+    sold_pln: float
+    sold_items: int = Field(description="Items with a sell price set")
+
+
 class Stats(BaseModel):
     purchases: int
     items: int
     spent_pln: float
     sold_pln: float
     sold_items: int = Field(description="Items with a sell price set")
+    sold_by_account: list[AccountSales] = Field(description="Sales split, in `Account` order")
     by_status: dict[SaleStatus, int]
     by_month: list[MonthStats]
 
@@ -414,6 +421,14 @@ def get_stats(store: StoreDep) -> Stats:
         spent_pln=sum(i.price_pln or 0.0 for i in items),
         sold_pln=sum(i.sell_price or 0.0 for i in sold),
         sold_items=len(sold),
+        sold_by_account=[
+            AccountSales(
+                account=account,
+                sold_pln=sum(i.sell_price or 0.0 for i in sold if i.account == account),
+                sold_items=sum(1 for i in sold if i.account == account),
+            )
+            for account in Account
+        ],
         by_status=Counter(i.status for i in items),
         by_month=[by_month[m] for m in sorted(by_month)],
     )
