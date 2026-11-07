@@ -294,8 +294,7 @@ export interface components {
         Account: "py-py" | "julia.wal802";
         /** AccountUpdate */
         AccountUpdate: {
-            /** @description null clears it */
-            account: components["schemas"]["Account"] | null;
+            account: components["schemas"]["Account"];
         };
         /** AccountUpdateResult */
         AccountUpdateResult: {
@@ -303,7 +302,7 @@ export interface components {
             tx_id: string;
             /** Item Id */
             item_id: string;
-            account: components["schemas"]["Account"] | null;
+            account: components["schemas"]["Account"];
         };
         /** Body_replace_listing_photo_api_listings__listing_id__photos__photo_id__put */
         Body_replace_listing_photo_api_listings__listing_id__photos__photo_id__put: {
@@ -389,10 +388,18 @@ export interface components {
              * @description `SaleItem.id` it was resold as
              */
             sale_item_id?: number | null;
+            /**
+             * Benefit Pln
+             * @description sell_price - price_pln, for sold items with both set
+             */
+            benefit_pln?: number | null;
             /** @default none */
             status: components["schemas"]["SaleStatus"];
-            /** @description Our account it belongs to */
-            account?: components["schemas"]["Account"] | null;
+            /**
+             * @description Our account it belongs to
+             * @default py-py
+             */
+            account: components["schemas"]["Account"];
             /**
              * Order Date
              * @default
@@ -410,6 +417,27 @@ export interface components {
              * @default
              */
             seller_country: string;
+        };
+        /** ItemsPage */
+        ItemsPage: {
+            /** Items */
+            items: components["schemas"]["Item"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Size */
+            size: number;
+            /**
+             * Benefit Pln
+             * @description Sum of `Item.benefit_pln` over all matching items
+             */
+            benefit_pln: number;
+            /**
+             * Benefit Items
+             * @description Matching items that have a benefit
+             */
+            benefit_items: number;
         };
         /** Listing */
         Listing: {
@@ -500,17 +528,6 @@ export interface components {
             items: number;
             /** Spent Pln */
             spent_pln: number;
-        };
-        /** Page[Item] */
-        Page_Item_: {
-            /** Items */
-            items: components["schemas"]["Item"][];
-            /** Total */
-            total: number;
-            /** Page */
-            page: number;
-            /** Size */
-            size: number;
         };
         /** PhotoOrderUpdate */
         PhotoOrderUpdate: {
@@ -834,7 +851,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Page_Item_"];
+                    "application/json": components["schemas"]["ItemsPage"];
                 };
             };
             /** @description Validation Error */

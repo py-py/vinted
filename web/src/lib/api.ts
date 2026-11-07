@@ -5,7 +5,7 @@ export type Item = Schemas["Item"]
 export type Purchase = Schemas["Purchase"]
 export type Sale = Schemas["Sale"]
 export type SaleItem = Schemas["SaleItem"]
-export type ItemsPage = Schemas["Page_Item_"]
+export type ItemsPage = Schemas["ItemsPage"]
 export type SaleStatus = Schemas["SaleStatus"]
 export type Account = Schemas["Account"]
 export const ACCOUNTS: Account[] = ["py-py", "julia.wal802"]
@@ -95,7 +95,7 @@ export const api = {
       body: JSON.stringify({ sale_item_id: saleItemId }),
     })
   },
-  setAccount(txId: string, itemId: number, account: Account | null) {
+  setAccount(txId: string, itemId: number, account: Account) {
     return request(`/items/${txId}/${itemId}/account`, {
       method: "PATCH",
       body: JSON.stringify({ account }),

@@ -100,7 +100,7 @@ export function ItemDetails({ item, onClose }: { item: Item; onClose?: () => voi
               <SellPriceInput item={item} />
             </div>
           </Field>
-          <Field label="Account">
+          <Field label="Seller Account">
             <div className="w-full">
               <AccountSelect item={item} />
             </div>

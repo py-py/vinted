@@ -17,7 +17,9 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useUrlParams } from "@/hooks/use-url-params"
 import { ACCOUNTS, api, type Account, type SaleStatus } from "@/lib/api"
+import { formatMoney } from "@/lib/format"
 import { STATUS_ORDER, STATUSES } from "@/lib/status"
+import { cn } from "@/lib/utils"
 
 const PAGE_SIZE = 40
 
@@ -55,7 +57,29 @@ export function ItemsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Items"
-        description={data ? `${data.total} items` : "Purchased items and their sale status"}
+        description={
+          data ? (
+            <>
+              {data.total} items
+              {data.benefit_items > 0 && (
+                <>
+                  {" · Benefits "}
+                  <span
+                    className={cn(
+                      "font-medium tabular-nums",
+                      data.benefit_pln < 0 ? "text-destructive" : "text-green-600",
+                    )}
+                  >
+                    {formatMoney(data.benefit_pln)}
+                  </span>
+                  {` from ${data.benefit_items} sold`}
+                </>
+              )}
+            </>
+          ) : (
+            "Purchased items and their sale status"
+          )
+        }
       />
 
       <div className="flex flex-col gap-3">
@@ -141,7 +165,7 @@ export function ItemsPage() {
                 <TableHead className="text-right">Paid</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Sell price</TableHead>
-                <TableHead>Account</TableHead>
+                <TableHead>Seller Account</TableHead>
                 <TableHead className="text-right">Benefits</TableHead>
               </TableRow>
             </TableHeader>

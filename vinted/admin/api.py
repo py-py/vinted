@@ -58,8 +58,11 @@ class Item(BaseModel):
     price_pln: float | None = None
     sell_price: float | None = Field(default=None, description="Resale price, PLN")
     sale_item_id: int | None = Field(default=None, description="`SaleItem.id` it was resold as")
+    benefit_pln: float | None = Field(
+        default=None, description="sell_price - price_pln, for sold items with both set"
+    )
     status: SaleStatus = SaleStatus.NONE
-    account: Account | None = Field(default=None, description="Our account it belongs to")
+    account: Account = Field(default=Account.RUSLAN, description="Our account it belongs to")
     order_date: str = ""
     seller_id: int | None = None
     seller_login: str = ""
@@ -138,13 +141,13 @@ class SaleLinkUpdateResult(BaseModel):
 
 
 class AccountUpdate(BaseModel):
-    account: Account | None = Field(description="null clears it")
+    account: Account
 
 
 class AccountUpdateResult(BaseModel):
     tx_id: str
     item_id: str
-    account: Account | None
+    account: Account
 
 
 class Page[T](BaseModel):
@@ -152,6 +155,11 @@ class Page[T](BaseModel):
     total: int
     page: int
     size: int
+
+
+class ItemsPage(Page[Item]):
+    benefit_pln: float = Field(description="Sum of `Item.benefit_pln` over all matching items")
+    benefit_items: int = Field(description="Matching items that have a benefit")
 
 
 class MonthStats(BaseModel):
@@ -187,6 +195,8 @@ def _stored_photo_url(item_id: int, url: str) -> str:
 def _to_item(purchase: dict, item: dict) -> Item:
     raw_status = item.get("_sale_status")
     raw_account = item.get("_account")
+    status = SaleStatus(raw_status) if raw_status in SaleStatus else SaleStatus.NONE
+    sell_price, price_pln = item.get("_sell_price"), item.get("price_pln")
     photo_urls = _photo_urls(item)
     return Item(
         id=item["id"],
@@ -200,11 +210,16 @@ def _to_item(purchase: dict, item: dict) -> Item:
         paid_price=item.get("paid_price"),
         paid_estimated=item.get("paid_estimated", False),
         currency=item.get("currency") or "",
-        price_pln=item.get("price_pln"),
-        sell_price=item.get("_sell_price"),
+        price_pln=price_pln,
+        sell_price=sell_price,
         sale_item_id=item.get("_sale_item_id"),
-        status=SaleStatus(raw_status) if raw_status in SaleStatus else SaleStatus.NONE,
-        account=Account(raw_account) if raw_account in Account else None,
+        benefit_pln=(
+            sell_price - price_pln
+            if status == SaleStatus.SOLD and sell_price is not None and price_pln is not None
+            else None
+        ),
+        status=status,
+        account=Account(raw_account) if raw_account in Account else Account.RUSLAN,
         order_date=purchase.get("order_date") or "",
         seller_id=purchase.get("seller_id"),
         seller_login=purchase.get("seller_login") or "",
@@ -304,7 +319,7 @@ def list_items(
     account: Annotated[list[Account] | None, Query(description="Keep only these")] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     size: Annotated[int, Query(ge=1, le=200)] = 50,
-) -> Page[Item]:
+) -> ItemsPage:
     items = [i for p in map(_to_purchase, load_purchases(store)) for i in p.items]
     if status:
         items = [i for i in items if i.status in status]
@@ -315,7 +330,15 @@ def list_items(
     if account:
         items = [i for i in items if i.account in account]
     start = (page - 1) * size
-    return Page(items=items[start : start + size], total=len(items), page=page, size=size)
+    benefits = [i.benefit_pln for i in items if i.benefit_pln is not None]
+    return ItemsPage(
+        items=items[start : start + size],
+        total=len(items),
+        page=page,
+        size=size,
+        benefit_pln=sum(benefits),
+        benefit_items=len(benefits),
+    )
 
 
 @router.patch("/items/{tx_id}/{item_id}")

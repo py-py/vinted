@@ -214,8 +214,8 @@ def test_update_item_sell_price(client: TestClient, store: MagicMock, price: flo
     store.set_item_sell_price.assert_called_once_with("1", "12", price)
 
 
-@pytest.mark.parametrize("account", ["py-py", None])
-def test_update_item_account(client: TestClient, store: MagicMock, account: str | None) -> None:
+@pytest.mark.parametrize("account", ["py-py", "julia.wal802"])
+def test_update_item_account(client: TestClient, store: MagicMock, account: str) -> None:
     response = client.patch("/api/items/1/12/account", json={"account": account})
     assert response.status_code == 200
     assert response.json() == {"tx_id": "1", "item_id": "12", "account": account}
@@ -223,16 +223,19 @@ def test_update_item_account(client: TestClient, store: MagicMock, account: str 
 
 
 def test_update_item_account_rejects_unknown(client: TestClient) -> None:
-    response = client.patch("/api/items/1/12/account", json={"account": "bob"})
-    assert response.status_code == 422
+    for account in ("bob", None):
+        response = client.patch("/api/items/1/12/account", json={"account": account})
+        assert response.status_code == 422
 
 
 def test_items_account(client: TestClient) -> None:
     body = client.get("/api/items").json()
     accounts = {i["id"]: i["account"] for i in body["items"]}
-    assert accounts == {11: "julia.wal802", 12: None, 21: None}
+    assert accounts == {11: "julia.wal802", 12: "py-py", 21: "py-py"}
     body = client.get("/api/items", params={"account": "julia.wal802"}).json()
     assert [i["id"] for i in body["items"]] == [11]
+    body = client.get("/api/items", params={"account": "py-py"}).json()
+    assert [i["id"] for i in body["items"]] == [21, 12]
 
 
 def test_update_item_sell_price_rejects_negative(client: TestClient) -> None:
@@ -250,6 +253,17 @@ def test_items_sell_price(client: TestClient) -> None:
     by_id = {i["id"]: i for i in client.get("/api/items").json()["items"]}
     assert by_id[11]["sell_price"] == 45.5
     assert by_id[12]["sell_price"] is None
+
+
+def test_items_benefit(client: TestClient) -> None:
+    body = client.get("/api/items").json()
+    by_id = {i["id"]: i for i in body["items"]}
+    assert by_id[11]["benefit_pln"] == pytest.approx(45.5 - by_id[11]["price_pln"])
+    assert by_id[12]["benefit_pln"] is None
+    assert body["benefit_pln"] == pytest.approx(by_id[11]["benefit_pln"])
+    assert body["benefit_items"] == 1
+    body = client.get("/api/items", params={"account": "py-py"}).json()
+    assert (body["benefit_pln"], body["benefit_items"]) == (0, 0)
 
 
 def test_items_sale_link(client: TestClient) -> None:
