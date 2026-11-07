@@ -61,7 +61,7 @@ def resolve(name: str) -> tuple[str, ModelSettings]:
 
 
 @cache
-def get_agent() -> Agent[None, ListingText]:
+def get_agent() -> Agent:
     """The listing agent, built on first use so importing the app needs no LLM settings."""
     model, settings = resolve(os.environ["LISTING_PROVIDER"])
     return Agent(
@@ -81,5 +81,10 @@ def describe(photos: list[bytes], notes: str | None = None) -> ListingText:
     images = [BinaryContent(data, media_type="image/jpeg") for data in photos[:MAX_PHOTOS]]
     prompt = "Write the listing for the item in these photos. The first photo is the main one."
     if notes and notes.strip():
-        prompt += f"\n\nSeller's notes about the item (trust them):\n{notes.strip()}"
+        prompt += (
+            "\n\n"
+            "Seller's notes about the item "
+            "(very important: trust them and reflect every fact in the listing):"
+            f"\n{notes.strip()}"
+        )
     return get_agent().run_sync([prompt, *images]).output
