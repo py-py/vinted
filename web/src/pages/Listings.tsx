@@ -185,7 +185,7 @@ function ListingRow({ listing }: { listing: Listing }) {
             <Button
               variant="outline"
               size="sm"
-              title="Send the photos to DeepSeek and save the title and description"
+              title="Send the photos to the AI LLM and save the title and description"
               disabled={listing.photos.length === 0 || analyze.isPending}
               onClick={() => analyze.mutate()}
             >
