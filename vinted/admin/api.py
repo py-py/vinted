@@ -20,6 +20,7 @@ from fastapi import Response
 from pydantic import BaseModel
 from pydantic import Field
 
+from ..account.purchases.models import Account
 from ..account.purchases.models import SaleStatus
 from ..storage.gcs import extract_token
 from .deps import PhotoStoreDep
@@ -58,6 +59,7 @@ class Item(BaseModel):
     sell_price: float | None = Field(default=None, description="Resale price, PLN")
     sale_item_id: int | None = Field(default=None, description="`SaleItem.id` it was resold as")
     status: SaleStatus = SaleStatus.NONE
+    account: Account | None = Field(default=None, description="Our account it belongs to")
     order_date: str = ""
     seller_id: int | None = None
     seller_login: str = ""
@@ -135,6 +137,16 @@ class SaleLinkUpdateResult(BaseModel):
     sale_item_id: int | None
 
 
+class AccountUpdate(BaseModel):
+    account: Account | None = Field(description="null clears it")
+
+
+class AccountUpdateResult(BaseModel):
+    tx_id: str
+    item_id: str
+    account: Account | None
+
+
 class Page[T](BaseModel):
     items: list[T]
     total: int
@@ -174,6 +186,7 @@ def _stored_photo_url(item_id: int, url: str) -> str:
 
 def _to_item(purchase: dict, item: dict) -> Item:
     raw_status = item.get("_sale_status")
+    raw_account = item.get("_account")
     photo_urls = _photo_urls(item)
     return Item(
         id=item["id"],
@@ -191,6 +204,7 @@ def _to_item(purchase: dict, item: dict) -> Item:
         sell_price=item.get("_sell_price"),
         sale_item_id=item.get("_sale_item_id"),
         status=SaleStatus(raw_status) if raw_status in SaleStatus else SaleStatus.NONE,
+        account=Account(raw_account) if raw_account in Account else None,
         order_date=purchase.get("order_date") or "",
         seller_id=purchase.get("seller_id"),
         seller_login=purchase.get("seller_login") or "",
@@ -287,6 +301,7 @@ def list_items(
     has_sell_price: Annotated[
         bool | None, Query(description="Keep only items with (true) or without (false) one")
     ] = None,
+    account: Annotated[list[Account] | None, Query(description="Keep only these")] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     size: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> Page[Item]:
@@ -297,6 +312,8 @@ def list_items(
         items = [i for i in items if _matches(q, i.title, i.seller_login)]
     if has_sell_price is not None:
         items = [i for i in items if (i.sell_price is not None) == has_sell_price]
+    if account:
+        items = [i for i in items if i.account in account]
     start = (page - 1) * size
     return Page(items=items[start : start + size], total=len(items), page=page, size=size)
 
@@ -337,6 +354,17 @@ def update_item_sale(
         raise HTTPException(status_code=404, detail=f"Sale item {update.sale_item_id} not found")
     store.set_item_sale_item_id(tx_id, item_id, update.sale_item_id)
     return SaleLinkUpdateResult(tx_id=tx_id, item_id=item_id, sale_item_id=update.sale_item_id)
+
+
+@router.patch("/items/{tx_id}/{item_id}/account")
+def update_item_account(
+    tx_id: Annotated[str, Path(description="Purchase (transaction) id")],
+    item_id: Annotated[str, Path(description="Item id within the purchase")],
+    update: AccountUpdate,
+    store: StoreDep,
+) -> AccountUpdateResult:
+    store.set_item_account(tx_id, item_id, update.account)
+    return AccountUpdateResult(tx_id=tx_id, item_id=item_id, account=update.account)
 
 
 @router.get("/stats")

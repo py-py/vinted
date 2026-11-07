@@ -16,6 +16,13 @@ class SaleStatus(StrEnum):
     TRASH = "trash"
 
 
+class Account(StrEnum):
+    """Our Vinted account an item is assigned to (custom field `_account`)."""
+
+    RUSLAN = "py-py"
+    JULIA = "julia.wal802"
+
+
 class CurrencyConversion(BaseModel):
     seller_currency: str
     buyer_currency: str

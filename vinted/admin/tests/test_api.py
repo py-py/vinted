@@ -42,6 +42,7 @@ ITEMS = {
             "_sale_status": "sold",
             "_sell_price": 45.5,
             "_sale_item_id": 51,
+            "_account": "julia.wal802",
         },
         {"id": 12, "title": "NB 9060", "paid_price": 90.0, "photo_url": "http://p/12.jpg"},
     ],
@@ -211,6 +212,27 @@ def test_update_item_sell_price(client: TestClient, store: MagicMock, price: flo
     assert response.status_code == 200
     assert response.json() == {"tx_id": "1", "item_id": "12", "sell_price": price}
     store.set_item_sell_price.assert_called_once_with("1", "12", price)
+
+
+@pytest.mark.parametrize("account", ["py-py", None])
+def test_update_item_account(client: TestClient, store: MagicMock, account: str | None) -> None:
+    response = client.patch("/api/items/1/12/account", json={"account": account})
+    assert response.status_code == 200
+    assert response.json() == {"tx_id": "1", "item_id": "12", "account": account}
+    store.set_item_account.assert_called_once_with("1", "12", account)
+
+
+def test_update_item_account_rejects_unknown(client: TestClient) -> None:
+    response = client.patch("/api/items/1/12/account", json={"account": "bob"})
+    assert response.status_code == 422
+
+
+def test_items_account(client: TestClient) -> None:
+    body = client.get("/api/items").json()
+    accounts = {i["id"]: i["account"] for i in body["items"]}
+    assert accounts == {11: "julia.wal802", 12: None, 21: None}
+    body = client.get("/api/items", params={"account": "julia.wal802"}).json()
+    assert [i["id"] for i in body["items"]] == [11]
 
 
 def test_update_item_sell_price_rejects_negative(client: TestClient) -> None:

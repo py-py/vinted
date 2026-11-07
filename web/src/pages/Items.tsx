@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useUrlParams } from "@/hooks/use-url-params"
-import { api, type SaleStatus } from "@/lib/api"
+import { ACCOUNTS, api, type Account, type SaleStatus } from "@/lib/api"
 import { STATUS_ORDER, STATUSES } from "@/lib/status"
 
 const PAGE_SIZE = 40
@@ -34,13 +34,15 @@ export function ItemsPage() {
   const status = params.getAll("status") as SaleStatus[]
   const sell = params.get("sell") as SellPriceFilter | null
   const hasSellPrice = sell ? SELL_PRICE_FILTERS[sell]?.hasSellPrice : undefined
+  const account = params.getAll("account") as Account[]
   const page = Number(params.get("page")) || 1
   const selectedKey = params.get("item")
   const deferredQ = useDeferredValue(q)
 
   const { data, isPending, isError, error } = useQuery({
-    queryKey: ["items", { status, q: deferredQ, hasSellPrice, page }],
-    queryFn: () => api.items({ status, q: deferredQ, hasSellPrice, page, size: PAGE_SIZE }),
+    queryKey: ["items", { status, q: deferredQ, hasSellPrice, account, page }],
+    queryFn: () =>
+      api.items({ status, q: deferredQ, hasSellPrice, account, page, size: PAGE_SIZE }),
     placeholderData: keepPreviousData,
   })
   const pages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
@@ -100,6 +102,25 @@ export function ItemsPage() {
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+        <ToggleGroup
+          type="multiple"
+          variant="outline"
+          size="sm"
+          spacing={2}
+          className="flex-wrap"
+          value={account}
+          onValueChange={(value) => update({ account: value })}
+        >
+          {ACCOUNTS.map((a) => (
+            <ToggleGroupItem
+              key={a}
+              value={a}
+              className="rounded-full data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            >
+              {a}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </div>
 
       {isError ? (
@@ -120,6 +141,7 @@ export function ItemsPage() {
                 <TableHead className="text-right">Paid</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Sell price</TableHead>
+                <TableHead>Account</TableHead>
                 <TableHead className="text-right">Benefits</TableHead>
               </TableRow>
             </TableHeader>
