@@ -103,6 +103,10 @@ export const api = {
   listing(listingId: string): Promise<Listing> {
     return request(`/listings/${listingId}`)
   },
+  // Every tag used on any listing, for autocomplete.
+  listingTags(): Promise<string[]> {
+    return request("/listings/tags")
+  },
   createListing(): Promise<Listing> {
     return request("/listings", { method: "POST" })
   },

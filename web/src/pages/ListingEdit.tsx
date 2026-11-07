@@ -8,6 +8,7 @@ import { CopyButton } from "@/components/shared/CopyButton"
 import { ListingPhotoGrid } from "@/components/shared/ListingPhotoGrid"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { PhotoGallery } from "@/components/shared/PhotoGallery"
+import { TagInput } from "@/components/shared/TagInput"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -93,14 +94,16 @@ export function ListingEditPage() {
     queryFn: () => api.listing(listingId!),
     enabled: !!listingId,
   })
+  const { data: allTags } = useQuery({ queryKey: ["listings", "tags"], queryFn: api.listingTags })
   const photos: DraftPhoto[] = draft ?? listing?.photos ?? []
   const title = fields?.title ?? listing?.title ?? ""
   const description = fields?.description ?? listing?.description ?? ""
   const notes = fields?.notes ?? listing?.notes ?? ""
   // Not `??`: null in the draft means the ID was cleared.
   const itemId = fields ? (fields.item_id ?? null) : (listing?.item_id ?? null)
+  const tags = fields ? (fields.tags ?? []) : (listing?.tags ?? [])
   const changeFields = (update: ListingUpdate) =>
-    setFields({ title, description, notes, item_id: itemId, ...update })
+    setFields({ title, description, notes, item_id: itemId, tags, ...update })
   const dirty = draft != null || fields != null
   const changePhotos = (update: (photos: DraftPhoto[]) => DraftPhoto[]) => setDraft(update(photos))
 
@@ -364,6 +367,16 @@ export function ListingEditPage() {
                 className="absolute top-1.5 right-1.5"
               />
             </div>
+            <label htmlFor="listing-tags" className="text-sm font-medium sm:pt-2">
+              Tags
+            </label>
+            <TagInput
+              id="listing-tags"
+              value={tags}
+              onChange={(tags) => changeFields({ tags })}
+              suggestions={allTags}
+              placeholder="Pick or type a tag, Enter to add"
+            />
             <label htmlFor="listing-item-id" className="text-sm font-medium sm:pt-2">
               Vinted item ID
             </label>

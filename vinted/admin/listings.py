@@ -64,6 +64,7 @@ class Listing(BaseModel):
         default=None,
         description="Seller's notes for the LLM, e.g. 'new, never worn'",
     )
+    tags: list[str] = Field(description="Free-form labels, like Jira's")
     photos: list[ListingPhoto]
 
 
@@ -74,6 +75,10 @@ class ListingUpdate(BaseModel):
     description: str | None = None
     item_id: int | None = Field(default=None, gt=0)
     notes: str | None = None
+    tags: list[str] | None = Field(
+        default=None,
+        description="Replaces all tags; trimmed, blanks and duplicates dropped",
+    )
 
 
 class DescribeRequest(BaseModel):
@@ -111,10 +116,23 @@ def _to_listing(doc: dict) -> Listing:
         description=doc.get("description"),
         item_id=doc.get("item_id"),
         notes=doc.get("notes"),
+        tags=doc.get("tags") or [],
         created_at=doc["created_at"],
         updated_at=doc.get("updated_at") or doc["created_at"],
         photos=[_to_photo(doc["id"], p) for p in doc.get("photos") or []],
     )
+
+
+def _clean_tags(tags: list[str] | None) -> list[str]:
+    """Trim and collapse whitespace; drop blanks and case-insensitive duplicates, keep order."""
+    seen: set[str] = set()
+    cleaned = []
+    for tag in tags or []:
+        tag = " ".join(tag.split())
+        if tag and tag.casefold() not in seen:
+            seen.add(tag.casefold())
+            cleaned.append(tag)
+    return cleaned
 
 
 def _store_photo(listing_id: str, file: UploadFile, photos: PhotoStoreDep) -> dict:
@@ -156,6 +174,16 @@ def list_listings(store: StoreDep) -> list[Listing]:
     return [_to_listing(d) for d in store.list_listings()]
 
 
+@router.get("/tags")
+def list_listing_tags(store: StoreDep) -> list[str]:
+    """Every tag used on any listing, for autocomplete; sorted case-insensitively."""
+    tags: dict[str, str] = {}
+    for doc in store.list_listings():
+        for tag in doc.get("tags") or []:
+            tags.setdefault(tag.casefold(), tag)
+    return sorted(tags.values(), key=str.casefold)
+
+
 @router.post("", status_code=201)
 def create_listing(store: StoreDep) -> Listing:
     return _to_listing(store.create_listing())
@@ -173,6 +201,8 @@ def update_listing(listing_id: uuid.UUID, update: ListingUpdate, store: StoreDep
     for text in ("title", "description", "notes"):
         if text in fields:
             fields[text] = (fields[text] or "").strip() or None
+    if "tags" in fields:
+        fields["tags"] = _clean_tags(fields["tags"])
     if fields:
         store.update_listing(str(listing_id), fields)
     return _to_listing(_get_or_404(store, listing_id))

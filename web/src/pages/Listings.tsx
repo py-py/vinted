@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import { PageHeader } from "@/components/shared/PageHeader"
 import { PhotoGallery } from "@/components/shared/PhotoGallery"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -155,6 +156,15 @@ function ListingRow({ listing }: { listing: Listing }) {
             {title}
           </Link>
           <div className="font-mono text-xs text-muted-foreground">{listing.id.slice(0, 8)}</div>
+          {listing.tags.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {listing.tags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="max-w-full">
+                  <span className="truncate">{tag}</span>
+                </Badge>
+              ))}
+            </div>
+          )}
         </TableCell>
         <TableCell className="whitespace-nowrap tabular-nums">
           {listing.item_id ? (

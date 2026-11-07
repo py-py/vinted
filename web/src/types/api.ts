@@ -161,6 +161,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/listings/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Listing Tags
+         * @description Every tag used on any listing, for autocomplete; sorted case-insensitively.
+         */
+        get: operations["list_listing_tags_api_listings_tags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/listings/{listing_id}": {
         parameters: {
             query?: never;
@@ -401,6 +421,11 @@ export interface components {
              * @description Seller's notes for the LLM, e.g. 'new, never worn'
              */
             notes?: string | null;
+            /**
+             * Tags
+             * @description Free-form labels, like Jira's
+             */
+            tags: string[];
             /** Photos */
             photos: components["schemas"]["ListingPhoto"][];
         };
@@ -451,6 +476,11 @@ export interface components {
             item_id?: number | null;
             /** Notes */
             notes?: string | null;
+            /**
+             * Tags
+             * @description Replaces all tags; trimmed, blanks and duplicates dropped
+             */
+            tags?: string[] | null;
         };
         /** MonthStats */
         MonthStats: {
@@ -1017,6 +1047,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Listing"];
+                };
+            };
+        };
+    };
+    list_listing_tags_api_listings_tags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
                 };
             };
         };

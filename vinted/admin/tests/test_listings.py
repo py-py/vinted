@@ -130,6 +130,33 @@ def test_listing_returns_item_id(client: TestClient, store: MagicMock) -> None:
     assert client.get(f"/api/listings/{LISTING_ID}").json()["item_id"] == 4567890123
 
 
+def test_update_listing_cleans_tags(client: TestClient, store: MagicMock) -> None:
+    client.patch(
+        f"/api/listings/{LISTING_ID}", json={"tags": [" Nike ", "kids  shoes", "nike", " "]}
+    )
+    store.update_listing.assert_called_once_with(LISTING_ID, {"tags": ["Nike", "kids shoes"]})
+
+
+def test_update_listing_clears_tags_with_null(client: TestClient, store: MagicMock) -> None:
+    client.patch(f"/api/listings/{LISTING_ID}", json={"tags": None})
+    store.update_listing.assert_called_once_with(LISTING_ID, {"tags": []})
+
+
+def test_listing_returns_tags(client: TestClient, store: MagicMock) -> None:
+    assert client.get(f"/api/listings/{LISTING_ID}").json()["tags"] == []
+    store.get_listing.return_value = {**_listing(), "tags": ["Nike"]}
+    assert client.get(f"/api/listings/{LISTING_ID}").json()["tags"] == ["Nike"]
+
+
+def test_list_listing_tags_is_distinct_and_sorted(client: TestClient, store: MagicMock) -> None:
+    store.list_listings.return_value = [
+        {**_listing(), "tags": ["nike", "Summer"]},
+        {**_listing(), "tags": ["Nike", "adidas"]},
+        _listing(),
+    ]
+    assert client.get("/api/listings/tags").json() == ["adidas", "nike", "Summer"]
+
+
 def test_update_missing_listing_is_404(client: TestClient, store: MagicMock) -> None:
     store.get_listing.return_value = None
     assert client.patch(f"/api/listings/{LISTING_ID}", json={"title": "x"}).status_code == 404
