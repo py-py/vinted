@@ -5,8 +5,10 @@ export type Item = Schemas["Item"]
 export type Purchase = Schemas["Purchase"]
 export type Sale = Schemas["Sale"]
 export type SaleItem = Schemas["SaleItem"]
-export type ItemsPage = Schemas["Page_Item_"]
+export type ItemsPage = Schemas["ItemsPage"]
 export type SaleStatus = Schemas["SaleStatus"]
+export type Account = Schemas["Account"]
+export const ACCOUNTS: Account[] = ["py-py", "julia.wal802"]
 export type Stats = Schemas["Stats"]
 export type Listing = Schemas["Listing"]
 export type ListingPhoto = Schemas["ListingPhoto"]
@@ -40,6 +42,7 @@ export type ItemsQuery = {
   status?: SaleStatus[]
   q?: string
   hasSellPrice?: boolean
+  account?: Account[]
   page?: number
   size?: number
 }
@@ -53,9 +56,10 @@ export type PurchasesQuery = {
 export type SalesQuery = PurchasesQuery
 
 export const api = {
-  items({ status = [], q, hasSellPrice, page, size }: ItemsQuery): Promise<ItemsPage> {
+  items({ status = [], q, hasSellPrice, account = [], page, size }: ItemsQuery): Promise<ItemsPage> {
     const params = new URLSearchParams()
     status.forEach((s) => params.append("status", s))
+    account.forEach((a) => params.append("account", a))
     if (q) params.set("q", q)
     if (hasSellPrice != null) params.set("has_sell_price", String(hasSellPrice))
     if (page) params.set("page", String(page))
@@ -89,6 +93,12 @@ export const api = {
     return request(`/items/${txId}/${itemId}/sale`, {
       method: "PATCH",
       body: JSON.stringify({ sale_item_id: saleItemId }),
+    })
+  },
+  setAccount(txId: string, itemId: number, account: Account) {
+    return request(`/items/${txId}/${itemId}/account`, {
+      method: "PATCH",
+      body: JSON.stringify({ account }),
     })
   },
   setSellPrice(txId: string, itemId: number, sellPrice: number | null) {

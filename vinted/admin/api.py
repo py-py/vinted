@@ -20,6 +20,7 @@ from fastapi import Response
 from pydantic import BaseModel
 from pydantic import Field
 
+from ..account.purchases.models import Account
 from ..account.purchases.models import SaleStatus
 from ..storage.gcs import extract_token
 from .deps import PhotoStoreDep
@@ -57,7 +58,11 @@ class Item(BaseModel):
     price_pln: float | None = None
     sell_price: float | None = Field(default=None, description="Resale price, PLN")
     sale_item_id: int | None = Field(default=None, description="`SaleItem.id` it was resold as")
+    benefit_pln: float | None = Field(
+        default=None, description="sell_price - price_pln, for sold items with both set"
+    )
     status: SaleStatus = SaleStatus.NONE
+    account: Account = Field(default=Account.RUSLAN, description="Our account it belongs to")
     order_date: str = ""
     seller_id: int | None = None
     seller_login: str = ""
@@ -135,11 +140,26 @@ class SaleLinkUpdateResult(BaseModel):
     sale_item_id: int | None
 
 
+class AccountUpdate(BaseModel):
+    account: Account
+
+
+class AccountUpdateResult(BaseModel):
+    tx_id: str
+    item_id: str
+    account: Account
+
+
 class Page[T](BaseModel):
     items: list[T]
     total: int
     page: int
     size: int
+
+
+class ItemsPage(Page[Item]):
+    benefit_pln: float = Field(description="Sum of `Item.benefit_pln` over all matching items")
+    benefit_items: int = Field(description="Matching items that have a benefit")
 
 
 class MonthStats(BaseModel):
@@ -149,12 +169,19 @@ class MonthStats(BaseModel):
     spent_pln: float
 
 
+class AccountSales(BaseModel):
+    account: Account
+    sold_pln: float
+    sold_items: int = Field(description="Items with a sell price set")
+
+
 class Stats(BaseModel):
     purchases: int
     items: int
     spent_pln: float
     sold_pln: float
     sold_items: int = Field(description="Items with a sell price set")
+    sold_by_account: list[AccountSales] = Field(description="Sales split, in `Account` order")
     by_status: dict[SaleStatus, int]
     by_month: list[MonthStats]
 
@@ -174,6 +201,9 @@ def _stored_photo_url(item_id: int, url: str) -> str:
 
 def _to_item(purchase: dict, item: dict) -> Item:
     raw_status = item.get("_sale_status")
+    raw_account = item.get("_account")
+    status = SaleStatus(raw_status) if raw_status in SaleStatus else SaleStatus.NONE
+    sell_price, price_pln = item.get("_sell_price"), item.get("price_pln")
     photo_urls = _photo_urls(item)
     return Item(
         id=item["id"],
@@ -187,10 +217,16 @@ def _to_item(purchase: dict, item: dict) -> Item:
         paid_price=item.get("paid_price"),
         paid_estimated=item.get("paid_estimated", False),
         currency=item.get("currency") or "",
-        price_pln=item.get("price_pln"),
-        sell_price=item.get("_sell_price"),
+        price_pln=price_pln,
+        sell_price=sell_price,
         sale_item_id=item.get("_sale_item_id"),
-        status=SaleStatus(raw_status) if raw_status in SaleStatus else SaleStatus.NONE,
+        benefit_pln=(
+            sell_price - price_pln
+            if status == SaleStatus.SOLD and sell_price is not None and price_pln is not None
+            else None
+        ),
+        status=status,
+        account=Account(raw_account) if raw_account in Account else Account.RUSLAN,
         order_date=purchase.get("order_date") or "",
         seller_id=purchase.get("seller_id"),
         seller_login=purchase.get("seller_login") or "",
@@ -287,9 +323,10 @@ def list_items(
     has_sell_price: Annotated[
         bool | None, Query(description="Keep only items with (true) or without (false) one")
     ] = None,
+    account: Annotated[list[Account] | None, Query(description="Keep only these")] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     size: Annotated[int, Query(ge=1, le=200)] = 50,
-) -> Page[Item]:
+) -> ItemsPage:
     items = [i for p in map(_to_purchase, load_purchases(store)) for i in p.items]
     if status:
         items = [i for i in items if i.status in status]
@@ -297,8 +334,18 @@ def list_items(
         items = [i for i in items if _matches(q, i.title, i.seller_login)]
     if has_sell_price is not None:
         items = [i for i in items if (i.sell_price is not None) == has_sell_price]
+    if account:
+        items = [i for i in items if i.account in account]
     start = (page - 1) * size
-    return Page(items=items[start : start + size], total=len(items), page=page, size=size)
+    benefits = [i.benefit_pln for i in items if i.benefit_pln is not None]
+    return ItemsPage(
+        items=items[start : start + size],
+        total=len(items),
+        page=page,
+        size=size,
+        benefit_pln=sum(benefits),
+        benefit_items=len(benefits),
+    )
 
 
 @router.patch("/items/{tx_id}/{item_id}")
@@ -339,6 +386,17 @@ def update_item_sale(
     return SaleLinkUpdateResult(tx_id=tx_id, item_id=item_id, sale_item_id=update.sale_item_id)
 
 
+@router.patch("/items/{tx_id}/{item_id}/account")
+def update_item_account(
+    tx_id: Annotated[str, Path(description="Purchase (transaction) id")],
+    item_id: Annotated[str, Path(description="Item id within the purchase")],
+    update: AccountUpdate,
+    store: StoreDep,
+) -> AccountUpdateResult:
+    store.set_item_account(tx_id, item_id, update.account)
+    return AccountUpdateResult(tx_id=tx_id, item_id=item_id, account=update.account)
+
+
 @router.get("/stats")
 def get_stats(store: StoreDep) -> Stats:
     purchases = [_to_purchase(p) for p in load_purchases(store)]
@@ -363,6 +421,14 @@ def get_stats(store: StoreDep) -> Stats:
         spent_pln=sum(i.price_pln or 0.0 for i in items),
         sold_pln=sum(i.sell_price or 0.0 for i in sold),
         sold_items=len(sold),
+        sold_by_account=[
+            AccountSales(
+                account=account,
+                sold_pln=sum(i.sell_price or 0.0 for i in sold if i.account == account),
+                sold_items=sum(1 for i in sold if i.account == account),
+            )
+            for account in Account
+        ],
         by_status=Counter(i.status for i in items),
         by_month=[by_month[m] for m in sorted(by_month)],
     )
