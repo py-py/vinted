@@ -46,6 +46,43 @@ Rzadki model Highness z paskiem i metalicznym złotym swooshem 💫👟
 
 Follow the same structure for other item types (clothes, bags, boots), with their own details.
 
+## Ski boots
+
+If the photos show ski boots, the description has four blocks instead of three. The first
+line is only brand and model (no ` | rozmiar:` part — the sizes go in their own block), and a
+`Flex / Mondo / EUR` block goes between the condition and the closing line:
+
+```
+Rossignol Hero J3
+
+✨ Stan: bardzo dobry — skorupa czysta, wszystkie klamry sprawne i kompletne
+
+Flex: 65
+Mondo: 20,5
+EUR: 32/33
+
+Białe buty juniorskie z czerwonymi klamrami — klasyk Rossignola dla młodego narciarza ⛷️❄️
+```
+
+- **Flex** and **Mondo**: copy exactly what is printed on the shell, cuff, liner or box (Mondo
+  is often printed as `26.5`, `265` or `26/26.5`). Never estimate them from the look or the model.
+  The number in mm on the heel (e.g. `245 mm`) is the sole length, not the Mondo size.
+- **Not readable:** still write the line, with nothing after the colon (`Flex:`, `Mondo:`) —
+  the seller fills it in. This is the one exception to the no-placeholder rule.
+- **EUR:** the one size you convert. If EUR is printed, copy it; otherwise convert from Mondo
+  with this table (a half-size like `26/26,5` uses its shell row). No Mondo → `EUR:` empty.
+
+| Mondo     | EUR   | Mondo     | EUR   |
+| --------- | ----- | --------- | ----- |
+| 15,0–15,5 | 24/25 | 23,0–23,5 | 36/37 |
+| 16,0–16,5 | 26    | 24,0–24,5 | 38    |
+| 17,0–17,5 | 27/28 | 25,0–25,5 | 39/40 |
+| 18,0–18,5 | 29    | 26,0–26,5 | 41/42 |
+| 19,0–19,5 | 30/31 | 27,0–27,5 | 42/43 |
+| 20,0–20,5 | 32/33 | 28,0–28,5 | 44    |
+| 21,0–21,5 | 34    | 29,0–29,5 | 45/46 |
+| 22,0–22,5 | 35/36 | 30,0–30,5 | 47    |
+
 ## Size and model — most important
 
 A wrong size or model means a return, so these two must be exact.
