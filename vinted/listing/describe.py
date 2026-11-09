@@ -64,13 +64,19 @@ def resolve(name: str) -> tuple[str, ModelSettings]:
 def get_agent() -> Agent:
     """The listing agent, built on first use so importing the app needs no LLM settings."""
     model, settings = resolve(os.environ["LISTING_PROVIDER"])
-    return Agent(
+    agent = Agent(
         model,
         output_type=ListingText,
-        instructions=(PROMPTS_DIR / "listing.md").read_text(),
         model_settings=settings,
         defer_model_check=True,
     )
+
+    @agent.instructions
+    def _instructions() -> str:
+        # Read on every run, so prompt edits apply without restarting the server.
+        return (PROMPTS_DIR / "listing.md").read_text()
+
+    return agent
 
 
 def describe(photos: list[bytes], notes: str | None = None) -> ListingText:

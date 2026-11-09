@@ -5,6 +5,7 @@ import {
   Fields,
   PhotoCarousel,
 } from "@/components/shared/DetailPane"
+import { AccountSelect } from "@/components/shared/AccountSelect"
 import { SaleItemInput } from "@/components/shared/SaleItemInput"
 import { SellPriceInput } from "@/components/shared/SellPriceInput"
 import { StatusSelect } from "@/components/shared/StatusSelect"
@@ -97,6 +98,11 @@ export function ItemDetails({ item, onClose }: { item: Item; onClose?: () => voi
           <Field label="Sell price">
             <div className="w-full">
               <SellPriceInput item={item} />
+            </div>
+          </Field>
+          <Field label="Seller Account">
+            <div className="w-full">
+              <AccountSelect item={item} />
             </div>
           </Field>
           <Field label="Sale item">

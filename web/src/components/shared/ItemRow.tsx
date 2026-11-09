@@ -1,6 +1,7 @@
 import { ExternalLink } from "lucide-react"
 
 import { Photo } from "@/components/shared/Photo"
+import { AccountSelect } from "@/components/shared/AccountSelect"
 import { SellPriceInput } from "@/components/shared/SellPriceInput"
 import { StatusSelect } from "@/components/shared/StatusSelect"
 import { TableCell, TableRow } from "@/components/ui/table"
@@ -96,6 +97,9 @@ export function ItemRow({ item, onSelect }: { item: Item; onSelect: () => void }
       </TableCell>
       <TableCell className="w-32 min-w-28">
         <SellPriceInput item={item} />
+      </TableCell>
+      <TableCell className="w-36 min-w-32">
+        <AccountSelect item={item} />
       </TableCell>
       <TableCell
         className={cn(

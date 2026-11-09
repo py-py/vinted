@@ -73,7 +73,19 @@ function KpiRow({ stats }: { stats: Stats }) {
       <StatCard
         title="Sales"
         value={`${Math.round(stats.sold_pln).toLocaleString("pl-PL")} PLN`}
-        hint={`${stats.sold_items} items with sell price`}
+        hint={
+          <>
+            {stats.sold_items} items with sell price
+            {stats.sold_by_account.map((a) => (
+              <span key={a.account} className="flex justify-between gap-2">
+                <span className="truncate">{a.account}</span>
+                <span className="whitespace-nowrap tabular-nums">
+                  {Math.round(a.sold_pln).toLocaleString("pl-PL")} PLN · {a.sold_items}
+                </span>
+              </span>
+            ))}
+          </>
+        }
         icon={Banknote}
       />
       <StatCard

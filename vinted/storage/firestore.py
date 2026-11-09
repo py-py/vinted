@@ -13,6 +13,7 @@ from datetime import datetime
 
 from google.cloud import firestore
 
+from ..account.purchases.models import Account
 from ..account.purchases.models import Order
 from ..account.purchases.models import SaleStatus
 from ..account.sales.models import Sale
@@ -110,6 +111,15 @@ class FirestoreStore:
         item_ref = self.purchases.document(transaction_id).collection("items").document(item_id)
         value = firestore.DELETE_FIELD if sale_item_id is None else sale_item_id
         item_ref.set({"_sale_item_id": value}, merge=True)
+
+    def set_item_account(self, transaction_id: str, item_id: str, account: Account) -> None:
+        """Assign the account an item belongs to.
+
+        Stored under the custom field `_account` on purchases/{tx}/items/{id};
+        items without it belong to `Account.RUSLAN`.
+        """
+        item_ref = self.purchases.document(transaction_id).collection("items").document(item_id)
+        item_ref.set({"_account": account}, merge=True)
 
     def create_listing(self) -> dict:
         """Create an empty listing with a fresh uuid4 id and return its doc."""

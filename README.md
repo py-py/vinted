@@ -21,8 +21,9 @@ FastAPI serves a JSON API under `/api` and the built React app from `web/` (see
 
 ```bash
 make build   # backend Docker image (with the web build baked in) + web npm deps
-make run     # API on :8000 + Vite on http://localhost:5173; Ctrl+C stops both
+make up      # API on :8000 + Vite on http://localhost:5173; Ctrl+C stops both
+make down    # stop the API (Docker or local) and Vite started elsewhere
 ```
 
-`make run DEV_PORT=8002` if port 8000 is taken. Run one side only with `make admin-web` /
+`make up DEV_PORT=8002` if port 8000 is taken. Run one side only with `make admin-web` /
 `make web-dev`; run any command in the container with `make cmd CMD="..."`.

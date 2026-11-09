@@ -2,7 +2,7 @@ DEV_PORT ?= 8000
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build run run-local admin-web-local shell cmd test admin-web web-dev web-build purchases sales sync scrape-item analyze cookies cookie-header
+.PHONY: help build up up-local down admin-web-local shell cmd test admin-web web-dev web-build purchases sales sync scrape-item analyze cookies cookie-header
 
 ###############################################################################
 #  Help — List available targets
@@ -34,18 +34,24 @@ test: ## Run pytest (ARGS="...")
 ###############################################################################
 
 # API in Docker on :$(DEV_PORT) + Vite on :5173; Ctrl+C stops both.
-run: ## API in Docker + Vite dev server
+up: ## API in Docker + Vite dev server
 	@trap 'kill 0' INT TERM EXIT; \
 	$(MAKE) --no-print-directory admin-web ADMIN_WEB_FLAGS=-T & \
 	$(MAKE) --no-print-directory web-dev & \
 	wait
 
-# Same as `run`, but the API runs on the host via uv (no Docker); Ctrl+C stops both.
-run-local: ## API on host via uv + Vite dev server
+# Same as `up`, but the API runs on the host via uv (no Docker); Ctrl+C stops both.
+up-local: ## API on host via uv + Vite dev server
 	@trap 'kill 0' INT TERM EXIT; \
 	$(MAKE) --no-print-directory admin-web-local & \
 	$(MAKE) --no-print-directory web-dev & \
 	wait
+
+# Stops whatever `up` / `up-local` left running (e.g. started in another terminal).
+down: ## Stop API (Docker + local) and Vite
+	docker compose down --remove-orphans
+	pkill -f "$(CURDIR)/.venv/bin/fastapi dev" || true
+	pkill -f "$(CURDIR)/web/node_modules/.*vite" || true
 
 ###############################################################################
 #  Backend — FastAPI admin API (Docker / local uv)
