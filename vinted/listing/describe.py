@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from pydantic import Field
 from pydantic_ai import Agent
 from pydantic_ai import BinaryContent
+from pydantic_ai.settings import ModelSettings
 
 from ..constants import PROMPTS_DIR
 from .photos import MAX_PHOTOS_PER_LISTING
@@ -33,13 +34,21 @@ class ListingText(BaseModel):
 agent = Agent(
     f"deepseek:{os.environ.get('DEEPSEEK_MODEL', DEFAULT_MODEL)}",
     output_type=ListingText,
-    instructions=(PROMPTS_DIR / "listing.md").read_text(),
     # DeepSeek thinks by default, and thinking rejects the forced tool_choice that structured
     # output uses (400 "Thinking mode does not support this tool_choice"); also cheaper.
     # Low temperature: the same photos should give the same size and model every time.
-    model_settings={"temperature": 0.2, "extra_body": {"thinking": {"type": "disabled"}}},
+    model_settings=ModelSettings(
+        temperature=0.2,
+        extra_body={"thinking": {"type": "disabled"}},
+    ),
     defer_model_check=True,
 )
+
+
+@agent.instructions
+def _instructions() -> str:
+    # Read on every run, so prompt edits apply without restarting the server.
+    return (PROMPTS_DIR / "listing.md").read_text()
 
 
 def describe(photos: list[bytes], notes: str | None = None) -> ListingText:
