@@ -17,6 +17,7 @@ from ..account.purchases.models import Account
 from ..account.purchases.models import Order
 from ..account.purchases.models import SaleStatus
 from ..account.sales.models import Sale
+from ..utils import chunked
 
 PURCHASES_COLLECTION = "purchases"
 SALES_COLLECTION = "sales"
@@ -316,8 +317,8 @@ class FirestoreStore:
             for item_id, fields in items.items()
             if fields
         ]
-        for start in range(0, len(writes), BATCH_SIZE):
+        for chunk in chunked(writes, BATCH_SIZE):
             batch = self.client.batch()
-            for ref, fields in writes[start : start + BATCH_SIZE]:
+            for ref, fields in chunk:
                 batch.set(ref, fields, merge=list(fields))
             batch.commit()
