@@ -99,6 +99,12 @@ sync: ## Purchases, then sales
 	$(MAKE) --no-print-directory purchases
 	$(MAKE) --no-print-directory sales
 
+wardrobe: ## Sync a member's wardrobe (MEMBER=<id>)
+	docker compose run --rm \
+		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
+		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
+		vinted python -m vinted.wardrobe $(MEMBER)
+
 ###############################################################################
 #  AI — Item scraping and LLM analysis (ITEM=<item id>)
 ###############################################################################

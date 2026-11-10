@@ -1,4 +1,6 @@
-# Wardrobe monitor — plan
+# Wardrobe monitor
+
+Status: implemented (`sync.py`, `status.py`, `api.py`).
 
 Track a public member's wardrobe in Firestore and detect new, sold and deleted
 listings between fetches.
@@ -112,16 +114,15 @@ Replacing photos later may shift it (untested).
 
 ## Code
 
-- `vinted/wardrobe/api.py` — add `listed_at` to `parse_item`, default
-  `per_page=96`.
-- `vinted/scraper/item.py` — `check_item_state(item_id) -> ItemState`.
-- `vinted/storage/firestore.py` — `WARDROBE_COLLECTION`,
-  `load_wardrobe_items(user_id)`, `save_wardrobe_diff(...)`.
-- `vinted/wardrobe/` — sync logic + `__main__.py`
-  (`python -m vinted.wardrobe <user_id>`).
-- `Makefile` — `wardrobe USER=<id>` target.
-- Tests — diff logic with fixtures (new / missing / reappeared) and
-  `check_item_state` parsing (sold / reserved / active / 404 page fixtures).
+- `api.py` — `fetch_wardrobe`, `parse_item` (the `api` map), `listed_at`.
+- `status.py` — `check_item_state` / `parse_item_state` (item page markers).
+- `models.py` — `ItemState`, `OPEN_STATES`.
+- `sync.py` — `diff_fetched`, `apply_state`, `member_doc`, `sync_wardrobe`.
+- `vinted/storage/firestore.py` — `get_wardrobe_member`,
+  `load_wardrobe_items`, `save_wardrobe` (field-level replace, batches of 400).
+- `__main__.py` — `python -m vinted.wardrobe <user_id> [--no-save]`.
+- `Makefile` — `make wardrobe MEMBER=<id>` (`USER` is taken by the shell).
+- `tests/` — parsing, page markers, diff logic.
 
 ## Open points
 
