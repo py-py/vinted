@@ -299,6 +299,10 @@ class FirestoreStore:
         snap = self.wardrobe.document(user_id).get()
         return snap.to_dict() if snap.exists else None
 
+    def load_wardrobe_members(self) -> dict[str, dict]:
+        """Every tracked member doc, keyed by user id."""
+        return {snap.id: snap.to_dict() or {} for snap in self.wardrobe.stream()}
+
     def load_wardrobe_items(self, user_id: str) -> dict[int, dict]:
         """Every tracked item of a member, keyed by item id."""
         items = self.wardrobe.document(user_id).collection("items")
