@@ -15,7 +15,7 @@ MEMBER_URL = "https://www.vinted.pl/member/{user_id}"
 async def fetch_wardrobe(
     user_id: str,
     *,
-    per_page: int = 20,
+    per_page: int = 96,  # max items per page
     max_pages: int | None = None,
 ) -> list[dict]:
     """Fetch all items from a Vinted user's wardrobe."""
