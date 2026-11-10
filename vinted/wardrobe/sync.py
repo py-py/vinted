@@ -1,6 +1,6 @@
 """Sync a member's wardrobe into Firestore and detect new / reserved / sold / deleted items.
 
-Item doc (wardrobe/{user_id}/items/{item_id}): Vinted data under `api`, our
+Item doc (wardrobes/{user_id}/items/{item_id}): Vinted data under `api`, our
 own fields at the top level — see PLAN.md for the layout.
 """
 
@@ -140,7 +140,7 @@ def member_doc(
     *,
     is_new: bool,
 ) -> dict:
-    """Fields of wardrobe/{user_id} to write for this sync."""
+    """Fields of wardrobes/{user_id} to write for this sync."""
     states = {item_id: doc.get("state", ItemState.ACTIVE) for item_id, doc in saved.items()}
     states |= {item_id: u["state"] for item_id, u in result.updates.items() if "state" in u}
 

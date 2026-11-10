@@ -21,7 +21,7 @@ from ..account.sales.models import Sale
 PURCHASES_COLLECTION = "purchases"
 SALES_COLLECTION = "sales"
 LISTINGS_COLLECTION = "listings"
-WARDROBE_COLLECTION = "wardrobe"
+WARDROBE_COLLECTION = "wardrobes"
 
 # Firestore allows 500 writes per batch.
 BATCH_SIZE = 400
@@ -43,8 +43,8 @@ class FirestoreStore:
         sales/{transaction_id}/items/{id}     -> per-item fields
         listings/{listing_id}                 -> {id, title, description, created_at,
                                                   updated_at, photos: [...]}
-        wardrobe/{user_id}                    -> tracked member: {api: {...}, our fields}
-        wardrobe/{user_id}/items/{item_id}    -> tracked item: {api: {...}, state, ...}
+        wardrobes/{user_id}                   -> tracked member: {api: {...}, our fields}
+        wardrobes/{user_id}/items/{item_id}   -> tracked item: {api: {...}, state, ...}
 
     Listing `photos` is an array of {id, path, width, height, bytes, created_at};
     array order is the display order.

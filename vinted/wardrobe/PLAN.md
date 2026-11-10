@@ -10,8 +10,8 @@ listings between fetches.
 Firestore paths alternate collection/document, so items live in a subcollection:
 
 ```
-wardrobe/{user_id}                 -> member doc
-wardrobe/{user_id}/items/{item_id} -> item doc
+wardrobes/{user_id}                 -> member doc
+wardrobes/{user_id}/items/{item_id} -> item doc
 ```
 
 Both docs keep Vinted data and our own data apart: everything from the API
