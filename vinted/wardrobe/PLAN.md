@@ -120,7 +120,7 @@ Replacing photos later may shift it (untested).
 - `sync.py` — `diff_fetched`, `apply_state`, `member_doc`, `sync_wardrobe`.
 - `vinted/storage/firestore.py` — `get_wardrobe_member`,
   `load_wardrobe_items`, `save_wardrobe` (field-level replace, batches of 400).
-- `__main__.py` — `python -m vinted.wardrobe <user_id> [--no-save]`.
+- `__main__.py` — `python -m vinted.wardrobe [user_id]` (no id lists tracked members).
 - `Makefile` — `make wardrobe MEMBER=<id>` (`USER` is taken by the shell).
 - `tests/` — parsing, page markers, diff logic.
 

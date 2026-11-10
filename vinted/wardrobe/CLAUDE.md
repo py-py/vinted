@@ -4,7 +4,8 @@ Monitors a public Vinted member's wardrobe: syncs items to Firestore and
 detects new / reserved / sold / deleted listings between runs. Full design
 and verified markers: `PLAN.md`.
 
-Run: `make wardrobe MEMBER=<id>` or `python -m vinted.wardrobe <id> [--no-save]`
+Run: `make wardrobe MEMBER=<id>` or `python -m vinted.wardrobe <id>`;
+no id lists tracked members
 (`MEMBER`, not `USER` — the shell owns `USER`).
 
 ## Firestore
