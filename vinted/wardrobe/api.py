@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from datetime import UTC
+from datetime import datetime
+
 import httpx
 
 from ..constants import USER_AGENT
@@ -55,11 +58,30 @@ async def fetch_wardrobe(
 
 
 def parse_item(item: dict) -> dict:
+    """The Vinted-sourced part of an item doc (stored under `api`)."""
     return {
         "id": item.get("id"),
+        "title": item.get("title", ""),
         "url": item.get("url", ""),
-        "name": item.get("title", ""),
-        "total_item_price": item.get("total_item_price", {}),
+        "price": item.get("price") or {},
+        "brand": item.get("brand", ""),
+        "size": item.get("size", ""),
+        "status": item.get("status", ""),
+        "photo_urls": [p.get("url", "") for p in item.get("photos") or []],
         "favourite_count": item.get("favourite_count", 0),
-        "image_urls": [p.get("url", "") for p in item.get("photos", [])],
+        "view_count": item.get("view_count", 0),
     }
+
+
+def listed_at(item: dict) -> datetime | None:
+    """When the listing was created: the earliest photo upload timestamp.
+
+    The wardrobe API has no created_at; photo timestamps track item creation
+    (see PLAN.md). None for an item without photo timestamps.
+    """
+    stamps = [
+        hr["timestamp"]
+        for p in item.get("photos") or []
+        if (hr := p.get("high_resolution")) and hr.get("timestamp")
+    ]
+    return datetime.fromtimestamp(min(stamps), UTC) if stamps else None
