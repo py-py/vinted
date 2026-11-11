@@ -6,6 +6,7 @@ from datetime import datetime
 import httpx
 
 from ..constants import USER_AGENT
+from ..utils import get_with_backoff
 
 WARDROBE_API_URL = "https://www.vinted.pl/api/v2/wardrobe/{user_id}/items"
 MEMBER_URL = "https://www.vinted.pl/member/{user_id}"
@@ -35,7 +36,8 @@ async def fetch_wardrobe(
 
         while True:
             print(f"-> Fetching page {page}")
-            resp = await client.get(
+            resp = await get_with_backoff(
+                client,
                 WARDROBE_API_URL.format(user_id=user_id),
                 params={"page": page, "per_page": per_page, "order": "relevance"},
             )

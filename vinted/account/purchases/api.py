@@ -13,12 +13,12 @@ Pipeline per order:
 from __future__ import annotations
 
 import asyncio
-import random
 
 import httpx
 
 from vinted.account.cookies import load_cookies
 from vinted.constants import USER_AGENT
+from vinted.utils import get_with_backoff
 
 from .models import CurrencyConversion
 from .models import Order
@@ -42,30 +42,6 @@ def _currency(d: dict | None) -> str:
     return d.get("currency_code", "") or ""
 
 
-async def _request(
-    client: httpx.AsyncClient,
-    url: str,
-    *,
-    params: dict | None = None,
-    max_retries: int = 5,
-) -> httpx.Response:
-    """GET with exponential backoff on 429."""
-    backoff = 2.0
-    resp: httpx.Response | None = None
-    for attempt in range(max_retries):
-        resp = await client.get(url, params=params)
-        if resp.status_code == 429:
-            retry_after = float(resp.headers.get("Retry-After", backoff))
-            sleep = retry_after + random.uniform(0, 1)
-            print(f"-> 429, sleeping {sleep:.1f}s (attempt {attempt + 1}/{max_retries})")
-            await asyncio.sleep(sleep)
-            backoff *= 2
-            continue
-        return resp
-    assert resp is not None
-    return resp
-
-
 async def fetch_my_orders(
     client: httpx.AsyncClient,
     *,
@@ -78,7 +54,7 @@ async def fetch_my_orders(
     page = 1
     while True:
         print(f"-> Fetching my_orders page {page}")
-        resp = await _request(
+        resp = await get_with_backoff(
             client,
             MY_ORDERS_URL,
             params={
@@ -103,21 +79,21 @@ async def fetch_my_orders(
 
 
 async def fetch_escrow_order(client: httpx.AsyncClient, transaction_id: int) -> dict:
-    resp = await _request(client, ESCROW_ORDER_URL.format(transaction_id=transaction_id))
+    resp = await get_with_backoff(client, ESCROW_ORDER_URL.format(transaction_id=transaction_id))
     resp.raise_for_status()
     return resp.json().get("escrow_order", {})
 
 
 async def fetch_escrow_order_items(client: httpx.AsyncClient, transaction_id: int) -> list[dict]:
     """Per-item details (title, size, condition, paid_price) for a transaction."""
-    resp = await _request(client, ESCROW_ITEMS_URL.format(transaction_id=transaction_id))
+    resp = await get_with_backoff(client, ESCROW_ITEMS_URL.format(transaction_id=transaction_id))
     resp.raise_for_status()
     return resp.json().get("items", [])
 
 
 async def fetch_transaction(client: httpx.AsyncClient, transaction_id: int) -> dict:
     """Transaction with `order.items[]` (photos, url, catalog_id, listed price) and seller."""
-    resp = await _request(client, TRANSACTION_URL.format(transaction_id=transaction_id))
+    resp = await get_with_backoff(client, TRANSACTION_URL.format(transaction_id=transaction_id))
     resp.raise_for_status()
     return resp.json().get("transaction", {})
 
