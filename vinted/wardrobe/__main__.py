@@ -16,7 +16,7 @@ async def main() -> None:
     parser.add_argument(
         "user_id",
         nargs="?",
-        help="Vinted member id (from /member/{id}); omit to list tracked members",
+        help="Member id (from /member/{id}), ALL for every tracked member; omit to list them",
     )
     args = parser.parse_args()
 
@@ -24,7 +24,19 @@ async def main() -> None:
         list_members(FirestoreStore())
         return
 
-    result = await sync_wardrobe(args.user_id, FirestoreStore())
+    store = FirestoreStore()
+    if args.user_id.upper() == "ALL":
+        members = store.load_wardrobe_members()
+        for user_id, doc in sorted(members.items()):
+            login = (doc.get("api") or {}).get("login", "")
+            print(f"=> {user_id} {login}")
+            await sync_member(user_id, store)
+    else:
+        await sync_member(args.user_id, store)
+
+
+async def sync_member(user_id: str, store: FirestoreStore) -> None:
+    result = await sync_wardrobe(user_id, store)
     print(f"-> New: {len(result.new)}")
     for item_id in result.new:
         print(f"   + {item_id}")

@@ -5,7 +5,7 @@ detects new / reserved / sold / deleted listings between runs. Full design
 and verified markers: `PLAN.md`.
 
 Run: `make wardrobe MEMBER=<id>` or `python -m vinted.wardrobe <id>`;
-no id lists tracked members
+`ALL` syncs every tracked member, no id lists them
 (`MEMBER`, not `USER` — the shell owns `USER`).
 
 ## Firestore

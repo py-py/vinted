@@ -94,7 +94,7 @@ sync: ## Purchases, then sales
 	$(MAKE) --no-print-directory purchases
 	$(MAKE) --no-print-directory sales
 
-wardrobe: ## Sync a member's wardrobe (MEMBER=<id>); no MEMBER lists tracked
+wardrobe: ## Sync a member's wardrobe (MEMBER=<id>|ALL); no MEMBER lists tracked
 	$(GCLOUD_RUN) vinted python -m vinted.wardrobe $(MEMBER)
 
 ###############################################################################
