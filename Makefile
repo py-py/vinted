@@ -7,7 +7,7 @@ GCLOUD_RUN = docker compose run --rm \
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build up up-local down admin-web-local shell cmd test admin-web web-dev web-build purchases sales sync scrape-item analyze cookies cookie-header
+.PHONY: help build up up-local down admin-web-local shell cmd test admin-web web-dev web-build purchases sales sync wardrobe wardrobe-sales scrape-item analyze cookies cookie-header
 
 ###############################################################################
 #  Help — List available targets
@@ -96,6 +96,9 @@ sync: ## Purchases, then sales
 
 wardrobe: ## Sync a member's wardrobe (MEMBER=<id>|ALL); no MEMBER lists tracked
 	$(GCLOUD_RUN) vinted python -m vinted.wardrobe $(MEMBER)
+
+wardrobe-sales: ## Sold wardrobe items (MEMBER=<id>; default all)
+	$(GCLOUD_RUN) vinted python -m vinted.wardrobe --sales $(MEMBER)
 
 ###############################################################################
 #  AI — Item scraping and LLM analysis (ITEM=<item id>)
