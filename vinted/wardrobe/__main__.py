@@ -29,7 +29,7 @@ async def main() -> None:
         members = store.load_wardrobe_members()
         for user_id, doc in sorted(members.items()):
             login = (doc.get("api") or {}).get("login", "")
-            print(f"=> {user_id} {login}")
+            print(f"=> {login} [{user_id}]")
             await sync_member(user_id, store)
     else:
         await sync_member(args.user_id, store)
