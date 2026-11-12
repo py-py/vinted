@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import asyncio
-import json
-import sys
+from datetime import UTC
+from datetime import datetime
 
 import httpx
 
 from ..constants import USER_AGENT
+from ..utils import get_with_backoff
 
 WARDROBE_API_URL = "https://www.vinted.pl/api/v2/wardrobe/{user_id}/items"
 MEMBER_URL = "https://www.vinted.pl/member/{user_id}"
@@ -36,7 +36,8 @@ async def fetch_wardrobe(
 
         while True:
             print(f"-> Fetching page {page}")
-            resp = await client.get(
+            resp = await get_with_backoff(
+                client,
                 WARDROBE_API_URL.format(user_id=user_id),
                 params={"page": page, "per_page": per_page, "order": "relevance"},
             )
@@ -59,25 +60,30 @@ async def fetch_wardrobe(
 
 
 def parse_item(item: dict) -> dict:
+    """The Vinted-sourced part of an item doc (stored under `api`)."""
     return {
         "id": item.get("id"),
+        "title": item.get("title", ""),
         "url": item.get("url", ""),
-        "name": item.get("title", ""),
-        "total_item_price": item.get("total_item_price", {}),
+        "price": item.get("price") or {},
+        "brand": item.get("brand", ""),
+        "size": item.get("size", ""),
+        "status": item.get("status", ""),
+        "photo_urls": [p.get("url", "") for p in item.get("photos") or []],
         "favourite_count": item.get("favourite_count", 0),
-        "image_urls": [p.get("url", "") for p in item.get("photos", [])],
+        "view_count": item.get("view_count", 0),
     }
 
 
-async def main() -> None:
-    user_id = sys.argv[1] if len(sys.argv) > 1 else None
-    if user_id is None:
-        raise SystemExit("Usage: python -m vinted.scraper.wardrobe <user_id>")
+def listed_at(item: dict) -> datetime | None:
+    """When the listing was created: the earliest photo upload timestamp.
 
-    items = await fetch_wardrobe(user_id)
-    result = [parse_item(item) for item in items]
-    print(json.dumps(result, indent=2, ensure_ascii=False))
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    The wardrobe API has no created_at; photo timestamps track item creation
+    (see PLAN.md). None for an item without photo timestamps.
+    """
+    stamps = [
+        hr["timestamp"]
+        for p in item.get("photos") or []
+        if (hr := p.get("high_resolution")) and hr.get("timestamp")
+    ]
+    return datetime.fromtimestamp(min(stamps), UTC) if stamps else None

@@ -1,8 +1,13 @@
 DEV_PORT ?= 8000
 
+# `docker compose run` with host gcloud ADC mounted (Firestore etc.).
+GCLOUD_RUN = docker compose run --rm \
+	--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
+	--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
+
 .DEFAULT_GOAL := help
 
-.PHONY: help build up up-local down admin-web-local shell cmd test admin-web web-dev web-build purchases sales sync scrape-item analyze cookies cookie-header
+.PHONY: help build up up-local down admin-web-local shell cmd test admin-web web-dev web-build purchases sales sync wardrobe wardrobe-sales scrape-item analyze cookies cookie-header
 
 ###############################################################################
 #  Help — List available targets
@@ -58,11 +63,7 @@ down: ## Stop API (Docker + local) and Vite
 ###############################################################################
 
 admin-web: ## FastAPI admin API in Docker
-	docker compose run --rm $(ADMIN_WEB_FLAGS) \
-		--publish $(DEV_PORT):8000 \
-		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
-		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
-		vinted fastapi dev --host 0.0.0.0 --port 8000
+	$(GCLOUD_RUN) $(ADMIN_WEB_FLAGS) --publish $(DEV_PORT):8000 vinted fastapi dev --host 0.0.0.0 --port 8000
 
 admin-web-local: ## FastAPI admin API on host via uv
 	uv run $(if $(wildcard .env),--env-file .env) fastapi dev --port $(DEV_PORT)
@@ -83,21 +84,21 @@ web-build: ## Production web build
 ###############################################################################
 
 purchases: ## Sync Vinted purchases
-	docker compose run --rm \
-		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
-		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
-		vinted python -m vinted.account.purchases
+	$(GCLOUD_RUN) vinted python -m vinted.account.purchases
 
 sales: ## Sync Vinted sales
-	docker compose run --rm \
-		--volume $(HOME)/.config/gcloud:/root/.config/gcloud:ro \
-		--env GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
-		vinted python -m vinted.account.sales
+	$(GCLOUD_RUN) vinted python -m vinted.account.sales
 
 # Purchases, then sales (sequential even under `make -j`).
 sync: ## Purchases, then sales
 	$(MAKE) --no-print-directory purchases
 	$(MAKE) --no-print-directory sales
+
+wardrobe: ## Sync a member's wardrobe (MEMBER=<id>|ALL); no MEMBER lists tracked
+	$(GCLOUD_RUN) vinted python -m vinted.wardrobe $(MEMBER)
+
+wardrobe-sales: ## Sold wardrobe items (MEMBER=<id>; default all)
+	$(GCLOUD_RUN) vinted python -m vinted.wardrobe --sales $(MEMBER)
 
 ###############################################################################
 #  AI — Item scraping and LLM analysis (ITEM=<item id>)

@@ -27,11 +27,11 @@ import httpx
 from vinted.account.cookies import load_cookies
 from vinted.account.purchases.api import _amount
 from vinted.account.purchases.api import _currency
-from vinted.account.purchases.api import _request
 from vinted.account.purchases.api import fetch_escrow_order
 from vinted.account.purchases.api import fetch_escrow_order_items
 from vinted.account.purchases.api import fetch_transaction
 from vinted.constants import USER_AGENT
+from vinted.utils import get_with_backoff
 
 from .models import Sale
 from .models import SaleItem
@@ -51,7 +51,7 @@ async def fetch_sold_orders(
     page = 1
     while True:
         print(f"-> Fetching sold orders page {page}")
-        resp = await _request(
+        resp = await get_with_backoff(
             client,
             SOLD_ORDERS_URL,
             params={

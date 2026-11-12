@@ -17,10 +17,15 @@ from ..account.purchases.models import Account
 from ..account.purchases.models import Order
 from ..account.purchases.models import SaleStatus
 from ..account.sales.models import Sale
+from ..utils import chunked
 
 PURCHASES_COLLECTION = "purchases"
 SALES_COLLECTION = "sales"
 LISTINGS_COLLECTION = "listings"
+WARDROBE_COLLECTION = "wardrobes"
+
+# Firestore allows 500 writes per batch.
+BATCH_SIZE = 400
 
 
 def _non_empty(doc: dict) -> dict:
@@ -39,6 +44,8 @@ class FirestoreStore:
         sales/{transaction_id}/items/{id}     -> per-item fields
         listings/{listing_id}                 -> {id, title, description, created_at,
                                                   updated_at, photos: [...]}
+        wardrobes/{user_id}                   -> tracked member: {api: {...}, our fields}
+        wardrobes/{user_id}/items/{item_id}   -> tracked item: {api: {...}, state, ...}
 
     Listing `photos` is an array of {id, path, width, height, bytes, created_at};
     array order is the display order.
@@ -52,6 +59,7 @@ class FirestoreStore:
         self.purchases = self.client.collection(PURCHASES_COLLECTION)
         self.sales = self.client.collection(SALES_COLLECTION)
         self.listings = self.client.collection(LISTINGS_COLLECTION)
+        self.wardrobe = self.client.collection(WARDROBE_COLLECTION)
 
     def existing_transaction_ids(self) -> set[int]:
         return {int(doc.id) for doc in self.purchases.list_documents()}
@@ -286,3 +294,35 @@ class FirestoreStore:
                 doc["updated_at"] = firestore.SERVER_TIMESTAMP
             batch.set(ref, doc, merge=True)
         batch.commit()
+
+    def get_wardrobe_member(self, user_id: str) -> dict | None:
+        snap = self.wardrobe.document(user_id).get()
+        return snap.to_dict() if snap.exists else None
+
+    def load_wardrobe_members(self) -> dict[str, dict]:
+        """Every tracked member doc, keyed by user id."""
+        return {snap.id: snap.to_dict() or {} for snap in self.wardrobe.stream()}
+
+    def load_wardrobe_items(self, user_id: str) -> dict[int, dict]:
+        """Every tracked item of a member, keyed by item id."""
+        items = self.wardrobe.document(user_id).collection("items")
+        return {int(snap.id): snap.to_dict() or {} for snap in items.stream()}
+
+    def save_wardrobe(self, user_id: str, member: dict, items: dict[int, dict]) -> None:
+        """Write the member doc and changed item fields.
+
+        Each listed field is replaced as a whole (so `api` never keeps keys
+        Vinted stopped sending); fields not listed are left untouched.
+        """
+        member_ref = self.wardrobe.document(user_id)
+        writes = [(member_ref, member)]
+        writes += [
+            (member_ref.collection("items").document(str(item_id)), fields)
+            for item_id, fields in items.items()
+            if fields
+        ]
+        for chunk in chunked(writes, BATCH_SIZE):
+            batch = self.client.batch()
+            for ref, fields in chunk:
+                batch.set(ref, fields, merge=list(fields))
+            batch.commit()
