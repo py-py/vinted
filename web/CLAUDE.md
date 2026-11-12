@@ -16,7 +16,7 @@ npm run lint      # oxlint
 npm run gen:api   # regenerate src/types/api.ts from the FastAPI OpenAPI schema
 ```
 
-From the repo root: `make build` once, then `make run` (API in Docker on `DEV_PORT`, default
+From the repo root: `make build` once, then `make up` (API in Docker on `DEV_PORT`, default
 8000, + Vite on 5173; Ctrl+C stops both). `make admin-web` / `make web-dev` run one side.
 Done = `npm run build` and `npm run lint` pass, and the page was checked in a browser.
 

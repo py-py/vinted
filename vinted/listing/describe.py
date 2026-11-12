@@ -1,24 +1,26 @@
 """
-Listing text from photos: a DeepSeek vision model (via pydantic-ai) suggests a title and a
-description for a new listing. Nothing is saved here; the admin UI shows the suggestion as an
-unsaved draft.
+Listing text from photos: a vision LLM (via pydantic-ai) suggests a title and a description
+for a new listing. Nothing is saved here; the admin UI shows the suggestion as an unsaved draft.
 
-Env: DEEPSEEK_API_KEY, DEEPSEEK_MODEL (a vision-capable model, default `deepseek-flash`).
+Env (all required): LISTING_PROVIDER (`google` or `deepseek`), then that provider's key and
+model: GEMINI_API_KEY / GEMINI_MODEL, or DEEPSEEK_API_KEY / DEEPSEEK_MODEL.
 """
 
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
+from functools import cache
 
 from pydantic import BaseModel
 from pydantic import Field
 from pydantic_ai import Agent
 from pydantic_ai import BinaryContent
+from pydantic_ai.settings import ModelSettings
 
 from ..constants import PROMPTS_DIR
 from .photos import MAX_PHOTOS_PER_LISTING
 
-DEFAULT_MODEL = "deepseek-flash"
 # Every photo is sent: the size tag is often one of the last ones.
 MAX_PHOTOS = MAX_PHOTOS_PER_LISTING
 
@@ -28,18 +30,53 @@ class ListingText(BaseModel):
     description: str = Field(description="Listing description for buyers")
 
 
-# `defer_model_check`: the provider (and its API key) is resolved on the first run, so importing
-# this module (the admin app, tests) works without DEEPSEEK_API_KEY.
-agent = Agent(
-    f"deepseek:{os.environ.get('DEEPSEEK_MODEL', DEFAULT_MODEL)}",
-    output_type=ListingText,
-    instructions=(PROMPTS_DIR / "listing.md").read_text(),
-    # DeepSeek thinks by default, and thinking rejects the forced tool_choice that structured
-    # output uses (400 "Thinking mode does not support this tool_choice"); also cheaper.
-    # Low temperature: the same photos should give the same size and model every time.
-    model_settings={"temperature": 0.2, "extra_body": {"thinking": {"type": "disabled"}}},
-    defer_model_check=True,
-)
+@dataclass(frozen=True)
+class Provider:
+    model_env: str
+    settings: ModelSettings
+
+
+BASE_SETTINGS: ModelSettings = {"temperature": 0.2}
+
+PROVIDERS: dict[str, Provider] = {
+    "google": Provider(
+        model_env="GEMINI_MODEL",
+        settings={},
+    ),
+    "deepseek": Provider(
+        model_env="DEEPSEEK_MODEL",
+        # Thinking mode rejects the forced tool_choice used for structured output.
+        settings={"extra_body": {"thinking": {"type": "disabled"}}},
+    ),
+}
+
+
+def resolve(name: str) -> tuple[str, ModelSettings]:
+    """The pydantic-ai `provider:model` string and model settings for provider `name`."""
+    if name not in PROVIDERS:
+        raise ValueError(f"LISTING_PROVIDER must be one of {sorted(PROVIDERS)}, got {name!r}")
+    provider = PROVIDERS[name]
+    model = os.environ[provider.model_env]
+    return f"{name}:{model}", {**BASE_SETTINGS, **provider.settings}
+
+
+@cache
+def get_agent() -> Agent:
+    """The listing agent, built on first use so importing the app needs no LLM settings."""
+    model, settings = resolve(os.environ["LISTING_PROVIDER"])
+    agent = Agent(
+        model,
+        output_type=ListingText,
+        model_settings=settings,
+        defer_model_check=True,
+    )
+
+    @agent.instructions
+    def _instructions() -> str:
+        # Read on every run, so prompt edits apply without restarting the server.
+        return (PROMPTS_DIR / "listing.md").read_text()
+
+    return agent
 
 
 def describe(photos: list[bytes], notes: str | None = None) -> ListingText:
@@ -50,5 +87,10 @@ def describe(photos: list[bytes], notes: str | None = None) -> ListingText:
     images = [BinaryContent(data, media_type="image/jpeg") for data in photos[:MAX_PHOTOS]]
     prompt = "Write the listing for the item in these photos. The first photo is the main one."
     if notes and notes.strip():
-        prompt += f"\n\nSeller's notes about the item (trust them):\n{notes.strip()}"
-    return agent.run_sync([prompt, *images]).output
+        prompt += (
+            "\n\n"
+            "Seller's notes about the item "
+            "(very important: trust them and reflect every fact in the listing):"
+            f"\n{notes.strip()}"
+        )
+    return get_agent().run_sync([prompt, *images]).output

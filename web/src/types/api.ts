@@ -109,6 +109,23 @@ export interface paths {
         patch: operations["update_item_sale_api_items__tx_id___item_id__sale_patch"];
         trace?: never;
     };
+    "/api/items/{tx_id}/{item_id}/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Item Account */
+        patch: operations["update_item_account_api_items__tx_id___item_id__account_patch"];
+        trace?: never;
+    };
     "/api/stats": {
         parameters: {
             query?: never;
@@ -289,6 +306,35 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * Account
+         * @description Our Vinted account an item is assigned to (custom field `_account`).
+         * @enum {string}
+         */
+        Account: "py-py" | "julia.wal802";
+        /** AccountSales */
+        AccountSales: {
+            account: components["schemas"]["Account"];
+            /** Sold Pln */
+            sold_pln: number;
+            /**
+             * Sold Items
+             * @description Items with a sell price set
+             */
+            sold_items: number;
+        };
+        /** AccountUpdate */
+        AccountUpdate: {
+            account: components["schemas"]["Account"];
+        };
+        /** AccountUpdateResult */
+        AccountUpdateResult: {
+            /** Tx Id */
+            tx_id: string;
+            /** Item Id */
+            item_id: string;
+            account: components["schemas"]["Account"];
+        };
         /** Body_replace_listing_photo_api_listings__listing_id__photos__photo_id__put */
         Body_replace_listing_photo_api_listings__listing_id__photos__photo_id__put: {
             /** File */
@@ -373,8 +419,18 @@ export interface components {
              * @description `SaleItem.id` it was resold as
              */
             sale_item_id?: number | null;
+            /**
+             * Benefit Pln
+             * @description sell_price - price_pln, for sold items with both set
+             */
+            benefit_pln?: number | null;
             /** @default none */
             status: components["schemas"]["SaleStatus"];
+            /**
+             * @description Our account it belongs to
+             * @default py-py
+             */
+            account: components["schemas"]["Account"];
             /**
              * Order Date
              * @default
@@ -392,6 +448,27 @@ export interface components {
              * @default
              */
             seller_country: string;
+        };
+        /** ItemsPage */
+        ItemsPage: {
+            /** Items */
+            items: components["schemas"]["Item"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Size */
+            size: number;
+            /**
+             * Benefit Pln
+             * @description Sum of `Item.benefit_pln` over all matching items
+             */
+            benefit_pln: number;
+            /**
+             * Benefit Items
+             * @description Matching items that have a benefit
+             */
+            benefit_items: number;
         };
         /** Listing */
         Listing: {
@@ -492,17 +569,6 @@ export interface components {
             items: number;
             /** Spent Pln */
             spent_pln: number;
-        };
-        /** Page[Item] */
-        Page_Item_: {
-            /** Items */
-            items: components["schemas"]["Item"][];
-            /** Total */
-            total: number;
-            /** Page */
-            page: number;
-            /** Size */
-            size: number;
         };
         /** PhotoOrderUpdate */
         PhotoOrderUpdate: {
@@ -687,6 +753,11 @@ export interface components {
              * @description Items with a sell price set
              */
             sold_items: number;
+            /**
+             * Sold By Account
+             * @description Sales split, in `Account` order
+             */
+            sold_by_account: components["schemas"]["AccountSales"][];
             /** By Status */
             by_status: {
                 [key: string]: number;
@@ -809,6 +880,8 @@ export interface operations {
                 q?: string | null;
                 /** @description Keep only items with (true) or without (false) one */
                 has_sell_price?: boolean | null;
+                /** @description Keep only these */
+                account?: components["schemas"]["Account"][] | null;
                 page?: number;
                 size?: number;
             };
@@ -824,7 +897,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Page_Item_"];
+                    "application/json": components["schemas"]["ItemsPage"];
                 };
             };
             /** @description Validation Error */
@@ -939,6 +1012,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SaleLinkUpdateResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_item_account_api_items__tx_id___item_id__account_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Purchase (transaction) id */
+                tx_id: string;
+                /** @description Item id within the purchase */
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountUpdateResult"];
                 };
             };
             /** @description Validation Error */
