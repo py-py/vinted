@@ -5,13 +5,17 @@ import asyncio
 from datetime import UTC
 from datetime import datetime
 
+from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 
 from ..storage import FirestoreStore
 from .api import MEMBER_URL
 from .models import ItemState
+from .models import MemberState
 from .sync import sync_wardrobe
+
+load_dotenv()
 
 
 async def main() -> None:
@@ -49,6 +53,9 @@ async def main() -> None:
 
 async def sync_member(user_id: str, store: FirestoreStore) -> None:
     result = await sync_wardrobe(user_id, store)
+    if result.member_state != MemberState.ACTIVE:
+        print(f"-> Member state: {result.member_state}")
+        return
     print(f"-> New: {len(result.new)}")
     for item_id in result.new:
         print(f"   + {item_id}")

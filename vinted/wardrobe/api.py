@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import UTC
 from datetime import datetime
 
@@ -7,9 +8,30 @@ import httpx
 
 from ..constants import USER_AGENT
 from ..utils import get_with_backoff
+from .models import MemberState
 
 WARDROBE_API_URL = "https://www.vinted.pl/api/v2/wardrobe/{user_id}/items"
 MEMBER_URL = "https://www.vinted.pl/member/{user_id}"
+
+BANNED_RE = re.compile(r'"is_account_banned":(true|false)')
+DELETED_RE = re.compile(r'"is_deleted":(true|false)')
+
+
+def parse_member_state(html: str, user_id: str) -> MemberState:
+    """Member account state from the HTML of their profile page.
+
+    The profile's user object (`"id":{user_id},"anon_id"...`) carries
+    `is_account_banned` / `is_deleted`; a banned member's wardrobe API returns
+    no items. Search from that object so other users on the page don't match.
+    """
+    text = html.replace('\\"', '"')
+    start = text.find(f'"id":{user_id},"anon_id"')
+    text = text[start:] if start >= 0 else text
+    if (m := DELETED_RE.search(text)) and m.group(1) == "true":
+        return MemberState.DELETED
+    if (m := BANNED_RE.search(text)) and m.group(1) == "true":
+        return MemberState.BANNED
+    return MemberState.ACTIVE
 
 
 async def fetch_wardrobe(
@@ -17,8 +39,12 @@ async def fetch_wardrobe(
     *,
     per_page: int = 96,  # max items per page
     max_pages: int | None = None,
-) -> list[dict]:
-    """Fetch all items from a Vinted user's wardrobe."""
+) -> tuple[MemberState, list[dict]]:
+    """Fetch the member's account state and all items from their wardrobe.
+
+    Items are only fetched for an active member; a banned or deleted one has
+    no listing, so their items come back empty.
+    """
     items: list[dict] = []
     page = 1
 
@@ -32,7 +58,14 @@ async def fetch_wardrobe(
         },
         follow_redirects=True,
     ) as client:
-        await client.get(MEMBER_URL.format(user_id=user_id))
+        resp = await client.get(MEMBER_URL.format(user_id=user_id))
+        if resp.status_code == 404:
+            return MemberState.DELETED, []
+        resp.raise_for_status()
+        state = parse_member_state(resp.text, user_id)
+        if state != MemberState.ACTIVE:
+            print(f"-> Member is {state}, skipping items")
+            return state, []
 
         while True:
             print(f"-> Fetching page {page}")
@@ -56,7 +89,7 @@ async def fetch_wardrobe(
             page += 1
 
     print(f"-> Total items: {len(items)}")
-    return items
+    return MemberState.ACTIVE, items
 
 
 def parse_item(item: dict) -> dict:

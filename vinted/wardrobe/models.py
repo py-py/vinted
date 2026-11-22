@@ -13,5 +13,13 @@ class ItemState(StrEnum):
     UNKNOWN = "unknown"
 
 
+class MemberState(StrEnum):
+    """Account state of a tracked member, read from their profile page (`state`)."""
+
+    ACTIVE = "active"
+    BANNED = "banned"
+    DELETED = "deleted"
+
+
 # States that can still change: re-checked on every sync while missing.
 OPEN_STATES = frozenset({ItemState.ACTIVE, ItemState.RESERVED, ItemState.UNKNOWN})

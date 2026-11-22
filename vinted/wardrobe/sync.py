@@ -20,6 +20,7 @@ from .api import listed_at
 from .api import parse_item
 from .models import OPEN_STATES
 from .models import ItemState
+from .models import MemberState
 from .status import check_item_state
 
 
@@ -31,6 +32,7 @@ class SyncResult:
     new: list[int] = field(default_factory=list)
     missing: list[int] = field(default_factory=list)
     changes: dict[int, tuple[ItemState, ItemState]] = field(default_factory=dict)
+    member_state: MemberState = MemberState.ACTIVE
 
 
 ###############################################################################
@@ -107,9 +109,13 @@ def apply_state(
 
 async def sync_wardrobe(user_id: str, store: FirestoreStore) -> SyncResult:
     now = datetime.now(UTC)
-    fetched = await fetch_wardrobe(user_id)
+    member_state, fetched = await fetch_wardrobe(user_id)
     saved = store.load_wardrobe_items(user_id)
-    result = diff_fetched(fetched, saved, now)
+    if member_state != MemberState.ACTIVE:
+        # No listing to diff against: keep the saved items as they are.
+        result = SyncResult(member_state=member_state)
+    else:
+        result = diff_fetched(fetched, saved, now)
 
     if result.missing:
         print(f"-> Checking {len(result.missing)} missing item(s)")
@@ -125,8 +131,16 @@ async def sync_wardrobe(user_id: str, store: FirestoreStore) -> SyncResult:
                     continue
                 apply_state(result, item_id, saved[item_id], state, now)
 
-    is_new_member = store.get_wardrobe_member(user_id) is None
-    member = member_doc(user_id, fetched, saved, result, now, is_new=is_new_member)
+    prev = store.get_wardrobe_member(user_id)
+    member = member_doc(
+        user_id,
+        fetched,
+        saved,
+        result,
+        now,
+        is_new=prev is None,
+        prev_state=(prev or {}).get("state"),
+    )
     store.save_wardrobe(user_id, member, result.updates)
     return result
 
@@ -139,12 +153,14 @@ def member_doc(
     now: datetime,
     *,
     is_new: bool,
+    prev_state: str | None = MemberState.ACTIVE,
 ) -> dict:
     """Fields of wardrobes/{user_id} to write for this sync."""
     states = {item_id: doc.get("state", ItemState.ACTIVE) for item_id, doc in saved.items()}
     states |= {item_id: u["state"] for item_id, u in result.updates.items() if "state" in u}
 
     doc: dict = {
+        "state": result.member_state,
         "last_fetched_at": now,
         "active_count": sum(1 for s in states.values() if s == ItemState.ACTIVE),
     }
@@ -152,6 +168,7 @@ def member_doc(
         doc["api"] = {"user_id": int(user_id), "login": login}
     if is_new:
         doc["created_at"] = now
-    if is_new or any("updated_at" in u for u in result.updates.values()):
+    state_changed = result.member_state != prev_state
+    if is_new or state_changed or any("updated_at" in u for u in result.updates.values()):
         doc["updated_at"] = now
     return doc

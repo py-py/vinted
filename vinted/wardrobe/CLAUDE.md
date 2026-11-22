@@ -30,6 +30,10 @@ is `gone_at` (first sync that saw it sold, not Vinted's sale time).
 - Returns active items only; sold and reserved items silently disappear.
 - No created date anywhere: `listed_at` = min `photos[].high_resolution.timestamp`
   (tracks item id order on 360 items).
+- Member page (`MEMBER_URL`) user object has `is_account_banned` /
+  `is_deleted`; a banned member's wardrobe API returns 0 items (verified
+  2026-11-22 on 311512854). Sync then sets member `state` and leaves items
+  untouched.
 - `view_count` is always 0 without cookies — don't rely on it.
 - `/api/v2/items/{id}` is 404 and `/details` 403 anonymously; use the HTML
   item page (`PRODUCT_URL`) instead.

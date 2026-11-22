@@ -152,6 +152,7 @@ def test_new_member_doc() -> None:
 
     assert doc == {
         "api": {"user_id": 282635132, "login": "julia.wal802"},
+        "state": "active",
         "last_fetched_at": NOW,
         "active_count": 2,
         "created_at": NOW,

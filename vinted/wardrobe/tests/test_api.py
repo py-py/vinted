@@ -12,6 +12,8 @@ from datetime import datetime
 
 from ..api import listed_at
 from ..api import parse_item
+from ..api import parse_member_state
+from ..models import MemberState
 
 
 def photo(url: str, timestamp: int | None) -> dict:
@@ -76,3 +78,31 @@ def test_listed_at_skips_photos_without_timestamp() -> None:
 
 def test_listed_at_none_without_photos() -> None:
     assert listed_at({"photos": []}) is None
+
+
+###############################################################################
+#  Parse Member State — Profile Page Flags
+###############################################################################
+
+
+def member_page(user_id: int, *, banned: bool, deleted: bool = False) -> str:
+    """Escaped flight-data snippet: another user first, then the profile user."""
+    other = '{\\"id\\":1,\\"anon_id\\":\\"x\\",\\"is_account_banned\\":true,\\"is_deleted\\":true}'
+    user = (
+        f'{{\\"id\\":{user_id},\\"anon_id\\":\\"y\\",'
+        f'\\"is_account_banned\\":{str(banned).lower()},\\"is_deleted\\":{str(deleted).lower()}}}'
+    )
+    return other + user
+
+
+def test_member_active() -> None:
+    assert parse_member_state(member_page(183486796, banned=False), "183486796") == "active"
+
+
+def test_member_banned() -> None:
+    assert parse_member_state(member_page(311512854, banned=True), "311512854") == "banned"
+
+
+def test_member_deleted() -> None:
+    page = member_page(5, banned=False, deleted=True)
+    assert parse_member_state(page, "5") == MemberState.DELETED
