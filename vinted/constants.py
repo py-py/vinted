@@ -10,6 +10,12 @@ USER_AGENT = (
 CATALOG_URL = "https://www.vinted.pl/catalog?catalog[]={catalog_id}&order=newest_first&page={page}"
 PRODUCT_URL = "https://www.vinted.pl/items/{product_id}"
 
+# Account orders (purchases + sales)
+ESCROW_ORDERS_URL = "https://api.vinted.pl/escrow-orders/api/v2/current-user/escrow-orders"
+ESCROW_ORDER_URL = "https://api.vinted.pl/escrow-orders/api/v2/escrow-orders/{transaction_id}"
+ESCROW_ITEMS_URL = "https://www.vinted.pl/api/v2/escrow_orders/{transaction_id}/items"
+TRANSACTION_URL = "https://www.vinted.pl/api/v2/transactions/{transaction_id}"
+
 CATALOG_WOMEN_SKI_BOOTS = "2652"
 
 CATALOG_RECIPES = {

@@ -1,10 +1,13 @@
 """
 Tests for vinted.account.purchases.api against recorded Vinted API responses.
 
-Fixtures in ./fixtures/ are raw JSON responses captured on 2026-10-15
-for transaction 22646003889 (a 3-item bundle from an EE seller, paid in PLN).
-They reflect the API shape after ~2026-09:
-  - my_orders: `photo` is null, thumbnail moved to top-level `photo_url`;
+Fixtures in ./fixtures/ are raw JSON responses for transaction 22646003889
+(a 3-item bundle from an EE seller, paid in PLN). Captured on 2026-10-15,
+except purchased_orders_page*.json and escrow_order.json, re-captured on
+2026-11-23 from api.vinted.pl/escrow-orders (the www.vinted.pl my_orders and
+escrow_orders/{tx} endpoints now 404). Buyer/seller login+photo scrubbed.
+They reflect the API shape after ~2026-11:
+  - purchased orders list: no `photo`, thumbnail is top-level `photo_url`;
     `conversation_id` is a UUID string, `date` is UTC with `Z`.
   - escrow_orders/{tx}/items: `size`, `status` are "" and
     `paid_price_in_seller_currency` is null; size/condition come from
@@ -24,10 +27,11 @@ from pathlib import Path
 import httpx
 import pytest
 
-from ..api import ESCROW_ITEMS_URL
-from ..api import ESCROW_ORDER_URL
-from ..api import MY_ORDERS_URL
-from ..api import TRANSACTION_URL
+from vinted.constants import ESCROW_ITEMS_URL
+from vinted.constants import ESCROW_ORDER_URL
+from vinted.constants import ESCROW_ORDERS_URL
+from vinted.constants import TRANSACTION_URL
+
 from ..api import build_order
 from ..api import fetch_my_orders
 
@@ -52,7 +56,7 @@ def calls() -> list[httpx.Request]:
 
 
 ###############################################################################
-#  Fetch My Orders — Pagination and Query Params
+#  Fetch Purchased Orders — Pagination and Query Params
 ###############################################################################
 
 
@@ -73,7 +77,7 @@ def paged_client(calls: list[httpx.Request]) -> Callable[[list[dict]], httpx.Asy
 
 
 async def test_paginates_and_concatenates_orders(paged_client, calls) -> None:
-    pages = [load("my_orders_page1"), load("my_orders_page2")]
+    pages = [load("purchased_orders_page1"), load("purchased_orders_page2")]
     async with paged_client(pages) as client:
         orders = await fetch_my_orders(client, per_page=2, max_pages=2)
 
@@ -83,11 +87,11 @@ async def test_paginates_and_concatenates_orders(paged_client, calls) -> None:
 
 
 async def test_sends_expected_query_params(paged_client, calls) -> None:
-    async with paged_client([load("my_orders_page1")]) as client:
+    async with paged_client([load("purchased_orders_page1")]) as client:
         await fetch_my_orders(client, status="completed", per_page=2, max_pages=1)
 
     request = calls[0]
-    assert str(request.url.copy_with(query=None)) == MY_ORDERS_URL
+    assert str(request.url.copy_with(query=None)) == ESCROW_ORDERS_URL
     assert dict(request.url.params) == {
         "type": "purchased",
         "status": "completed",
@@ -97,7 +101,7 @@ async def test_sends_expected_query_params(paged_client, calls) -> None:
 
 
 async def test_stops_on_empty_page(paged_client, calls) -> None:
-    pages = [load("my_orders_page1"), load("my_orders_page2")]
+    pages = [load("purchased_orders_page1"), load("purchased_orders_page2")]
     async with paged_client(pages) as client:
         orders = await fetch_my_orders(client, per_page=2)
 
@@ -106,7 +110,7 @@ async def test_stops_on_empty_page(paged_client, calls) -> None:
 
 
 async def test_stops_on_short_page(paged_client, calls) -> None:
-    async with paged_client([load("my_orders_page1")]) as client:
+    async with paged_client([load("purchased_orders_page1")]) as client:
         orders = await fetch_my_orders(client, per_page=100)
 
     assert len(orders) == 2
@@ -114,13 +118,13 @@ async def test_stops_on_short_page(paged_client, calls) -> None:
 
 
 async def test_returns_raw_order_dicts(paged_client) -> None:
-    async with paged_client([load("my_orders_page1")]) as client:
+    async with paged_client([load("purchased_orders_page1")]) as client:
         orders = await fetch_my_orders(client, per_page=100)
 
     first = orders[0]
     assert first["transaction_id"] == TX
     assert first["conversation_id"] == CONVERSATION_ID
-    assert first["photo"] is None
+    assert "photo" not in first
     assert first["photo_url"].startswith("https://images1.vinted.net/")
 
 
@@ -131,7 +135,7 @@ async def test_returns_raw_order_dicts(paged_client) -> None:
 
 @pytest.fixture
 def raw_order() -> dict:
-    return load("my_orders_page1")["my_orders"][0]
+    return load("purchased_orders_page1")["my_orders"][0]
 
 
 @pytest.fixture

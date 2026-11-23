@@ -1,51 +1,79 @@
 {
+  "code": 0,
   "escrow_order": {
-    "id": 22646003889,
-    "seller_id": 312208246,
+    "buyer": {
+      "external_id": 3131275209,
+      "is_business": false,
+      "login": "scrubbed",
+      "photo_url": null,
+      "user_id": 3131275209
+    },
     "buyer_id": 3131275209,
-    "current_user_side": "buyer",
-    "is_seller_business": false,
-    "is_suspended": false,
+    "completed_at": "2026-10-09T08:43:20Z",
     "conversation_id": "01a0e1f0-5731-7836-9bf0-76c74a079965",
     "created_at": "2026-09-27T08:17:24Z",
-    "title": "Bundle 3 items",
+    "current_user_side": "buyer",
+    "id": 22646003889,
+    "is_seller_business": false,
+    "is_suspended": false,
     "items": [
       {
+        "external_id": 10092914997,
         "id": 10092914997,
-        "title": "Rohelised Jordan Low/ Nike",
         "is_deleted": false,
-        "photo_url": "https://images1.vinted.net/t/02_02205_FV74nK9WwMmP9FbAqyT1nody/150x210/f5e7291f.jpeg?s=0d16839253ef931785966bc22a17fe7d1c2131ad"
+        "item_id": 10092914997,
+        "photo_url": "https://images1.vinted.net/t/02_02205_FV74nK9WwMmP9FbAqyT1nody/150x210/f5e7291f.jpeg?s=0d16839253ef931785966bc22a17fe7d1c2131ad",
+        "size": null,
+        "status": null,
+        "title": "Rohelised Jordan Low/ Nike"
       },
       {
+        "external_id": 10149546725,
         "id": 10149546725,
-        "title": "Neoonkollased space hippie 04",
         "is_deleted": false,
-        "photo_url": "https://images1.vinted.net/t/02_01ad8_NuhoH4r4DJowJmR3Qs34XcTE/150x210/67f8ef47.jpeg?s=2040373cd0609c16b5c9a1531e649be1dcb896d2"
+        "item_id": 10149546725,
+        "photo_url": "https://images1.vinted.net/t/02_01ad8_NuhoH4r4DJowJmR3Qs34XcTE/150x210/67f8ef47.jpeg?s=2040373cd0609c16b5c9a1531e649be1dcb896d2",
+        "size": null,
+        "status": null,
+        "title": "Neoonkollased space hippie 04"
       },
       {
+        "external_id": 10149615955,
         "id": 10149615955,
-        "title": "Beežid/hallid meeste space hippie 04",
         "is_deleted": false,
-        "photo_url": "https://images1.vinted.net/t/05_0082d_XKENKF7Uie7MkfwAB8GRcSEz/150x210/b854244b.jpeg?s=9cfad36bcdd7c5f67b74c4aebf7d2ab12027f973"
+        "item_id": 10149615955,
+        "photo_url": "https://images1.vinted.net/t/05_0082d_XKENKF7Uie7MkfwAB8GRcSEz/150x210/b854244b.jpeg?s=9cfad36bcdd7c5f67b74c4aebf7d2ab12027f973",
+        "size": null,
+        "status": null,
+        "title": "Beežid/hallid meeste space hippie 04"
       }
     ],
-    "status": "completed",
-    "transaction_status": 450,
-    "total_price": {
-      "amount": 169.25,
-      "currency_code": "PLN"
-    },
-    "shipment": {
-      "price_ex_vat": {
-        "amount": 9.25,
-        "currency_code": "PLN"
-      },
-      "vat_amount": {
-        "amount": 2.22,
-        "currency_code": "PLN"
-      }
-    },
+    "kind": "item",
     "payment_data": {
+      "conversion_data": {
+        "base_rate": {
+          "amount": "1.00",
+          "currency_code": "EUR"
+        },
+        "items_price": {
+          "amount": "33.30",
+          "currency_code": "EUR"
+        },
+        "provider": "Adyen N.V.",
+        "rate": "0.012",
+        "rounded_rate": {
+          "amount": "4.43",
+          "currency_code": "PLN"
+        },
+        "shipment_price": {
+          "amount": "2.59",
+          "currency_code": "EUR"
+        }
+      },
+      "customs_tax_price": null,
+      "electronics_verification_fee_price": null,
+      "import_vat_price": null,
+      "item_verification_fee_price": null,
       "items_price": {
         "price": {
           "amount": "147.50",
@@ -53,30 +81,20 @@
         }
       },
       "sales_tax_price": null,
-      "customs_tax_price": null,
-      "import_vat_price": null,
       "service_fee_price": {
+        "discount": null,
         "price": {
           "amount": "10.28",
-          "currency_code": "PLN"
-        },
-        "discount": null
-      },
-      "item_verification_fee_price": null,
-      "electronics_verification_fee_price": null,
-      "total_price_without_tax": {
-        "price": {
-          "amount": "157.78",
           "currency_code": "PLN"
         }
       },
       "shipment_price": {
-        "price": {
-          "amount": "11.47",
-          "currency_code": "PLN"
-        },
         "discount": {
           "amount": "5.14",
+          "currency_code": "PLN"
+        },
+        "price": {
+          "amount": "11.47",
           "currency_code": "PLN"
         },
         "price_excluding_vat": {
@@ -92,29 +110,46 @@
         "amount": "169.25",
         "currency_code": "PLN"
       },
-      "conversion_data": {
-        "items_price": {
-          "amount": "33.30",
-          "currency_code": "EUR"
-        },
-        "shipment_price": {
-          "amount": "2.59",
-          "currency_code": "EUR"
-        },
-        "base_rate": {
-          "amount": "1.00",
-          "currency_code": "EUR"
-        },
-        "rounded_rate": {
-          "amount": "4.43",
+      "total_price_without_tax": {
+        "price": {
+          "amount": "157.78",
           "currency_code": "PLN"
-        },
-        "provider": "Adyen N.V.",
-        "rate": "0.012"
+        }
       }
     },
+    "product_offers": [],
     "purchase_id": "KvXExBSJiW-oeW7GNGnNS",
-    "traits": []
-  },
-  "code": 0
+    "seller": {
+      "external_id": 312208246,
+      "is_business": false,
+      "login": "scrubbed",
+      "photo_url": null,
+      "user_id": 312208246
+    },
+    "seller_id": 312208246,
+    "services": [
+      "shipping",
+      "bpf"
+    ],
+    "shipment": {
+      "price_ex_vat": {
+        "amount": 9.25,
+        "currency_code": "PLN"
+      },
+      "vat_amount": {
+        "amount": 2.22,
+        "currency_code": "PLN"
+      }
+    },
+    "status": "completed",
+    "title": "Bundle 3 items",
+    "total_price": {
+      "amount": 169.25,
+      "currency_code": "PLN"
+    },
+    "traits": [],
+    "transaction_status": 450,
+    "uuid": "01a0e1f0-b620-7405-835e-a898bfc05102",
+    "was_ever_suspended": false
+  }
 }

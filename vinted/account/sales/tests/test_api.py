@@ -3,8 +3,10 @@ Tests for vinted.account.sales.api against recorded Vinted API responses.
 
 Fixtures in ./fixtures/ are raw JSON responses captured on 2026-10-24
 from api.vinted.pl escrow-orders (type=sold, status=completed, per_page=2),
-plus escrow_orders/{tx}[/items] and transactions/{tx} for bundle 22009759206
-(4 items, listed 170 PLN, sold for 123.82). Buyer login/photo are scrubbed.
+plus escrow_orders/{tx}/items and transactions/{tx} for bundle 22009759206
+(4 items, listed 170 PLN, sold for 123.82). escrow_order.json was re-captured
+on 2026-11-23 from api.vinted.pl/escrow-orders/api/v2/escrow-orders/{tx}.
+Buyer/seller login+photo are scrubbed.
 
 Run:
     make test  (or: pytest vinted/account/sales)
@@ -20,11 +22,11 @@ from pathlib import Path
 import httpx
 import pytest
 
-from vinted.account.purchases.api import ESCROW_ITEMS_URL
-from vinted.account.purchases.api import ESCROW_ORDER_URL
-from vinted.account.purchases.api import TRANSACTION_URL
+from vinted.constants import ESCROW_ITEMS_URL
+from vinted.constants import ESCROW_ORDER_URL
+from vinted.constants import ESCROW_ORDERS_URL
+from vinted.constants import TRANSACTION_URL
 
-from ..api import SOLD_ORDERS_URL
 from ..api import allocate_sold_prices
 from ..api import build_sale
 from ..api import fetch_sold_orders
@@ -79,7 +81,7 @@ async def test_sends_expected_query_params(paged_client, calls) -> None:
         await fetch_sold_orders(client, status="completed", per_page=2, max_pages=1)
 
     request = calls[0]
-    assert str(request.url.copy_with(query=None)) == SOLD_ORDERS_URL
+    assert str(request.url.copy_with(query=None)) == ESCROW_ORDERS_URL
     assert dict(request.url.params) == {
         "type": "sold",
         "status": "completed",

@@ -1,13 +1,7 @@
 """
 HTTP layer for purchased orders.
 
-Auth is shared with favourites: cookies are read from `cookies.json`.
-
-Pipeline per order:
-  /api/v2/my_orders                       -> list of orders (paginated)
-  /api/v2/escrow_orders/{tx_id}           -> payment breakdown + totals
-  /api/v2/escrow_orders/{tx_id}/items     -> per-item paid price + size/condition
-  /api/v2/transactions/{tx_id}            -> per-item photos/url/catalog + seller info
+Endpoints, auth and API quirks: see CLAUDE.md in this package.
 """
 
 from __future__ import annotations
@@ -17,17 +11,16 @@ import asyncio
 import httpx
 
 from vinted.account.cookies import load_cookies
+from vinted.constants import ESCROW_ITEMS_URL
+from vinted.constants import ESCROW_ORDER_URL
+from vinted.constants import ESCROW_ORDERS_URL
+from vinted.constants import TRANSACTION_URL
 from vinted.constants import USER_AGENT
 from vinted.utils import get_with_backoff
 
 from .models import CurrencyConversion
 from .models import Order
 from .models import OrderItem
-
-MY_ORDERS_URL = "https://www.vinted.pl/api/v2/my_orders"
-ESCROW_ORDER_URL = "https://www.vinted.pl/api/v2/escrow_orders/{transaction_id}"
-ESCROW_ITEMS_URL = "https://www.vinted.pl/api/v2/escrow_orders/{transaction_id}/items"
-TRANSACTION_URL = "https://www.vinted.pl/api/v2/transactions/{transaction_id}"
 
 
 def _amount(d: dict | None) -> float:
@@ -56,7 +49,7 @@ async def fetch_my_orders(
         print(f"-> Fetching my_orders page {page}")
         resp = await get_with_backoff(
             client,
-            MY_ORDERS_URL,
+            ESCROW_ORDERS_URL,
             params={
                 "type": "purchased",
                 "status": status,

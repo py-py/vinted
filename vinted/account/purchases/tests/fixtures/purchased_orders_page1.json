@@ -1,0 +1,43 @@
+{
+  "my_orders": [
+    {
+      "conversation_id": "01a0e1f0-5731-7836-9bf0-76c74a079965",
+      "date": "2026-09-27T08:17:23Z",
+      "escrow_order_id": 22646003889,
+      "escrow_order_uuid": "01a0e1f0-b620-7405-835e-a898bfc05102",
+      "photo_url": "https://images1.vinted.net/t/02_02205_FV74nK9WwMmP9FbAqyT1nody/150x210/f5e7291f.jpeg?s=0d16839253ef931785966bc22a17fe7d1c2131ad",
+      "price": {
+        "amount": "169.25",
+        "currency_code": "PLN"
+      },
+      "status": "Order completed!",
+      "title": "Bundle 3 items",
+      "transaction_id": 22646003889,
+      "transaction_user_status": "completed"
+    },
+    {
+      "conversation_id": "01a075fb-8c5a-7140-88a2-f900f127b48f",
+      "date": "2026-09-06T09:10:26Z",
+      "escrow_order_id": 22082867790,
+      "escrow_order_uuid": "01a075fb-bfa0-765f-a777-82d34b90ab88",
+      "photo_url": "https://images1.vinted.net/t/02_0055d_73jKaBXVYDnzcKam7HUavKdG/150x210/351b6740.jpeg?s=3cea43bbf826519aa8493fb85a8c7d68502f2be6",
+      "price": {
+        "amount": "88.49",
+        "currency_code": "PLN"
+      },
+      "status": "Order completed!",
+      "title": "Adidas Terrex nou",
+      "transaction_id": 22082867790,
+      "transaction_user_status": "completed"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "per_page": 2,
+    "current_page": 1,
+    "total_entries": 210,
+    "total_pages": 105,
+    "time": 1792071841
+  },
+  "order_details_enabled": false
+}

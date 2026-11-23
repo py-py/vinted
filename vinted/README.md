@@ -9,7 +9,7 @@ sequenceDiagram
     participant V as Vinted API
 
     loop page = 1, 2, ...
-        S->>V: GET /api/v2/my_orders?type=purchased&status=completed&page=N
+        S->>V: GET api.vinted.pl/escrow-orders/api/v2/current-user/escrow-orders?type=purchased&status=completed&page=N
         V-->>S: my_orders[] → transaction_id
     end
 

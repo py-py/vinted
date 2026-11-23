@@ -1,21 +1,7 @@
 """
 HTTP layer for sold orders.
 
-Auth is shared with orders: cookies are read from `cookies.json`.
-
-Pipeline per sale:
-  api.vinted.pl/escrow-orders/api/v2/current-user/escrow-orders?type=sold
-                                          -> list of sold orders (paginated, same
-                                             shape as `my_orders` + `escrow_order_id`)
-  /api/v2/escrow_orders/{tx_id}           -> items price + shipment
-  /api/v2/escrow_orders/{tx_id}/items     -> item ids/titles (kept for deleted listings)
-  /api/v2/transactions/{tx_id}            -> per-item listed price/photos/url + buyer
-
-Vinted deletes old sold listings (~3 months); `transactions/{tx}` then returns
-`order.items: []`, so escrow items are the source of truth for the item list.
-
-Vinted does not return a per-item sold price (escrow items have it null), so for
-bundles `items_price` is split across items proportionally to `listed_price`.
+Endpoints, deleted listings and sold-price split: see CLAUDE.md in this package.
 """
 
 from __future__ import annotations
@@ -30,13 +16,12 @@ from vinted.account.purchases.api import _currency
 from vinted.account.purchases.api import fetch_escrow_order
 from vinted.account.purchases.api import fetch_escrow_order_items
 from vinted.account.purchases.api import fetch_transaction
+from vinted.constants import ESCROW_ORDERS_URL
 from vinted.constants import USER_AGENT
 from vinted.utils import get_with_backoff
 
 from .models import Sale
 from .models import SaleItem
-
-SOLD_ORDERS_URL = "https://api.vinted.pl/escrow-orders/api/v2/current-user/escrow-orders"
 
 
 async def fetch_sold_orders(
@@ -53,7 +38,7 @@ async def fetch_sold_orders(
         print(f"-> Fetching sold orders page {page}")
         resp = await get_with_backoff(
             client,
-            SOLD_ORDERS_URL,
+            ESCROW_ORDERS_URL,
             params={
                 "type": "sold",
                 "status": status,
